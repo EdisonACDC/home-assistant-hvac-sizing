@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d2438">
+  <title>Dimensionamento Climatizzazione Pro</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">HVAC · CARICHI TERMICI</p>
+      <h1>Dimensionamento Climatizzazione</h1>
+    </div>
+    <div class="top-actions">
+      <button id="new-project" class="button ghost">Nuovo</button>
+      <button id="open-projects" class="button ghost">Progetti</button>
+      <button id="save-project" class="button primary">Salva</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel project-panel">
+      <label>Nome progetto<input id="project-name" value="Nuovo impianto"></label>
+      <label>Cliente<input id="customer" placeholder="Nome o ragione sociale"></label>
+      <label>Località<input id="location" placeholder="Città"></label>
+      <div class="method-switch" role="group" aria-label="Metodo di calcolo">
+        <button class="method active" data-method="quick">Calcolo rapido</button>
+        <button class="method" data-method="professional">Calcolo professionale</button>
+      </div>
+    </section>
+
+    <section id="climate-panel" class="panel climate hidden">
+      <div class="section-title"><div><p class="eyebrow">CONDIZIONI DI PROGETTO</p><h2>Clima interno ed esterno</h2></div></div>
+      <div class="grid six">
+        <label>Estate esterna °C<input id="summer-outdoor" type="number" value="35" step="0.1"></label>
+        <label>U.R. esterna %<input id="summer-rh-out" type="number" value="50" min="0" max="100"></label>
+        <label>Estate interna °C<input id="summer-indoor" type="number" value="26" step="0.1"></label>
+        <label>U.R. interna %<input id="summer-rh-in" type="number" value="50" min="0" max="100"></label>
+        <label>Inverno esterna °C<input id="winter-outdoor" type="number" value="-5" step="0.1"></label>
+        <label>Inverno interna °C<input id="winter-indoor" type="number" value="20" step="0.1"></label>
+      </div>
+    </section>
+
+    <section class="section-title rooms-heading">
+      <div><p class="eyebrow">LOCALI</p><h2>Dati per il calcolo</h2></div>
+      <button id="add-room" class="button secondary">+ Aggiungi locale</button>
+    </section>
+    <div id="rooms"></div>
+
+    <div class="calculate-bar">
+      <div><strong id="room-count">1 locale</strong><span>I risultati restano separati per ogni ambiente</span></div>
+      <button id="calculate" class="button calculate">Calcola potenze</button>
+    </div>
+
+    <section id="results" class="results hidden"></section>
+  </main>
+
+  <dialog id="projects-dialog">
+    <div class="dialog-head"><h2>Progetti salvati</h2><button id="close-projects" class="icon-button">×</button></div>
+    <div id="projects-list" class="projects-list"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
+
