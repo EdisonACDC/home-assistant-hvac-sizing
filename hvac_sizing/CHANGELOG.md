@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0
+
+- Nuova sezione "Diagnosi prestazioni" per testare una macchina in funzione.
+- Inserimento temperature ambiente/ritorno, aria in uscita, temperatura esterna e umidità.
+- Inserimento bassa/alta pressione del manifold e temperature di evaporazione/condensazione lette dallo strumento.
+- Calcolo automatico di ΔT aria, surriscaldamento, sottoraffreddamento e approach termici.
+- Incrocio tecnico tra portata aria, pressioni, temperature, SH/SC, temperatura di mandata compressore e assorbimento.
+- Diagnosi guidata senza giudicare la carica refrigerante da una sola pressione.
+- Supporto compressori inverter e on/off con avvertenze dedicate per EEV e modulazione.
+- Dati della prova prestazioni salvati insieme al progetto.
+- Interfaccia responsive per telefono, tablet e PC.
+
 ## 0.2.0
 
 - Nuova sezione "Vuoto e messa in servizio".
