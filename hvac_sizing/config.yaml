@@ -1,5 +1,5 @@
 name: "Dimensionamento Climatizzazione Pro"
-version: "0.4.2"
+version: "0.4.3"
 slug: "hvac_sizing_pro"
 description: "Calcolo carichi, vuoto, messa in servizio e diagnosi tecnica HVAC anche per split con sola bassa pressione"
 url: "https://github.com/EdisonACDC/home-assistant-hvac-sizing"
