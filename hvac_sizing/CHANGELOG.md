@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+- Diagnosi prestazioni separata tra split con sola presa di bassa pressione e sistemi con bassa + alta accessibili.
+- In modalità "solo bassa" i campi HP, condensazione e sottoraffreddamento vengono nascosti e non sono richiesti.
+- Valutazione professionale con ΔT aria, temperatura di evaporazione, surriscaldamento, condizioni ambiente, pulizia/portata aria e assorbimento.
+- Livello di affidabilità della diagnosi carica: bassa, media o alta in base ai dati realmente disponibili.
+- Su inverter/EEV l'add-on evita conclusioni automatiche sulla carica durante modulazione o con dati insufficienti.
+- La sola pressione di aspirazione non viene mai usata come prova di sottocarica o sovraccarica.
+- Aggiunto ordine diagnostico professionale: lato aria → stabilizzazione → ΔT → LP/Tsat → SH → HP/SC se disponibili → assorbimento → valutazione finale.
+
 ## 0.3.0
 
 - Nuova sezione "Diagnosi prestazioni" per testare una macchina in funzione.
