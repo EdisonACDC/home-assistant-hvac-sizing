@@ -10,10 +10,11 @@
 <body>
   <header class="topbar">
     <div>
-      <p class="eyebrow">HVAC · CARICHI TERMICI</p>
+      <p class="eyebrow">HVAC · CARICHI TERMICI · COLLAUDO</p>
       <h1>Dimensionamento Climatizzazione</h1>
     </div>
     <div class="top-actions">
+      <button id="go-commissioning" class="button ghost">Vuoto</button>
       <button id="new-project" class="button ghost">Nuovo</button>
       <button id="open-projects" class="button ghost">Progetti</button>
       <button id="save-project" class="button primary">Salva</button>
@@ -29,6 +30,51 @@
         <button class="method active" data-method="quick">Calcolo rapido</button>
         <button class="method" data-method="professional">Calcolo professionale</button>
       </div>
+    </section>
+
+    <section id="commissioning" class="panel commissioning-panel">
+      <div class="section-title commissioning-title">
+        <div><p class="eyebrow">VUOTO E MESSA IN SERVIZIO</p><h2>Diagnosi evacuazione impianto</h2></div>
+        <span class="status-pill">Assistente tecnico</span>
+      </div>
+      <div class="grid four commissioning-grid">
+        <label>Refrigerante
+          <select id="vac-refrigerant">
+            <option>R32</option><option>R410A</option><option>R134a</option><option>R290</option>
+          </select>
+        </label>
+        <label>Condizione impianto
+          <select id="vac-system-state">
+            <option value="new">Nuovo / asciutto</option>
+            <option value="used">Già funzionato / presenza olio</option>
+            <option value="open">Rimasto aperto all'atmosfera</option>
+          </select>
+        </label>
+        <label>Frusta principale
+          <select id="vac-hose-size">
+            <option value="0.25">1/4&quot; standard</option>
+            <option value="0.375">3/8&quot; vuoto</option>
+            <option value="0.5">1/2&quot; alto flusso</option>
+          </select>
+        </label>
+        <label>Tempo evacuazione min<input id="vac-minutes" type="number" value="60" min="0" step="1"></label>
+        <label>Micron iniziali<input id="vac-start" type="number" value="1650" min="0" step="1"></label>
+        <label>Micron attuali<input id="vac-current" type="number" value="900" min="0" step="1"></label>
+        <label>Test risalita - inizio micron<input id="vac-rise-start" type="number" placeholder="es. 450" min="0" step="1"></label>
+        <label>Test risalita - fine micron<input id="vac-rise-end" type="number" placeholder="es. 620" min="0" step="1"></label>
+        <label>Durata test risalita min<input id="vac-rise-minutes" type="number" value="10" min="1" step="1"></label>
+      </div>
+      <div class="check-grid">
+        <label class="check"><input id="vac-core-removed" type="checkbox"><span>Schrader rimosso con core remover</span></label>
+        <label class="check"><input id="vac-nitrogen-tested" type="checkbox"><span>Prova tenuta con azoto superata</span></label>
+        <label class="check"><input id="vac-oil-fresh" type="checkbox" checked><span>Olio pompa nuovo / pulito</span></label>
+      </div>
+      <div class="commissioning-actions">
+        <button id="analyze-vacuum" class="button calculate">Analizza il vuoto</button>
+        <button id="reset-vacuum" class="button secondary">Azzera test</button>
+      </div>
+      <div id="vacuum-result" class="vacuum-result hidden" aria-live="polite"></div>
+      <p class="disclaimer safety-note"><strong>Sicurezza:</strong> azoto secco solo con riduttore. Non immettere azoto mentre la pompa del vuoto sta aspirando. Isola la pompa, rompi il vuoto con azoto, poi evacua di nuovo.</p>
     </section>
 
     <section id="climate-panel" class="panel climate hidden">
@@ -66,4 +112,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
