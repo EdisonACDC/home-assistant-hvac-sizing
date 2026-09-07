@@ -39,10 +39,16 @@
         <div><p class="eyebrow">DIAGNOSI PRESTAZIONI</p><h2>Controllo tecnico macchina in funzione</h2></div>
         <span class="status-pill">Diagnosi professionale</span>
       </div>
-      <p class="diagnostic-intro">Inserisci i valori letti dal manifold e le temperature reali. L'assistente calcola ΔT aria, surriscaldamento e sottoraffreddamento e incrocia i dati senza diagnosticare la carica da una sola pressione.</p>
+      <p class="diagnostic-intro">Inserisci solo i dati realmente misurabili sulla macchina. L'assistente distingue gli split con una sola presa di servizio dai sistemi con bassa e alta accessibili e non diagnostica la carica da una sola pressione.</p>
 
       <p class="subheading">Macchina e condizioni di prova</p>
       <div class="grid four">
+        <label>Accesso frigorifero
+          <select id="perf-access">
+            <option value="low_only">Split normale · solo bassa pressione</option>
+            <option value="low_high">Bassa + alta pressione accessibili</option>
+          </select>
+        </label>
         <label>Refrigerante<select id="perf-refrigerant"><option>R32</option><option>R410A</option><option>R134a</option><option>R290</option></select></label>
         <label>Modalità<select id="perf-mode"><option value="cooling">Raffrescamento</option><option value="heating">Riscaldamento</option></select></label>
         <label>Tipo compressore<select id="perf-compressor"><option value="inverter">Inverter</option><option value="fixed">On/Off</option></select></label>
@@ -50,17 +56,17 @@
         <label>Temperatura esterna °C<input id="perf-outdoor" type="number" value="30" step="0.1"></label>
         <label>Temperatura ambiente/ritorno °C<input id="perf-return-air" type="number" value="26" step="0.1"></label>
         <label>Umidità ambiente %<input id="perf-rh" type="number" value="50" min="0" max="100" step="1"></label>
-        <label>Temperatura uscita evaporatore/mandata aria °C<input id="perf-supply-air" type="number" value="14" step="0.1"></label>
+        <label>Temperatura aria uscita unità interna °C<input id="perf-supply-air" type="number" value="14" step="0.1"></label>
       </div>
 
-      <p class="subheading">Valori manifold e tubazioni</p>
+      <p class="subheading">Valori frigoriferi e tubazioni</p>
       <div class="grid four">
-        <label>Bassa pressione bar(g)<input id="perf-low-bar" type="number" step="0.01" placeholder="es. 9.2"></label>
-        <label>Alta pressione bar(g)<input id="perf-high-bar" type="number" step="0.01" placeholder="es. 26.5"></label>
+        <label>Bassa pressione bar(g)<input id="perf-low-bar" type="number" step="0.01" placeholder="lettura manifold"></label>
         <label>Temperatura evaporazione sat. °C<input id="perf-evap-sat" type="number" step="0.1" placeholder="lettura Testo"></label>
-        <label>Temperatura condensazione sat. °C<input id="perf-cond-sat" type="number" step="0.1" placeholder="lettura Testo"></label>
         <label>Temperatura tubo aspirazione °C<input id="perf-suction-line" type="number" step="0.1" placeholder="pinza temperatura"></label>
-        <label>Temperatura tubo liquido °C<input id="perf-liquid-line" type="number" step="0.1" placeholder="pinza temperatura"></label>
+        <label class="perf-high-only">Alta pressione bar(g)<input id="perf-high-bar" type="number" step="0.01" placeholder="lettura manifold"></label>
+        <label class="perf-high-only">Temperatura condensazione sat. °C<input id="perf-cond-sat" type="number" step="0.1" placeholder="lettura Testo"></label>
+        <label class="perf-high-only">Temperatura tubo liquido °C<input id="perf-liquid-line" type="number" step="0.1" placeholder="pinza temperatura"></label>
         <label>Temperatura mandata compressore °C<input id="perf-discharge-line" type="number" step="0.1" placeholder="opzionale"></label>
         <label>Corrente compressore A<input id="perf-current" type="number" step="0.1" placeholder="opzionale"></label>
         <label>Corrente nominale/riferimento A<input id="perf-rated-current" type="number" step="0.1" placeholder="targa/manuale"></label>
@@ -76,7 +82,7 @@
         <button id="reset-performance" class="button secondary">Azzera prova</button>
       </div>
       <div id="performance-result" class="vacuum-result hidden" aria-live="polite"></div>
-      <p class="disclaimer safety-note"><strong>Nota tecnica:</strong> su inverter, EEV e multisplit pressioni, SH e SC variano con carico e frequenza compressore. I limiti del costruttore e i dati di servizio della macchina hanno sempre priorità.</p>
+      <p class="disclaimer safety-note"><strong>Metodo:</strong> con una sola presa di servizio la diagnosi usa soprattutto ΔT aria, temperatura di evaporazione, surriscaldamento, condizioni ambiente e assorbimento. L'assenza dell'alta non viene trattata come errore. Su inverter/EEV i dati vanno interpretati a macchina stabilizzata e le specifiche del costruttore prevalgono sempre.</p>
     </section>
 
     <section id="commissioning" class="panel commissioning-panel">
