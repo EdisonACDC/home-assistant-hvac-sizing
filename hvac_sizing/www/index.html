@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#0d2438">
   <title>Dimensionamento Climatizzazione Pro</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="diagnostics.css">
 </head>
 <body>
   <header class="topbar">
@@ -14,6 +15,7 @@
       <h1>Dimensionamento Climatizzazione</h1>
     </div>
     <div class="top-actions">
+      <button id="go-performance" class="button ghost">Diagnosi</button>
       <button id="go-commissioning" class="button ghost">Vuoto</button>
       <button id="new-project" class="button ghost">Nuovo</button>
       <button id="open-projects" class="button ghost">Progetti</button>
@@ -32,31 +34,60 @@
       </div>
     </section>
 
+    <section id="performance-test" class="panel performance-panel">
+      <div class="section-title commissioning-title">
+        <div><p class="eyebrow">DIAGNOSI PRESTAZIONI</p><h2>Controllo tecnico macchina in funzione</h2></div>
+        <span class="status-pill">Diagnosi professionale</span>
+      </div>
+      <p class="diagnostic-intro">Inserisci i valori letti dal manifold e le temperature reali. L'assistente calcola ΔT aria, surriscaldamento e sottoraffreddamento e incrocia i dati senza diagnosticare la carica da una sola pressione.</p>
+
+      <p class="subheading">Macchina e condizioni di prova</p>
+      <div class="grid four">
+        <label>Refrigerante<select id="perf-refrigerant"><option>R32</option><option>R410A</option><option>R134a</option><option>R290</option></select></label>
+        <label>Modalità<select id="perf-mode"><option value="cooling">Raffrescamento</option><option value="heating">Riscaldamento</option></select></label>
+        <label>Tipo compressore<select id="perf-compressor"><option value="inverter">Inverter</option><option value="fixed">On/Off</option></select></label>
+        <label>Tempo stabilizzazione min<input id="perf-runtime" type="number" value="15" min="0" step="1"></label>
+        <label>Temperatura esterna °C<input id="perf-outdoor" type="number" value="30" step="0.1"></label>
+        <label>Temperatura ambiente/ritorno °C<input id="perf-return-air" type="number" value="26" step="0.1"></label>
+        <label>Umidità ambiente %<input id="perf-rh" type="number" value="50" min="0" max="100" step="1"></label>
+        <label>Temperatura uscita evaporatore/mandata aria °C<input id="perf-supply-air" type="number" value="14" step="0.1"></label>
+      </div>
+
+      <p class="subheading">Valori manifold e tubazioni</p>
+      <div class="grid four">
+        <label>Bassa pressione bar(g)<input id="perf-low-bar" type="number" step="0.01" placeholder="es. 9.2"></label>
+        <label>Alta pressione bar(g)<input id="perf-high-bar" type="number" step="0.01" placeholder="es. 26.5"></label>
+        <label>Temperatura evaporazione sat. °C<input id="perf-evap-sat" type="number" step="0.1" placeholder="lettura Testo"></label>
+        <label>Temperatura condensazione sat. °C<input id="perf-cond-sat" type="number" step="0.1" placeholder="lettura Testo"></label>
+        <label>Temperatura tubo aspirazione °C<input id="perf-suction-line" type="number" step="0.1" placeholder="pinza temperatura"></label>
+        <label>Temperatura tubo liquido °C<input id="perf-liquid-line" type="number" step="0.1" placeholder="pinza temperatura"></label>
+        <label>Temperatura mandata compressore °C<input id="perf-discharge-line" type="number" step="0.1" placeholder="opzionale"></label>
+        <label>Corrente compressore A<input id="perf-current" type="number" step="0.1" placeholder="opzionale"></label>
+        <label>Corrente nominale/riferimento A<input id="perf-rated-current" type="number" step="0.1" placeholder="targa/manuale"></label>
+      </div>
+
+      <div class="check-grid">
+        <label class="check"><input id="perf-filters-clean" type="checkbox" checked><span>Filtri e batteria interna puliti</span></label>
+        <label class="check"><input id="perf-outdoor-clean" type="checkbox" checked><span>Batteria esterna pulita e ventilazione libera</span></label>
+        <label class="check"><input id="perf-fan-high" type="checkbox" checked><span>Ventola interna alta durante il test</span></label>
+      </div>
+      <div class="commissioning-actions">
+        <button id="analyze-performance" class="button calculate">Analizza funzionamento</button>
+        <button id="reset-performance" class="button secondary">Azzera prova</button>
+      </div>
+      <div id="performance-result" class="vacuum-result hidden" aria-live="polite"></div>
+      <p class="disclaimer safety-note"><strong>Nota tecnica:</strong> su inverter, EEV e multisplit pressioni, SH e SC variano con carico e frequenza compressore. I limiti del costruttore e i dati di servizio della macchina hanno sempre priorità.</p>
+    </section>
+
     <section id="commissioning" class="panel commissioning-panel">
       <div class="section-title commissioning-title">
         <div><p class="eyebrow">VUOTO E MESSA IN SERVIZIO</p><h2>Diagnosi evacuazione impianto</h2></div>
         <span class="status-pill">Assistente tecnico</span>
       </div>
       <div class="grid four commissioning-grid">
-        <label>Refrigerante
-          <select id="vac-refrigerant">
-            <option>R32</option><option>R410A</option><option>R134a</option><option>R290</option>
-          </select>
-        </label>
-        <label>Condizione impianto
-          <select id="vac-system-state">
-            <option value="new">Nuovo / asciutto</option>
-            <option value="used">Già funzionato / presenza olio</option>
-            <option value="open">Rimasto aperto all'atmosfera</option>
-          </select>
-        </label>
-        <label>Frusta principale
-          <select id="vac-hose-size">
-            <option value="0.25">1/4&quot; standard</option>
-            <option value="0.375">3/8&quot; vuoto</option>
-            <option value="0.5">1/2&quot; alto flusso</option>
-          </select>
-        </label>
+        <label>Refrigerante<select id="vac-refrigerant"><option>R32</option><option>R410A</option><option>R134a</option><option>R290</option></select></label>
+        <label>Condizione impianto<select id="vac-system-state"><option value="new">Nuovo / asciutto</option><option value="used">Già funzionato / presenza olio</option><option value="open">Rimasto aperto all'atmosfera</option></select></label>
+        <label>Frusta principale<select id="vac-hose-size"><option value="0.25">1/4&quot; standard</option><option value="0.375">3/8&quot; vuoto</option><option value="0.5">1/2&quot; alto flusso</option></select></label>
         <label>Tempo evacuazione min<input id="vac-minutes" type="number" value="60" min="0" step="1"></label>
         <label>Micron iniziali<input id="vac-start" type="number" value="1650" min="0" step="1"></label>
         <label>Micron attuali<input id="vac-current" type="number" value="900" min="0" step="1"></label>
@@ -89,26 +120,15 @@
       </div>
     </section>
 
-    <section class="section-title rooms-heading">
-      <div><p class="eyebrow">LOCALI</p><h2>Dati per il calcolo</h2></div>
-      <button id="add-room" class="button secondary">+ Aggiungi locale</button>
-    </section>
+    <section class="section-title rooms-heading"><div><p class="eyebrow">LOCALI</p><h2>Dati per il calcolo</h2></div><button id="add-room" class="button secondary">+ Aggiungi locale</button></section>
     <div id="rooms"></div>
-
-    <div class="calculate-bar">
-      <div><strong id="room-count">1 locale</strong><span>I risultati restano separati per ogni ambiente</span></div>
-      <button id="calculate" class="button calculate">Calcola potenze</button>
-    </div>
-
+    <div class="calculate-bar"><div><strong id="room-count">1 locale</strong><span>I risultati restano separati per ogni ambiente</span></div><button id="calculate" class="button calculate">Calcola potenze</button></div>
     <section id="results" class="results hidden"></section>
   </main>
 
-  <dialog id="projects-dialog">
-    <div class="dialog-head"><h2>Progetti salvati</h2><button id="close-projects" class="icon-button">×</button></div>
-    <div id="projects-list" class="projects-list"></div>
-  </dialog>
-
+  <dialog id="projects-dialog"><div class="dialog-head"><h2>Progetti salvati</h2><button id="close-projects" class="icon-button">×</button></div><div id="projects-list" class="projects-list"></div></dialog>
   <div id="toast" class="toast" role="status"></div>
   <script src="app.js"></script>
+  <script src="diagnostics.js"></script>
 </body>
 </html>
