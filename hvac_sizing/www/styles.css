@@ -73,16 +73,40 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .project-item small { display: block; color: var(--muted); margin-top: .2rem; }
 .toast { position: fixed; z-index: 20; right: 1rem; bottom: 5.5rem; max-width: 360px; background: var(--green); color: #04150e; padding: .8rem 1rem; border-radius: 11px; font-weight: 800; opacity: 0; transform: translateY(8px); pointer-events: none; transition: .2s; }
 .toast.show { opacity: 1; transform: translateY(0); }
+
+.commissioning-panel { border-color: rgba(59,201,219,.35); background: linear-gradient(145deg, rgba(14,55,72,.98), rgba(8,31,47,.98)); }
+.commissioning-title { margin-bottom: 1rem; }
+.status-pill { color: var(--cyan); background: rgba(59,201,219,.1); border: 1px solid rgba(59,201,219,.3); border-radius: 999px; padding: .35rem .65rem; font-size: .72rem; font-weight: 800; }
+.check-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; margin-top: 1rem; }
+.check { flex-direction: row; align-items: center; gap: .65rem; background: rgba(7,27,42,.7); border: 1px solid var(--line); border-radius: 11px; padding: .75rem; color: var(--text); }
+.check input { width: 20px; min-height: 20px; height: 20px; accent-color: var(--cyan); box-shadow: none; }
+.commissioning-actions { display: flex; gap: .7rem; margin-top: 1rem; }
+.vacuum-result { margin-top: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: 14px; background: #071b2a; }
+.vacuum-result.ok { border-color: rgba(83,211,155,.5); }
+.vacuum-result.warn { border-color: rgba(255,173,90,.55); }
+.vacuum-result.danger { border-color: rgba(255,107,107,.55); }
+.vacuum-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; }
+.vacuum-summary > div { background: rgba(255,255,255,.025); border: 1px solid var(--line); border-radius: 11px; padding: .8rem; }
+.vacuum-summary span { display: block; color: var(--muted); font-size: .7rem; margin-bottom: .3rem; }
+.vacuum-summary strong { font-size: 1rem; }
+.diagnostic-list { margin: 1rem 0 0; padding-left: 1.3rem; color: var(--text); }
+.diagnostic-list li { margin: .55rem 0; line-height: 1.45; }
+.procedure-box { margin-top: 1rem; padding: .9rem; border-radius: 11px; background: rgba(77,141,255,.08); border: 1px solid rgba(77,141,255,.3); }
+.procedure-box p { color: var(--muted); line-height: 1.5; margin-top: .4rem; font-size: .8rem; }
+.safety-note { border-left: 3px solid var(--orange); padding-left: .7rem; }
+
 @media (max-width: 900px) {
   .project-panel { grid-template-columns: 1fr 1fr; }
   .method-switch { grid-column: 1 / -1; }
   .grid.six, .grid.four { grid-template-columns: repeat(2, 1fr); }
   .totals { grid-template-columns: 1fr 1fr; }
+  .check-grid { grid-template-columns: 1fr; }
+  .vacuum-summary { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 620px) {
   .topbar { align-items: flex-start; flex-direction: column; }
-  .top-actions { width: 100%; }
-  .top-actions .button { flex: 1; padding-inline: .45rem; }
+  .top-actions { width: 100%; overflow-x: auto; }
+  .top-actions .button { flex: 1; padding-inline: .45rem; white-space: nowrap; }
   .project-panel, .grid.six, .grid.four { grid-template-columns: 1fr 1fr; }
   .project-panel > label:first-child { grid-column: 1 / -1; }
   .method-switch { overflow-x: auto; }
@@ -91,5 +115,9 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
   .result-table { min-width: 660px; }
   .calculate-bar span { display: none; }
   .button.calculate { min-width: auto; }
+  .commissioning-title { align-items: flex-start; }
+  .status-pill { display: none; }
+  .commissioning-actions { flex-direction: column; }
+  .commissioning-actions .button { width: 100%; }
+  .vacuum-summary { grid-template-columns: 1fr; }
 }
-

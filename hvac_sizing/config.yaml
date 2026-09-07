@@ -1,7 +1,7 @@
 name: "Dimensionamento Climatizzazione Pro"
-version: "0.1.0"
+version: "0.2.0"
 slug: "hvac_sizing_pro"
-description: "Calcolo rapido e tecnico dei carichi frigoriferi e termici per ogni locale"
+description: "Calcolo rapido e tecnico dei carichi frigoriferi e termici per ogni locale, con assistente vuoto e messa in servizio"
 url: "https://github.com/EdisonACDC/home-assistant-hvac-sizing"
 arch:
   - amd64

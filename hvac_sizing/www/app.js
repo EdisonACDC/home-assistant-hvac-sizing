@@ -99,6 +99,23 @@ function syncRoomInput(event) {
   room[input.dataset.key] = input.type === 'number' ? n(input.value) : input.value;
 }
 
+function commissioningPayload() {
+  return {
+    refrigerant: $('#vac-refrigerant').value,
+    system_state: $('#vac-system-state').value,
+    hose_size: $('#vac-hose-size').value,
+    minutes: n($('#vac-minutes').value),
+    start_micron: n($('#vac-start').value),
+    current_micron: n($('#vac-current').value),
+    rise_start: n($('#vac-rise-start').value),
+    rise_end: n($('#vac-rise-end').value),
+    rise_minutes: n($('#vac-rise-minutes').value),
+    core_removed: $('#vac-core-removed').checked,
+    nitrogen_tested: $('#vac-nitrogen-tested').checked,
+    oil_fresh: $('#vac-oil-fresh').checked
+  };
+}
+
 function projectPayload() {
   return {
     id: currentProjectId,
@@ -108,7 +125,9 @@ function projectPayload() {
       summer_outdoor_c: n($('#summer-outdoor').value), summer_outdoor_rh: n($('#summer-rh-out').value),
       summer_indoor_c: n($('#summer-indoor').value), summer_indoor_rh: n($('#summer-rh-in').value),
       winter_outdoor_c: n($('#winter-outdoor').value), winter_indoor_c: n($('#winter-indoor').value), heating_factor: 1
-    }, rooms
+    },
+    commissioning: commissioningPayload(),
+    rooms
   };
 }
 
@@ -143,6 +162,100 @@ function renderResults(result) {
     </tbody></table></div><p class="disclaimer">${escapeHtml(result.disclaimer)}</p>`;
 }
 
+function analyzeVacuum() {
+  const data = commissioningPayload();
+  const target = $('#vacuum-result');
+  const notes = [];
+  let level = 'ok';
+  let title = 'Evacuazione in buona direzione';
+
+  if (!data.current_micron) {
+    toast('Inserisci il valore attuale in micron', true);
+    return;
+  }
+
+  const reduction = data.start_micron > 0 ? ((data.start_micron - data.current_micron) / data.start_micron) * 100 : 0;
+  const slope = data.minutes > 0 && data.start_micron > data.current_micron ? (data.start_micron - data.current_micron) / data.minutes : 0;
+
+  if (data.current_micron <= 500) {
+    title = 'Vuoto profondo raggiunto';
+    notes.push('Se il costruttore non prescrive un valore diverso, sei nella zona utile per eseguire il test di risalita.');
+  } else if (data.current_micron <= 1000) {
+    level = 'warn';
+    title = 'Vuoto ancora incompleto';
+    notes.push('Il valore è sotto 1000 micron ma non ancora nella zona obiettivo. Continua l’evacuazione e guarda la tendenza.');
+  } else {
+    level = 'danger';
+    title = 'Vuoto insufficiente';
+    notes.push('Se il valore resta sopra 1000 micron per molto tempo, verifica restrizioni, umidità, collegamenti e olio della pompa.');
+  }
+
+  if (data.hose_size === '0.25') {
+    notes.push('La frusta da 1/4" limita molto la portata in vuoto profondo. Una 3/8" o 1/2" corta migliora sensibilmente i tempi.');
+  }
+  if (!data.core_removed) {
+    notes.push('Lo Schrader ancora montato può essere una forte strozzatura. Un core remover professionale aumenta molto la conduttanza.');
+  }
+  if (data.system_state === 'used') {
+    notes.push('Su un impianto già funzionato l’olio può rilasciare lentamente refrigerante disciolto e umidità: il valore può scendere lentamente o oscillare.');
+  }
+  if (data.system_state === 'open') {
+    notes.push('Se l’impianto è rimasto aperto all’atmosfera, considera umidità elevata e più cicli di evacuazione con rottura del vuoto a azoto secco.');
+  }
+  if (!data.oil_fresh) {
+    notes.push('Olio della pompa non pulito: sostituirlo può migliorare molto il vuoto finale.');
+  }
+  if (data.nitrogen_tested) {
+    notes.push('La prova di tenuta con azoto superata rende meno probabile una perdita importante, ma il test di risalita resta utile.');
+  }
+
+  if (data.rise_start > 0 && data.rise_end > 0 && data.rise_minutes > 0) {
+    const rise = data.rise_end - data.rise_start;
+    const rate = rise / data.rise_minutes;
+    if (rise <= 0) {
+      notes.push('Il test di risalita non mostra aumento: dato ottimo, verifica comunque che la pompa sia realmente isolata.');
+    } else if (data.rise_end <= 1000 && rate <= 50) {
+      notes.push(`Test risalita favorevole: +${Math.round(rise)} micron in ${data.rise_minutes} min (${Math.round(rate)} micron/min).`);
+    } else if (rate <= 150) {
+      if (level === 'ok') level = 'warn';
+      notes.push(`Risalita moderata: +${Math.round(rise)} micron in ${data.rise_minutes} min. Possibile degassamento/umidità residua; ripeti l’evacuazione.`);
+    } else {
+      level = 'danger';
+      title = 'Risalita troppo rapida';
+      notes.push(`Risalita di circa ${Math.round(rate)} micron/min: controlla perdite, raccordi, valvole e presenza di forte umidità.`);
+    }
+  } else {
+    notes.push('Quando arrivi al valore obiettivo, isola la pompa e registra inizio/fine del test di risalita per distinguere meglio umidità e perdita.');
+  }
+
+  if (data.refrigerant === 'R290') {
+    notes.push('R290 è infiammabile: lavora solo con attrezzatura/procedure idonee A3, circuito privo di refrigerante e area adeguatamente ventilata.');
+  }
+
+  const progress = reduction > 0 ? `${Math.max(0, Math.min(100, reduction)).toFixed(0)}%` : '—';
+  target.className = `vacuum-result ${level}`;
+  target.innerHTML = `
+    <div class="vacuum-summary">
+      <div><span>Diagnosi</span><strong>${escapeHtml(title)}</strong></div>
+      <div><span>Micron attuali</span><strong>${Math.round(data.current_micron)}</strong></div>
+      <div><span>Riduzione dal valore iniziale</span><strong>${progress}</strong></div>
+      <div><span>Velocità media</span><strong>${slope > 0 ? `${Math.round(slope)} µm/min` : '—'}</strong></div>
+    </div>
+    <ol class="diagnostic-list">${notes.map(note => `<li>${escapeHtml(note)}</li>`).join('')}</ol>
+    <div class="procedure-box"><strong>Procedura consigliata</strong><p>Continua fino al valore previsto dal costruttore; per riferimento operativo, punta a ≤500 micron. Poi isola la pompa e osserva la risalita per 10–15 minuti. Se serve rompere il vuoto, isola la pompa, introduci azoto secco con riduttore e poi evacua nuovamente.</p></div>`;
+}
+
+function resetVacuum() {
+  $('#vac-start').value = '';
+  $('#vac-current').value = '';
+  $('#vac-rise-start').value = '';
+  $('#vac-rise-end').value = '';
+  $('#vac-minutes').value = '0';
+  $('#vac-rise-minutes').value = '10';
+  $('#vacuum-result').className = 'vacuum-result hidden';
+  $('#vacuum-result').innerHTML = '';
+}
+
 async function saveProject() {
   try {
     const result = await api('projects', {method: 'POST', body: JSON.stringify(projectPayload())});
@@ -166,6 +279,11 @@ async function loadProject(id) {
   $('#summer-outdoor').value = climate.summer_outdoor_c ?? 35; $('#summer-rh-out').value = climate.summer_outdoor_rh ?? 50;
   $('#summer-indoor').value = climate.summer_indoor_c ?? 26; $('#summer-rh-in').value = climate.summer_indoor_rh ?? 50;
   $('#winter-outdoor').value = climate.winter_outdoor_c ?? -5; $('#winter-indoor').value = climate.winter_indoor_c ?? 20;
+  const c = p.commissioning || {};
+  $('#vac-refrigerant').value = c.refrigerant || 'R32'; $('#vac-system-state').value = c.system_state || 'new'; $('#vac-hose-size').value = c.hose_size || '0.25';
+  $('#vac-minutes').value = c.minutes ?? 60; $('#vac-start').value = c.start_micron || ''; $('#vac-current').value = c.current_micron || '';
+  $('#vac-rise-start').value = c.rise_start || ''; $('#vac-rise-end').value = c.rise_end || ''; $('#vac-rise-minutes').value = c.rise_minutes ?? 10;
+  $('#vac-core-removed').checked = Boolean(c.core_removed); $('#vac-nitrogen-tested').checked = Boolean(c.nitrogen_tested); $('#vac-oil-fresh').checked = c.oil_fresh !== false;
   applyMethod(); renderRooms(); $('#projects-dialog').close(); toast('Progetto caricato');
 }
 
@@ -198,6 +316,9 @@ $('#save-project').addEventListener('click', saveProject);
 $('#open-projects').addEventListener('click', showProjects);
 $('#close-projects').addEventListener('click', () => $('#projects-dialog').close());
 $('#new-project').addEventListener('click', newProject);
+$('#go-commissioning').addEventListener('click', () => $('#commissioning').scrollIntoView({behavior: 'smooth', block: 'start'}));
+$('#analyze-vacuum').addEventListener('click', analyzeVacuum);
+$('#reset-vacuum').addEventListener('click', resetVacuum);
 $('#projects-list').addEventListener('click', async event => {
   const open = event.target.closest('[data-open]'); const remove = event.target.closest('[data-remove]');
   try { if (open) await loadProject(open.dataset.open); if (remove) { await api(`projects/${remove.dataset.remove}`, {method: 'DELETE'}); await showProjects(); } }
