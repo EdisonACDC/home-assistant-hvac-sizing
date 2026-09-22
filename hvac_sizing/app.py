@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import sqlite3
 import uuid
 from datetime import datetime, timezone
@@ -17,6 +18,7 @@ import qrcode
 import qrcode.image.svg
 
 from calc_engine import calculate_project
+from cylinder_pdf import generate_cylinder_pdf
 
 
 APP_DIR = Path(__file__).parent
@@ -97,8 +99,17 @@ def cylinder_payload(row: sqlite3.Row, history: list[sqlite3.Row] | None = None)
     return result
 
 
+def valid_web_url(value: str) -> bool:
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc) and len(value) <= 2000
+
+
+def safe_filename(value: object) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "-", str(value or "bombola")).strip("-.") or "bombola"
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HVACSizing/0.5"
+    server_version = "HVACSizing/0.5.1"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"{self.address_string()} - {fmt % args}", flush=True)
@@ -140,13 +151,24 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def _send_pdf(self, content: bytes, filename: str, download: bool) -> None:
+        disposition = "attachment" if download else "inline"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Content-Disposition", f'{disposition}; filename="{safe_filename(filename)}"')
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(content)
+
     def _error(self, message: str, status: int = 400) -> None:
         self._send_json({"error": message}, status)
 
     def do_GET(self) -> None:
         path = self._path()
         if path == "/api/health":
-            self._send_json({"status": "ok", "version": "0.5.0"})
+            self._send_json({"status": "ok", "version": "0.5.1"})
             return
         if path == "/api/projects":
             with db_connection() as db:
@@ -168,11 +190,29 @@ class Handler(BaseHTTPRequestHandler):
                 rows = db.execute("SELECT * FROM cylinders ORDER BY refrigerant, name COLLATE NOCASE").fetchall()
             self._send_json([cylinder_payload(row) for row in rows])
             return
+        if path == "/api/cylinders/pdf":
+            query = parse_qs(urlparse(self.path).query)
+            base_url = str(query.get("url", [""])[0])
+            if not valid_web_url(base_url):
+                self._error("Indirizzo per i QR non valido")
+                return
+            with db_connection() as db:
+                rows = db.execute("SELECT * FROM cylinders ORDER BY refrigerant, name COLLATE NOCASE").fetchall()
+                cylinders = []
+                for row in rows:
+                    history = db.execute(
+                        "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (row["id"],)
+                    ).fetchall()
+                    cylinders.append(cylinder_payload(row, history))
+            pdf = generate_cylinder_pdf(cylinders, base_url)
+            download = query.get("download", [""])[0] == "1"
+            self._send_pdf(pdf, "magazzino-bombole.pdf", download)
+            return
         if path.startswith("/api/cylinders/") and path.endswith("/qr"):
             cylinder_id = path.split("/")[3]
             query = parse_qs(urlparse(self.path).query)
             target_url = str(query.get("url", [""])[0])
-            if not target_url.startswith(("http://", "https://")) or len(target_url) > 2000:
+            if not valid_web_url(target_url):
                 self._error("Indirizzo QR non valido")
                 return
             with db_connection() as db:
@@ -185,7 +225,27 @@ class Handler(BaseHTTPRequestHandler):
             qr.make(fit=True)
             output = io.BytesIO()
             qr.make_image(image_factory=qrcode.image.svg.SvgPathImage).save(output)
-            self._send_svg(output.getvalue(), f"bombola-{row['code']}.svg")
+            self._send_svg(output.getvalue(), f"bombola-{safe_filename(row['code'])}.svg")
+            return
+        if path.startswith("/api/cylinders/") and path.endswith("/pdf"):
+            cylinder_id = path.split("/")[3]
+            query = parse_qs(urlparse(self.path).query)
+            base_url = str(query.get("url", [""])[0])
+            if not valid_web_url(base_url):
+                self._error("Indirizzo per il QR non valido")
+                return
+            with db_connection() as db:
+                row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+                history = db.execute(
+                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (cylinder_id,)
+                ).fetchall()
+            if not row:
+                self._error("Bombola non trovata", 404)
+                return
+            cylinder = cylinder_payload(row, history)
+            pdf = generate_cylinder_pdf([cylinder], base_url)
+            download = query.get("download", [""])[0] == "1"
+            self._send_pdf(pdf, f"scheda-bombola-{safe_filename(row['code'])}.pdf", download)
             return
         if path.startswith("/api/cylinders/"):
             cylinder_id = path.split("/")[3]

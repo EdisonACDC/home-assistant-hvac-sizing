@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1
+
+- Scheda PDF A4 scaricabile per ogni bombola.
+- Stampa della scheda completa con dati, tara, peso totale, residuo, QR e storico movimenti.
+- PDF unico del magazzino con una scheda separata per ogni bombola.
+- Pulsanti dedicati per scaricare o stampare una singola scheda e tutte le schede insieme.
+
 ## 0.5.0
 
 - Nuovo magazzino bombole refrigerante con archivio persistente.

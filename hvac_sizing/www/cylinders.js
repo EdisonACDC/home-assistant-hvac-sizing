@@ -10,6 +10,25 @@ function cylinderLink(id) {
   return url;
 }
 
+function cylinderBaseLink() {
+  const url = new URL(window.location.href);
+  url.hash = '';
+  url.searchParams.delete('bombola');
+  return url;
+}
+
+function cylinderPdfUrl(id = null, download = false) {
+  const path = id ? `api/cylinders/${encodeURIComponent(id)}/pdf` : 'api/cylinders/pdf';
+  const parameters = new URLSearchParams({url: cylinderBaseLink().href});
+  if (download) parameters.set('download', '1');
+  return `${path}?${parameters}`;
+}
+
+function openPdfForPrint(url) {
+  const opened = window.open(url, '_blank', 'noopener');
+  if (!opened) toast('Il browser ha bloccato la scheda PDF. Consenti i popup e riprova.', true);
+}
+
 async function loadCylinders(openFromQr = false) {
   try {
     cylinderItems = await api('cylinders');
@@ -37,6 +56,8 @@ function renderCylinders() {
       <span class="cylinder-balance">${kg(item.current_gas_kg)}</span>
       <small>Peso totale stimato ${kg(item.total_weight_kg)} · Tara ${kg(item.tare_kg)}</small>
     </button>`).join('') : `<div class="empty-state">${cylinderItems.length ? 'Nessuna bombola corrisponde alla ricerca.' : 'Nessuna bombola registrata. Premi “Nuova bombola” per iniziare.'}</div>`;
+  $('#download-all-cylinders-pdf').href = cylinderPdfUrl(null, true);
+  $('#download-all-cylinders-pdf').download = 'magazzino-bombole.pdf';
 }
 
 function updateNewCylinderPreview() {
@@ -75,6 +96,8 @@ async function openCylinder(id, updateUrl = true) {
     $('#cylinder-qr').src = qrUrl;
     $('#download-cylinder-qr').href = qrUrl;
     $('#download-cylinder-qr').download = `bombola-${activeCylinder.code}.svg`;
+    $('#download-cylinder-pdf').href = cylinderPdfUrl(id, true);
+    $('#download-cylinder-pdf').download = `scheda-bombola-${activeCylinder.code}.pdf`;
     $('.qr-card h3').textContent = `${activeCylinder.code} · ${activeCylinder.refrigerant}`;
     if (updateUrl) history.replaceState({}, '', directUrl);
     if (!$('#cylinder-dialog').open) $('#cylinder-dialog').showModal();
@@ -187,6 +210,19 @@ $('#operation-total').addEventListener('input', updateOperationPreview);
 $('#operation-amount').addEventListener('input', updateOperationPreview);
 $('#cylinder-operation-form').addEventListener('submit', saveCylinderOperation);
 $('#delete-cylinder').addEventListener('click', deleteActiveCylinder);
+$('#download-all-cylinders-pdf').addEventListener('click', event => {
+  if (!cylinderItems.length) {
+    event.preventDefault();
+    toast('Registra almeno una bombola prima di creare il PDF', true);
+  }
+});
+$('#print-all-cylinders').addEventListener('click', () => {
+  if (!cylinderItems.length) return toast('Registra almeno una bombola prima di stampare', true);
+  openPdfForPrint(cylinderPdfUrl());
+});
+$('#print-cylinder-sheet').addEventListener('click', () => {
+  if (activeCylinder) openPdfForPrint(cylinderPdfUrl(activeCylinder.id));
+});
 $('#print-cylinder-qr').addEventListener('click', () => {
   document.body.classList.add('qr-printing');
   window.print();

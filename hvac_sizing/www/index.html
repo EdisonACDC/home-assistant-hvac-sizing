@@ -38,7 +38,11 @@
     <section id="cylinders" class="panel cylinders-panel">
       <div class="section-title cylinders-title">
         <div><p class="eyebrow">MAGAZZINO REFRIGERANTE</p><h2>Bombole e quantità residue</h2></div>
-        <button id="new-cylinder" class="button primary">+ Nuova bombola</button>
+        <div class="cylinder-main-actions">
+          <a id="download-all-cylinders-pdf" class="button secondary" download>PDF magazzino</a>
+          <button id="print-all-cylinders" class="button ghost" type="button">Stampa schede</button>
+          <button id="new-cylinder" class="button primary">+ Nuova bombola</button>
+        </div>
       </div>
       <div id="cylinder-summary" class="cylinder-summary"></div>
       <label class="cylinder-search">Cerca bombola
@@ -189,6 +193,13 @@
           <img id="cylinder-qr" alt="QR code della bombola">
           <p>Scansionandolo si apre direttamente questa scheda.</p>
           <div class="qr-actions"><a id="download-cylinder-qr" class="button secondary" download>Scarica QR</a><button id="print-cylinder-qr" class="button ghost" type="button">Stampa</button></div>
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <div><p class="eyebrow">SCHEDA A4</p><h3>Foglio completo della bombola</h3><small>Dati, quantità residua, QR code e storico movimenti.</small></div>
+        <div>
+          <a id="download-cylinder-pdf" class="button primary" download>Scarica PDF</a>
+          <button id="print-cylinder-sheet" class="button secondary" type="button">Stampa scheda</button>
         </div>
       </div>
       <div class="history-head"><h3>Storico movimenti</h3><button id="delete-cylinder" class="delete-room" type="button">Elimina bombola</button></div>
