@@ -1,7 +1,7 @@
 name: "Dimensionamento Climatizzazione Pro"
-version: "0.4.3"
+version: "0.5.0"
 slug: "hvac_sizing_pro"
-description: "Calcolo carichi, vuoto, messa in servizio e diagnosi tecnica HVAC anche per split con sola bassa pressione"
+description: "Calcolo HVAC, diagnosi tecnica e magazzino bombole refrigerante con QR code"
 url: "https://github.com/EdisonACDC/home-assistant-hvac-sizing"
 arch:
   - amd64

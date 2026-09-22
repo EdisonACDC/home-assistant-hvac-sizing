@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0
+
+- Nuovo magazzino bombole refrigerante con archivio persistente.
+- QR code individuale, scaricabile e stampabile, che apre direttamente la scheda della bombola.
+- Registrazione di tara, peso totale, tipo di refrigerante, capacità e note.
+- Calcolo automatico del gas effettivo residuo: peso totale meno tara.
+- Movimenti separati per pesatura, aggiunta e prelievo, con blocco dei valori impossibili.
+- Storico completo con data, quantità precedente, quantità risultante e note di lavoro.
+- Riepilogo automatico delle quantità disponibili divise per refrigerante.
+- Interfaccia responsive ottimizzata per scansione e utilizzo da telefono.
+
 ## 0.4.0
 
 - Diagnosi prestazioni separata tra split con sola presa di bassa pressione e sistemi con bassa + alta accessibili.
