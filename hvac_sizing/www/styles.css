@@ -144,6 +144,9 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .history-row time, .history-row small { color: var(--muted); font-size: .7rem; }
 .history-value { text-align: right; }
 .history-value strong { display: block; color: var(--green); }
+.language-switch { display: inline-flex; align-items: center; padding: .18rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(7,27,42,.75); flex: 0 0 auto; }
+.language-button { border: 0; border-radius: 7px; padding: .48rem .58rem; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; font-weight: 900; cursor: pointer; }
+.language-button.active { color: #06151e; background: var(--cyan); }
 
 @media (max-width: 900px) {
   .project-panel { grid-template-columns: 1fr 1fr; }

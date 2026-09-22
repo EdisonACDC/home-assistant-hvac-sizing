@@ -1,10 +1,12 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const n = value => Number(value || 0);
+const tr = value => window.AppI18n?.translate(value) || value;
 
 let method = 'quick';
 let currentProjectId = null;
 let rooms = [];
+let lastCalculationResult = null;
 
 const defaults = () => ({
   id: crypto.randomUUID(), name: 'Locale 1', length: 5, width: 4, height: 2.7,
@@ -134,13 +136,14 @@ function projectPayload() {
 async function api(path, options = {}) {
   const response = await fetch(`api/${path}`, {headers: {'Content-Type': 'application/json'}, ...options});
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Operazione non riuscita');
+  if (!response.ok) throw new Error(window.AppI18n?.translate(data.error || 'Operazione non riuscita') || data.error || 'Operazione non riuscita');
   return data;
 }
 
 async function calculate() {
   try {
     const result = await api('calculate', {method: 'POST', body: JSON.stringify(projectPayload())});
+    lastCalculationResult = result;
     renderResults(result);
     $('#results').scrollIntoView({behavior: 'smooth', block: 'start'});
   } catch (error) { toast(error.message, true); }
@@ -150,7 +153,7 @@ function renderResults(result) {
   const target = $('#results');
   target.classList.remove('hidden');
   target.innerHTML = `
-    <div class="section-title"><div><p class="eyebrow">RISULTATO ${result.method.toUpperCase()}</p><h2>${escapeHtml(result.project_name)}</h2></div></div>
+    <div class="section-title"><div><p class="eyebrow">${tr('RISULTATO')} ${tr(result.method.toUpperCase())}</p><h2>${escapeHtml(result.project_name)}</h2></div></div>
     <div class="totals">
       <div class="metric"><span>Superficie totale</span><strong>${result.totals.area_m2} m²</strong></div>
       <div class="metric"><span>Volume totale</span><strong>${result.totals.volume_m3} m³</strong></div>
@@ -159,7 +162,7 @@ function renderResults(result) {
     </div>
     <div class="result-scroll"><table class="result-table"><thead><tr><th>Locale</th><th>m²</th><th>Sensibile</th><th>Latente</th><th>Freddo totale</th><th>Caldo</th><th>SHR</th></tr></thead><tbody>
       ${result.rooms.map(room => `<tr><td><strong>${escapeHtml(room.name)}</strong></td><td>${room.area_m2}</td><td>${room.sensible_cooling_w} W</td><td>${room.latent_cooling_w} W</td><td><strong>${room.total_cooling_kw} kW</strong></td><td><strong>${room.heating_kw} kW</strong></td><td>${room.shr}</td></tr>`).join('')}
-    </tbody></table></div><p class="disclaimer">${escapeHtml(result.disclaimer)}</p>`;
+    </tbody></table></div><p class="disclaimer">${escapeHtml(tr(result.disclaimer))}</p>`;
 }
 
 function analyzeVacuum() {
@@ -236,12 +239,12 @@ function analyzeVacuum() {
   target.className = `vacuum-result ${level}`;
   target.innerHTML = `
     <div class="vacuum-summary">
-      <div><span>Diagnosi</span><strong>${escapeHtml(title)}</strong></div>
+      <div><span>Diagnosi</span><strong>${escapeHtml(tr(title))}</strong></div>
       <div><span>Micron attuali</span><strong>${Math.round(data.current_micron)}</strong></div>
       <div><span>Riduzione dal valore iniziale</span><strong>${progress}</strong></div>
       <div><span>Velocità media</span><strong>${slope > 0 ? `${Math.round(slope)} µm/min` : '—'}</strong></div>
     </div>
-    <ol class="diagnostic-list">${notes.map(note => `<li>${escapeHtml(note)}</li>`).join('')}</ol>
+    <ol class="diagnostic-list">${notes.map(note => `<li>${escapeHtml(tr(note))}</li>`).join('')}</ol>
     <div class="procedure-box"><strong>Procedura consigliata</strong><p>Continua fino al valore previsto dal costruttore; per riferimento operativo, punta a ≤500 micron. Poi isola la pompa e osserva la risalita per 10–15 minuti. Se serve rompere il vuoto, isola la pompa, introduci azoto secco con riduttore e poi evacua nuovamente.</p></div>`;
 }
 
@@ -266,7 +269,7 @@ async function saveProject() {
 async function showProjects() {
   try {
     const projects = await api('projects');
-    $('#projects-list').innerHTML = projects.length ? projects.map(project => `<div class="project-item"><div><strong>${escapeHtml(project.name)}</strong><small>${new Date(project.updated_at).toLocaleString('it-IT')}</small></div><button class="button secondary" data-open="${project.id}">Apri</button><button class="delete-room" data-remove="${project.id}">Elimina</button></div>`).join('') : '<p class="disclaimer">Nessun progetto salvato.</p>';
+    $('#projects-list').innerHTML = projects.length ? projects.map(project => `<div class="project-item"><div><strong>${escapeHtml(project.name)}</strong><small>${new Date(project.updated_at).toLocaleString(window.AppI18n?.locale() || 'it-IT')}</small></div><button class="button secondary" data-open="${project.id}">Apri</button><button class="delete-room" data-remove="${project.id}">Elimina</button></div>`).join('') : '<p class="disclaimer">Nessun progetto salvato.</p>';
     if (!$('#projects-dialog').open) $('#projects-dialog').showModal();
   } catch (error) { toast(error.message, true); }
 }
@@ -299,7 +302,7 @@ function newProject() {
 }
 
 function toast(message, error = false) {
-  const node = $('#toast'); node.textContent = message; node.style.background = error ? 'var(--danger)' : 'var(--green)';
+  const node = $('#toast'); node.textContent = window.AppI18n?.translate(message) || message; node.style.background = error ? 'var(--danger)' : 'var(--green)';
   node.classList.add('show'); setTimeout(() => node.classList.remove('show'), 2600);
 }
 
@@ -312,6 +315,11 @@ $('#rooms').addEventListener('click', event => {
 $$('.method').forEach(button => button.addEventListener('click', () => { method = button.dataset.method; applyMethod(); renderRooms(); }));
 $('#add-room').addEventListener('click', () => { const room = defaults(); room.name = `Locale ${rooms.length + 1}`; rooms.push(room); renderRooms(); });
 $('#calculate').addEventListener('click', calculate);
+window.addEventListener('app-language-changed', () => {
+  renderRooms();
+  if (lastCalculationResult && !$('#results').classList.contains('hidden')) renderResults(lastCalculationResult);
+  if (!$('#vacuum-result').classList.contains('hidden')) analyzeVacuum();
+});
 $('#save-project').addEventListener('click', saveProject);
 $('#open-projects').addEventListener('click', showProjects);
 $('#close-projects').addEventListener('click', () => $('#projects-dialog').close());

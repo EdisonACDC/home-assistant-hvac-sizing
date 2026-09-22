@@ -119,7 +119,7 @@ def safe_filename(value: object) -> str:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HVACSizing/0.5.2"
+    server_version = "HVACSizing/0.6.0"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"{self.address_string()} - {fmt % args}", flush=True)
@@ -178,7 +178,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = self._path()
         if path == "/api/health":
-            self._send_json({"status": "ok", "version": "0.5.2"})
+            self._send_json({"status": "ok", "version": "0.6.0"})
             return
         if path == "/api/projects":
             with db_connection() as db:
@@ -214,7 +214,8 @@ class Handler(BaseHTTPRequestHandler):
                         "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (row["id"],)
                     ).fetchall()
                     cylinders.append(cylinder_payload(row, history))
-            pdf = generate_cylinder_pdf(cylinders, base_url)
+            language = "de" if query.get("lang", [""])[0] == "de" else "it"
+            pdf = generate_cylinder_pdf(cylinders, base_url, language)
             download = query.get("download", [""])[0] == "1"
             self._send_pdf(pdf, "magazzino-bombole.pdf", download)
             return
@@ -253,7 +254,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._error("Bombola non trovata", 404)
                 return
             cylinder = cylinder_payload(row, history)
-            pdf = generate_cylinder_pdf([cylinder], base_url)
+            language = "de" if query.get("lang", [""])[0] == "de" else "it"
+            pdf = generate_cylinder_pdf([cylinder], base_url, language)
             download = query.get("download", [""])[0] == "1"
             self._send_pdf(pdf, f"scheda-bombola-{safe_filename(row['code'])}.pdf", download)
             return
@@ -404,7 +406,7 @@ class Handler(BaseHTTPRequestHandler):
         filename = path.rsplit("/", 1)[-1]
         if not filename or "." not in filename:
             filename = "index.html"
-        allowed = {"index.html", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css"}
+        allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css"}
         if filename not in allowed:
             self.send_error(404)
             return

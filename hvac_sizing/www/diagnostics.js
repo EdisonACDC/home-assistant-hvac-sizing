@@ -9,6 +9,7 @@
   const text = id => $d(id)?.value || '';
   const checked = id => Boolean($d(id)?.checked);
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+  const td = value => window.AppI18n?.translate(value) || value;
 
   function performancePayload() {
     return {
@@ -37,11 +38,11 @@
   }
 
   function badge(label, value, state = '') {
-    return `<div class="diag-metric ${state}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`;
+    return `<div class="diag-metric ${state}"><span>${esc(td(label))}</span><strong>${esc(td(value))}</strong></div>`;
   }
 
   function addFinding(findings, severity, title, detail) {
-    findings.push({severity, title, detail});
+    findings.push({severity, title: td(title), detail: td(detail)});
   }
 
   function updateAccessUI() {
@@ -177,7 +178,7 @@
 
     target.className = `vacuum-result ${overall}`;
     target.innerHTML = `
-      <div class="diagnostic-head"><div><span>Esito tecnico</span><strong>${esc(title)}</strong></div><div class="diagnostic-score">${dangerCount ? 'STOP' : warnCount ? 'CHECK' : 'OK'}</div></div>
+      <div class="diagnostic-head"><div><span>Esito tecnico</span><strong>${esc(td(title))}</strong></div><div class="diagnostic-score">${dangerCount ? 'STOP' : warnCount ? 'CHECK' : 'OK'}</div></div>
       <div class="diag-metrics">${metrics.join('')}</div>
       <div class="findings">${findings.map(f => `<article class="finding ${f.severity}"><strong>${esc(f.title)}</strong><p>${esc(f.detail)}</p></article>`).join('')}</div>
       <div class="procedure-box"><strong>Ordine professionale di diagnosi</strong><p>1) verifica pulizia e portata aria; 2) stabilizza la macchina; 3) misura ritorno e mandata aria; 4) registra LP e temperatura di evaporazione; 5) misura il tubo aspirazione e calcola SH; 6) se HP è realmente disponibile, aggiungi condensazione e SC; 7) incrocia assorbimento e temperature; 8) solo alla fine valuta carica, EEV/restrizioni o scambio termico. Il manuale di servizio della macchina prevale sempre.</p></div>`;
@@ -234,5 +235,8 @@
   $d('#analyze-performance')?.addEventListener('click', analyzePerformance);
   $d('#reset-performance')?.addEventListener('click', resetPerformance);
   $d('#go-performance')?.addEventListener('click', () => $d('#performance-test')?.scrollIntoView({behavior:'smooth', block:'start'}));
+  window.addEventListener('app-language-changed', () => {
+    if (!$d('#performance-result')?.classList.contains('hidden')) analyzePerformance();
+  });
   updateAccessUI();
 })();

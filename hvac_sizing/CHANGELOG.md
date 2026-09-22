@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+- Aggiunto selettore Italiano / Deutsch con preferenza memorizzata.
+- Tradotte interfaccia, magazzino bombole e schede PDF in tedesco.
+- PDF e formattazione di date e quantità seguono la lingua selezionata.
+
 ## 0.5.2
 
 - Corretto il salvataggio delle bombole da iPhone e tastiere italiane con pesi inseriti usando la virgola decimale.

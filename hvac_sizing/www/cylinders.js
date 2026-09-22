@@ -1,7 +1,8 @@
 let cylinderItems = [];
 let activeCylinder = null;
+const ctr = value => window.AppI18n?.translate(value) || value;
 
-const kg = value => `${Number(value || 0).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg`;
+const kg = value => `${Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg`;
 
 function decimalText(value) {
   let normalized = String(value ?? '').trim().replace(/[\s\u00a0]/g, '');
@@ -22,7 +23,7 @@ function cylinderNumber(value) {
 
 function formError(selector, message = '') {
   const node = $(selector);
-  node.textContent = message;
+  node.textContent = ctr(message);
   node.classList.toggle('hidden', !message);
 }
 
@@ -43,6 +44,7 @@ function cylinderBaseLink() {
 function cylinderPdfUrl(id = null, download = false) {
   const path = id ? `api/cylinders/${encodeURIComponent(id)}/pdf` : 'api/cylinders/pdf';
   const parameters = new URLSearchParams({url: cylinderBaseLink().href});
+  parameters.set('lang', window.AppI18n?.getLanguage() || 'it');
   if (download) parameters.set('download', '1');
   return `${path}?${parameters}`;
 }
@@ -142,9 +144,9 @@ function renderCylinderDetail() {
 
   const names = {initial: 'Registrazione iniziale', weighing: 'Pesatura', add: 'Aggiunta', remove: 'Prelievo'};
   $('#cylinder-history').innerHTML = activeCylinder.history.length ? activeCylinder.history.map(item => {
-    const date = new Date(item.created_at).toLocaleString('it-IT', {dateStyle: 'short', timeStyle: 'short'});
+    const date = new Date(item.created_at).toLocaleString(window.AppI18n?.locale() || 'it-IT', {dateStyle: 'short', timeStyle: 'short'});
     const detail = item.operation === 'weighing'
-      ? `Peso totale ${kg(item.total_weight_kg)}`
+      ? `${ctr('Peso totale')} ${kg(item.total_weight_kg)}`
       : `${item.operation === 'remove' ? '−' : '+'}${kg(Math.abs(item.amount_kg || 0))}`;
     return `<div class="history-row"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}</small></div><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div></div>`;
   }).join('') : '<div class="empty-state">Nessun movimento registrato.</div>';
@@ -164,17 +166,17 @@ function updateOperationPreview() {
   if (!activeCylinder) return;
   const operation = $('#cylinder-operation').value;
   let after = Number(activeCylinder.current_gas_kg);
-  let explanation = `Residuo attuale: <strong>${kg(after)}</strong>`;
+  let explanation = `${ctr('Residuo attuale')}: <strong>${kg(after)}</strong>`;
   if (operation === 'weighing') {
     const total = cylinderNumber($('#operation-total').value);
     if (total) {
       after = Math.max(0, total - Number(activeCylinder.tare_kg));
-      explanation = `${kg(total)} − tara ${kg(activeCylinder.tare_kg)} = <strong>${kg(after)} di gas</strong>`;
+      explanation = `${kg(total)} − ${ctr('tara')} ${kg(activeCylinder.tare_kg)} = <strong>${kg(after)} ${ctr('di gas')}</strong>`;
     }
   } else {
     const amount = cylinderNumber($('#operation-amount').value);
     after = operation === 'add' ? after + amount : after - amount;
-    explanation = `Nuovo residuo previsto: <strong>${kg(after)}</strong>`;
+    explanation = `${ctr('Nuovo residuo previsto')}: <strong>${kg(after)}</strong>`;
   }
   $('#operation-preview').innerHTML = explanation;
 }
@@ -210,7 +212,10 @@ function closeCylinderDialog() {
 }
 
 async function deleteActiveCylinder() {
-  if (!activeCylinder || !confirm(`Eliminare la bombola ${activeCylinder.code} e tutto lo storico?`)) return;
+  const question = window.AppI18n?.getLanguage() === 'de'
+    ? `Flasche ${activeCylinder?.code || ''} und den gesamten Verlauf löschen?`
+    : `Eliminare la bombola ${activeCylinder?.code || ''} e tutto lo storico?`;
+  if (!activeCylinder || !confirm(question)) return;
   try {
     await api(`cylinders/${activeCylinder.id}`, {method: 'DELETE'});
     closeCylinderDialog();
@@ -267,3 +272,10 @@ $('#print-cylinder-qr').addEventListener('click', () => {
 });
 
 loadCylinders(true);
+window.addEventListener('app-language-changed', () => {
+  renderCylinders();
+  if (activeCylinder) {
+    renderCylinderDetail();
+    $('#download-cylinder-pdf').href = cylinderPdfUrl(activeCylinder.id, true);
+  }
+});

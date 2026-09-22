@@ -1,0 +1,106 @@
+(() => {
+  const messages = {
+    'Dimensionamento Climatizzazione Pro': 'Klimaanlagen-Dimensionierung Pro',
+    'HVAC · CARICHI TERMICI · COLLAUDO': 'HVAC · KÜHLLAST · INBETRIEBNAHME',
+    'Dimensionamento Climatizzazione': 'Klimaanlagen-Dimensionierung',
+    'Bombole': 'Flaschen', 'Diagnosi': 'Diagnose', 'Vuoto': 'Vakuum', 'Nuovo': 'Neu', 'Progetti': 'Projekte', 'Salva': 'Speichern',
+    'Nome progetto': 'Projektname', 'Nuovo impianto': 'Neue Anlage', 'Cliente': 'Kunde', 'Nome o ragione sociale': 'Name oder Firma', 'Località': 'Ort', 'Città': 'Stadt',
+    'Metodo di calcolo': 'Berechnungsmethode', 'Calcolo rapido': 'Schnellberechnung', 'Calcolo professionale': 'Fachberechnung',
+    'MAGAZZINO REFRIGERANTE': 'KÄLTEMITTELLAGER', 'Bombole e quantità residue': 'Flaschen und Restmengen', 'PDF magazzino': 'Lager-PDF', 'Stampa schede': 'Datenblätter drucken', '+ Nuova bombola': '+ Neue Flasche',
+    'Cerca bombola': 'Flasche suchen', 'Nome, codice o refrigerante': 'Name, Code oder Kältemittel', 'Bombole registrate': 'Erfasste Flaschen',
+    'DIAGNOSI PRESTAZIONI': 'LEISTUNGSDIAGNOSE', 'Controllo tecnico macchina in funzione': 'Technische Prüfung im Betrieb', 'Diagnosi professionale': 'Fachdiagnose',
+    "Inserisci solo i dati realmente misurabili sulla macchina. L'assistente distingue gli split con una sola presa di servizio dai sistemi con bassa e alta accessibili e non diagnostica la carica da una sola pressione.": 'Gib nur tatsächlich an der Anlage messbare Werte ein. Der Assistent unterscheidet Splitgeräte mit nur einem Serviceanschluss von Systemen mit zugänglicher Nieder- und Hochdruckseite und beurteilt die Füllmenge nicht anhand nur eines Druckwerts.',
+    'Macchina e condizioni di prova': 'Anlage und Prüfbedingungen', 'Accesso frigorifero': 'Kältekreis-Zugang', 'Split normale · solo bassa pressione': 'Normales Splitgerät · nur Niederdruck', 'Bassa + alta pressione accessibili': 'Nieder- und Hochdruck zugänglich',
+    'Refrigerante': 'Kältemittel', 'Modalità': 'Betriebsart', 'Raffrescamento': 'Kühlen', 'Riscaldamento': 'Heizen', 'Tipo compressore': 'Verdichtertyp',
+    'Tempo stabilizzazione min': 'Stabilisierungszeit min', 'Temperatura esterna °C': 'Außentemperatur °C', 'Temperatura ambiente/ritorno °C': 'Raum-/Rücklufttemperatur °C', 'Umidità ambiente %': 'Raumfeuchte %', 'Temperatura aria uscita unità interna °C': 'Zulufttemperatur Innengerät °C',
+    'Valori frigoriferi e tubazioni': 'Kältekreis- und Rohrleitungswerte', 'Bassa pressione bar(g)': 'Niederdruck bar(g)', 'lettura manometri': 'Manometerwert', 'Temperatura evaporazione sat. °C': 'Sättigungs-Verdampfungstemperatur °C', 'lettura Testo': 'Messwert', 'Temperatura tubo aspirazione °C': 'Saugleitungstemperatur °C', 'pinza temperatura': 'Temperaturfühler',
+    'Alta pressione bar(g)': 'Hochdruck bar(g)', 'Temperatura condensazione sat. °C': 'Sättigungs-Verflüssigungstemperatur °C', 'Temperatura tubo liquido °C': 'Flüssigkeitsleitungstemperatur °C', 'Temperatura mandata compressore °C': 'Verdichter-Austrittstemperatur °C', 'opzionale': 'optional', 'Corrente compressore A': 'Verdichterstrom A', 'Corrente nominale/riferimento A': 'Nenn-/Referenzstrom A', 'targa/manuale': 'Typenschild/Handbuch',
+    'Filtri e batteria interna puliti': 'Filter und Innenwärmetauscher sauber', 'Batteria esterna pulita e ventilazione libera': 'Außenwärmetauscher sauber und Luftweg frei', 'Ventola interna alta durante il test': 'Hohe Innenlüfterstufe während der Prüfung', 'Analizza funzionamento': 'Betrieb analysieren', 'Azzera prova': 'Prüfung zurücksetzen',
+    'VUOTO E MESSA IN SERVIZIO': 'VAKUUM UND INBETRIEBNAHME', 'Diagnosi evacuazione impianto': 'Diagnose der Evakuierung', 'Assistente tecnico': 'Technischer Assistent', 'Condizione impianto': 'Anlagenzustand', 'Nuovo / asciutto': 'Neu / trocken', 'Già funzionato / presenza olio': 'Bereits betrieben / Öl vorhanden', "Rimasto aperto all'atmosfera": 'Zur Atmosphäre offen gewesen',
+    'Frusta principale': 'Hauptschlauch', '1/4" standard': '1/4" Standard', '3/8" vuoto': '3/8" Vakuum', '1/2" alto flusso': '1/2" Hochdurchfluss', 'Tempo evacuazione min': 'Evakuierungszeit min', 'Micron iniziali': 'Startwert Mikron', 'Micron attuali': 'Aktueller Wert Mikron', 'Test risalita - inizio micron': 'Anstiegstest – Start Mikron', 'Test risalita - fine micron': 'Anstiegstest – Ende Mikron', 'Durata test risalita min': 'Dauer Anstiegstest min',
+    'Valvola a spillo rimossa': 'Ventileinsatz entfernt', 'Prova tenuta con azoto superata': 'Dichtheitsprüfung mit Stickstoff bestanden', 'Olio pompa nuovo / pulito': 'Pumpenöl neu / sauber', 'Analizza il vuoto': 'Vakuum analysieren', 'Azzera test': 'Test zurücksetzen',
+    'CONDIZIONI DI PROGETTO': 'AUSLEGUNGSBEDINGUNGEN', 'Clima interno ed esterno': 'Innen- und Außenklima', 'Estate esterna °C': 'Sommer außen °C', 'U.R. esterna %': 'Außenfeuchte %', 'Estate interna °C': 'Sommer innen °C', 'U.R. interna %': 'Innenfeuchte %', 'Inverno esterna °C': 'Winter außen °C', 'Inverno interna °C': 'Winter innen °C',
+    'LOCALI': 'RÄUME', 'Dati per il calcolo': 'Berechnungsdaten', '+ Aggiungi locale': '+ Raum hinzufügen', 'I risultati restano separati per ogni ambiente': 'Die Ergebnisse bleiben je Raum getrennt', 'Calcola potenze': 'Leistung berechnen',
+    'Progetti salvati': 'Gespeicherte Projekte', 'Chiudi': 'Schließen', 'Registra nuova bombola': 'Neue Flasche erfassen', 'Nome bombola': 'Flaschenname', 'es. R32 nuova 01': 'z. B. R32 neu 01', 'Codice identificativo': 'Kenncode', 'es. R32-001': 'z. B. R32-001', 'Tara bombola kg': 'Flaschen-Tara kg', 'Peso totale attuale kg': 'Aktuelles Gesamtgewicht kg', 'bombola + gas': 'Flasche + Kältemittel', 'Capacità refrigerante kg (opzionale)': 'Kältemittelkapazität kg (optional)', 'Gas effettivo calcolato': 'Berechneter tatsächlicher Inhalt', 'Peso totale − tara': 'Gesamtgewicht − Tara', 'Note': 'Notizen', 'Marca, numero di serie, proprietà…': 'Marke, Seriennummer, Eigentümer …', 'Salva bombola e crea QR': 'Flasche speichern und QR erstellen',
+    'Bombola': 'Flasche', 'Registra movimento': 'Vorgang erfassen', 'Operazione': 'Vorgang', 'Pesatura bombola': 'Flasche wiegen', 'Prelievo refrigerante': 'Kältemittel entnehmen', 'Aggiunta refrigerante': 'Kältemittel hinzufügen', 'Peso totale sulla bilancia kg': 'Gesamtgewicht auf der Waage kg', 'Quantità refrigerante kg': 'Kältemittelmenge kg', 'Note / impianto / cliente': 'Notizen / Anlage / Kunde',
+    'QR code bombola': 'QR-Code der Flasche', 'QR code della bombola': 'QR-Code der Flasche', 'Scansionandolo si apre direttamente questa scheda.': 'Beim Scannen öffnet sich dieses Datenblatt direkt.', 'Scarica QR': 'QR herunterladen', 'Stampa': 'Drucken', 'SCHEDA A4': 'A4-DATENBLATT', 'Foglio completo della bombola': 'Vollständiges Flaschendatenblatt', 'Dati, quantità residua, QR code e storico movimenti.': 'Daten, Restmenge, QR-Code und Bewegungsverlauf.', 'Scarica PDF': 'PDF herunterladen', 'Stampa scheda': 'Datenblatt drucken', 'Storico movimenti': 'Bewegungsverlauf', 'Elimina bombola': 'Flasche löschen',
+    'Gas residuo effettivo': 'Tatsächlicher Restinhalt', 'Peso totale calcolato': 'Berechnetes Gesamtgewicht', 'Capacità gas': 'Kältemittelkapazität', 'Registrazione iniziale': 'Ersterfassung', 'Pesatura': 'Wägung', 'Aggiunta': 'Zugabe', 'Prelievo': 'Entnahme', 'residuo': 'Restmenge', 'Nessun movimento registrato.': 'Keine Bewegung erfasst.',
+    'Nessuna bombola corrisponde alla ricerca.': 'Keine Flasche entspricht der Suche.', 'Nessuna bombola registrata. Premi “Nuova bombola” per iniziare.': 'Keine Flasche erfasst. Drücke „Neue Flasche“, um zu beginnen.',
+    'Coefficienti rapidi': 'Schnellkoeffizienten', 'Lunghezza m': 'Länge m', 'Larghezza m': 'Breite m', 'Altezza m': 'Höhe m', 'Margine %': 'Reserve %', 'Base raffrescamento W/m³': 'Basis Kühlen W/m³', 'Base riscaldamento W/m³': 'Basis Heizen W/m³', 'Fattore isolamento': 'Dämmfaktor', 'Fattore esposizione': 'Expositionsfaktor', 'Fattore vetrate': 'Verglasungsfaktor', 'Persone': 'Personen', 'Illuminazione W': 'Beleuchtung W', 'Apparecchiature W': 'Geräte W',
+    'Involucro edilizio': 'Gebäudehülle', 'Pareti esterne m²': 'Außenwände m²', 'U pareti W/m²K': 'U-Wert Wände W/m²K', 'Finestre m²': 'Fenster m²', 'U finestre W/m²K': 'U-Wert Fenster W/m²K', 'Tetto/solaio m²': 'Dach/Decke m²', 'U tetto W/m²K': 'U-Wert Dach W/m²K', 'Pavimento m²': 'Boden m²', 'U pavimento W/m²K': 'U-Wert Boden W/m²K', 'Sole, aria e umidità': 'Sonne, Luft und Feuchte', 'Irradianza finestra W/m²': 'Sonneneinstrahlung Fenster W/m²', 'Fattore solare vetro g': 'Gesamtenergiedurchlassgrad g', 'Fattore schermatura': 'Verschattungsfaktor', 'Infiltrazioni vol/h': 'Infiltration 1/h', 'Aria esterna m³/h': 'Außenluft m³/h', 'Carichi interni': 'Interne Lasten', 'Contemporaneità persone': 'Anwesenheitsfaktor', 'Sensibile per persona W': 'Sensible Last je Person W', 'Latente per persona W': 'Latente Last je Person W', 'Illuminazione installata W': 'Installierte Beleuchtung W', 'Uso illuminazione': 'Nutzungsfaktor Beleuchtung', 'Apparecchiature installate W': 'Installierte Geräte W', 'Uso apparecchiature': 'Nutzungsfaktor Geräte', 'Nome locale': 'Raumname', 'Elimina': 'Löschen',
+    'RISULTATO': 'ERGEBNIS', 'Superficie totale': 'Gesamtfläche', 'Volume totale': 'Gesamtvolumen', 'Potenza frigorifera': 'Kälteleistung', 'Potenza riscaldamento': 'Heizleistung', 'Potenza termica': 'Heizleistung', 'Volume': 'Volumen', 'Totale impianto': 'Gesamtanlage', 'Raffrescamento totale': 'Gesamtkühlleistung', 'Riscaldamento totale': 'Gesamtheizleistung', 'Locale': 'Raum', 'Sensibile': 'Sensibel', 'Latente': 'Latent', 'Freddo totale': 'Kühlen gesamt', 'Caldo': 'Heizen',
+    'Stima tecnica di progetto: verificare dati, condizioni di progetto e requisiti normativi prima della selezione definitiva delle macchine.': 'Technische Auslegungsschätzung: Daten, Auslegungsbedingungen und normative Anforderungen vor der endgültigen Geräteauswahl prüfen.',
+    'Apri': 'Öffnen', 'Nessun progetto salvato.': 'Keine Projekte gespeichert.', 'Progetto salvato': 'Projekt gespeichert', 'Progetto caricato': 'Projekt geladen', 'Progetto eliminato': 'Projekt gelöscht', 'Deve rimanere almeno un locale': 'Mindestens ein Raum muss erhalten bleiben', 'Operazione non riuscita': 'Vorgang fehlgeschlagen',
+    'Bombola registrata e QR creato': 'Flasche gespeichert und QR-Code erstellt', 'Movimento registrato': 'Vorgang erfasst', 'Bombola eliminata': 'Flasche gelöscht', 'Registra almeno una bombola prima di creare il PDF': 'Erfasse mindestens eine Flasche, bevor du das PDF erstellst', 'Registra almeno una bombola prima di stampare': 'Erfasse mindestens eine Flasche vor dem Drucken', 'Il browser ha bloccato la scheda PDF. Consenti i popup e riprova.': 'Der Browser hat das PDF-Fenster blockiert. Pop-ups erlauben und erneut versuchen.', 'Impossibile generare il QR. Chiudi e riapri la scheda oppure riavvia l’add-on.': 'Der QR-Code konnte nicht erstellt werden. Datenblatt schließen und erneut öffnen oder das Add-on neu starten.',
+    'Residuo attuale': 'Aktuelle Restmenge', 'Nuovo residuo previsto': 'Voraussichtliche neue Restmenge', 'Peso totale': 'Gesamtgewicht', 'tara': 'Tara', 'di gas': 'Kältemittel',
+    'Diagnosi': 'Diagnose', 'Riduzione dal valore iniziale': 'Reduktion gegenüber Startwert', 'Velocità media': 'Durchschnittsgeschwindigkeit', 'Procedura consigliata': 'Empfohlenes Verfahren', 'Evacuazione in buona direzione': 'Evakuierung entwickelt sich gut', 'Vuoto profondo raggiunto': 'Tiefvakuum erreicht', 'Vuoto ancora incompleto': 'Vakuum noch unvollständig', 'Vuoto insufficiente': 'Vakuum unzureichend', 'Risalita troppo rapida': 'Druckanstieg zu schnell', 'Inserisci il valore attuale in micron': 'Aktuellen Mikronwert eingeben',
+    'Esito tecnico': 'Technisches Ergebnis', 'Ordine professionale di diagnosi': 'Fachgerechte Diagnosereihenfolge', 'Surriscaldamento': 'Überhitzung', 'Sottoraffreddamento': 'Unterkühlung', 'Pressione LP': 'Niederdruck', 'Pressioni LP / HP': 'Drücke ND / HD', 'Affidabilità diagnosi carica': 'Zuverlässigkeit der Füllmengendiagnose', 'Funzionamento complessivamente plausibile': 'Betrieb insgesamt plausibel', 'Anomalia tecnica da approfondire': 'Technische Abweichung genauer prüfen', 'Funzionamento da verificare': 'Betrieb prüfen', 'Funzionamento plausibile con una verifica': 'Betrieb plausibel, eine Prüfung erforderlich',
+    'Macchina non ancora stabilizzata': 'Anlage noch nicht stabilisiert', 'Nessun raffreddamento lato aria': 'Keine luftseitige Kühlung', 'ΔT aria basso': 'Luft-ΔT niedrig', 'ΔT aria moderatamente basso': 'Luft-ΔT mäßig niedrig', 'Scambio lato aria plausibile': 'Luftseitiger Wärmeaustausch plausibel', 'ΔT aria elevato': 'Luft-ΔT hoch', 'ΔT aria molto elevato': 'Luft-ΔT sehr hoch', 'Nessun riscaldamento lato aria': 'Keine luftseitige Heizleistung', 'ΔT riscaldamento basso': 'Heiz-ΔT niedrig', 'ΔT riscaldamento elevato': 'Heiz-ΔT hoch', 'Portata aria non verificata': 'Luftvolumenstrom nicht geprüft', 'Scambio esterno non verificato': 'Außenwärmetauscher nicht geprüft', 'Evaporazione molto bassa': 'Verdampfungstemperatur sehr niedrig', 'Evaporazione vicina alla temperatura ambiente': 'Verdampfung nahe Raumtemperatur', 'Surriscaldamento negativo': 'Negative Überhitzung', 'Surriscaldamento quasi nullo': 'Überhitzung nahezu null', 'Surriscaldamento basso': 'Überhitzung niedrig', 'Surriscaldamento plausibile': 'Überhitzung plausibel', 'Surriscaldamento alto': 'Überhitzung hoch', 'Surriscaldamento molto alto': 'Überhitzung sehr hoch', 'Pressione bassa disponibile ma SH non calcolabile': 'Niederdruck vorhanden, Überhitzung nicht berechenbar', 'Pressioni non coerenti': 'Drücke nicht plausibel', 'Sottoraffreddamento negativo': 'Negative Unterkühlung', 'Sottoraffreddamento basso': 'Unterkühlung niedrig', 'Sottoraffreddamento plausibile': 'Unterkühlung plausibel', 'Sottoraffreddamento alto': 'Unterkühlung hoch', 'Sottoraffreddamento molto alto': 'Unterkühlung sehr hoch', 'Condensazione alta rispetto all’esterno': 'Verflüssigungstemperatur gegenüber außen hoch', 'Modalità split · sola bassa pressione': 'Splitbetrieb · nur Niederdruck', 'Temperatura mandata molto alta': 'Austrittstemperatur sehr hoch', 'Temperatura mandata elevata': 'Austrittstemperatur erhöht', 'Assorbimento oltre riferimento': 'Stromaufnahme über Referenz', 'Interpretazione inverter / EEV': 'Bewertung Inverter / EEV', 'Limite diagnostico dichiarato': 'Ausgewiesene Diagnosegrenze', 'Refrigerante A3 infiammabile': 'Entflammbares A3-Kältemittel',
+    'ΔT aria raffrescamento': 'Luft-ΔT Kühlen', 'ΔT aria riscaldamento': 'Luft-ΔT Heizen', 'Approach ritorno→evaporazione': 'Annäherung Rückluft→Verdampfung', 'Approach condensazione→esterna': 'Annäherung Verflüssigung→Außenluft', 'T mandata compressore': 'Verdichter-Austrittstemperatur', 'Assorbimento vs riferimento': 'Stromaufnahme vs. Referenz',
+    'ALTA': 'HOCH', 'MEDIA': 'MITTEL', 'BASSA': 'NIEDRIG', 'RAPIDO': 'SCHNELL', 'PROFESSIONALE': 'FACHBERECHNUNG'
+  };
+
+  const reverse = Object.fromEntries(Object.entries(messages).map(([it, de]) => [de, it]));
+  let language = localStorage.getItem('hvac-language') === 'de' ? 'de' : 'it';
+  let applying = false;
+
+  function translate(value, target = language) {
+    const text = String(value ?? '');
+    const table = target === 'de' ? messages : reverse;
+    if (table[text]) return table[text];
+    const room = text.match(/^Locale (\d+)$/);
+    if (target === 'de' && room) return `Raum ${room[1]}`;
+    const raum = text.match(/^Raum (\d+)$/);
+    if (target === 'it' && raum) return `Locale ${raum[1]}`;
+    const countIt = text.match(/^(\d+) (locale|locali)$/);
+    if (target === 'de' && countIt) return `${countIt[1]} ${countIt[1] === '1' ? 'Raum' : 'Räume'}`;
+    const countDe = text.match(/^(\d+) (Raum|Räume)$/);
+    if (target === 'it' && countDe) return `${countDe[1]} ${countDe[1] === '1' ? 'locale' : 'locali'}`;
+    return text;
+  }
+
+  function translateNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const match = node.nodeValue.match(/^(\s*)(.*?)(\s*)$/s);
+      if (match && match[2]) node.nodeValue = `${match[1]}${translate(match[2])}${match[3]}`;
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE || ['SCRIPT', 'STYLE'].includes(node.tagName)) return;
+    ['placeholder', 'aria-label', 'title'].forEach(attribute => {
+      if (node.hasAttribute(attribute)) node.setAttribute(attribute, translate(node.getAttribute(attribute)));
+    });
+    [...node.childNodes].forEach(translateNode);
+  }
+
+  function apply(root = document.documentElement) {
+    if (applying) return;
+    applying = true;
+    document.documentElement.lang = language;
+    translateNode(root);
+    document.title = translate(document.title);
+    document.querySelectorAll('[data-language]').forEach(button => {
+      const active = button.dataset.language === language;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    applying = false;
+  }
+
+  function setLanguage(next) {
+    if (!['it', 'de'].includes(next) || next === language) return;
+    language = next;
+    localStorage.setItem('hvac-language', language);
+    apply();
+    window.dispatchEvent(new CustomEvent('app-language-changed', {detail: {language}}));
+  }
+
+  window.AppI18n = {apply, getLanguage: () => language, locale: () => language === 'de' ? 'de-DE' : 'it-IT', setLanguage, translate};
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-language]').forEach(button => button.addEventListener('click', () => setLanguage(button.dataset.language)));
+    apply();
+    new MutationObserver(records => {
+      if (applying) return;
+      records.forEach(record => record.addedNodes.forEach(translateNode));
+    }).observe(document.body, {childList: true, subtree: true});
+  });
+})();
