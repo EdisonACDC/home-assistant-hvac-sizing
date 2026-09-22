@@ -127,6 +127,7 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .operation-card, .qr-card { display: grid; gap: .75rem; padding: 1rem; border: 1px solid var(--line); border-radius: 14px; background: rgba(7,27,42,.72); }
 .operation-preview { min-height: 44px; padding: .7rem; border-radius: 10px; color: var(--muted); background: rgba(77,141,255,.08); border: 1px solid rgba(77,141,255,.22); }
 .operation-preview strong { color: var(--text); }
+.form-error { padding: .7rem .8rem; border: 1px solid rgba(255,107,107,.55); border-radius: 10px; background: rgba(255,107,107,.1); color: #ffb3b3; font-size: .78rem; font-weight: 800; line-height: 1.4; }
 .qr-card { align-content: start; text-align: center; }
 .qr-card img { width: min(100%, 220px); aspect-ratio: 1; margin: 0 auto; padding: .5rem; border-radius: 10px; background: white; }
 .qr-card p { color: var(--muted); font-size: .76rem; line-height: 1.4; }

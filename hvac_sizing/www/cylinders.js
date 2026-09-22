@@ -3,6 +3,29 @@ let activeCylinder = null;
 
 const kg = value => `${Number(value || 0).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg`;
 
+function decimalText(value) {
+  let normalized = String(value ?? '').trim().replace(/[\s\u00a0]/g, '');
+  if (normalized.includes(',') && normalized.includes('.')) {
+    normalized = normalized.lastIndexOf(',') > normalized.lastIndexOf('.')
+      ? normalized.replaceAll('.', '').replace(',', '.')
+      : normalized.replaceAll(',', '');
+  } else {
+    normalized = normalized.replace(',', '.');
+  }
+  return normalized;
+}
+
+function cylinderNumber(value) {
+  const parsed = Number(decimalText(value));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formError(selector, message = '') {
+  const node = $(selector);
+  node.textContent = message;
+  node.classList.toggle('hidden', !message);
+}
+
 function cylinderLink(id) {
   const url = new URL(window.location.href);
   url.hash = '';
@@ -61,16 +84,18 @@ function renderCylinders() {
 }
 
 function updateNewCylinderPreview() {
-  const tare = n($('#new-cylinder-tare').value);
-  const total = n($('#new-cylinder-total').value);
+  const tare = cylinderNumber($('#new-cylinder-tare').value);
+  const total = cylinderNumber($('#new-cylinder-total').value);
   const net = Math.max(0, total - tare);
   $('#new-cylinder-net').textContent = kg(net);
 }
 
 async function createCylinder(event) {
   event.preventDefault();
+  formError('#new-cylinder-error');
   const form = new FormData(event.currentTarget);
   const payload = Object.fromEntries(form.entries());
+  ['tare_kg', 'total_weight_kg', 'capacity_kg'].forEach(key => { payload[key] = decimalText(payload[key]); });
   try {
     const created = await api('cylinders', {method: 'POST', body: JSON.stringify(payload)});
     event.currentTarget.reset();
@@ -80,6 +105,7 @@ async function createCylinder(event) {
     toast('Bombola registrata e QR creato');
     await openCylinder(created.id);
   } catch (error) {
+    formError('#new-cylinder-error', error.message);
     toast(error.message, true);
   }
 }
@@ -93,6 +119,7 @@ async function openCylinder(id, updateUrl = true) {
     setOperationFields();
     const directUrl = cylinderLink(id);
     const qrUrl = `api/cylinders/${encodeURIComponent(id)}/qr?url=${encodeURIComponent(directUrl.href)}`;
+    formError('#cylinder-qr-error');
     $('#cylinder-qr').src = qrUrl;
     $('#download-cylinder-qr').href = qrUrl;
     $('#download-cylinder-qr').download = `bombola-${activeCylinder.code}.svg`;
@@ -139,13 +166,13 @@ function updateOperationPreview() {
   let after = Number(activeCylinder.current_gas_kg);
   let explanation = `Residuo attuale: <strong>${kg(after)}</strong>`;
   if (operation === 'weighing') {
-    const total = n($('#operation-total').value);
+    const total = cylinderNumber($('#operation-total').value);
     if (total) {
       after = Math.max(0, total - Number(activeCylinder.tare_kg));
       explanation = `${kg(total)} − tara ${kg(activeCylinder.tare_kg)} = <strong>${kg(after)} di gas</strong>`;
     }
   } else {
-    const amount = n($('#operation-amount').value);
+    const amount = cylinderNumber($('#operation-amount').value);
     after = operation === 'add' ? after + amount : after - amount;
     explanation = `Nuovo residuo previsto: <strong>${kg(after)}</strong>`;
   }
@@ -154,8 +181,12 @@ function updateOperationPreview() {
 
 async function saveCylinderOperation(event) {
   event.preventDefault();
+  formError('#cylinder-operation-error');
   const form = new FormData(event.currentTarget);
   const payload = Object.fromEntries(form.entries());
+  ['total_weight_kg', 'amount_kg'].forEach(key => {
+    if (key in payload) payload[key] = decimalText(payload[key]);
+  });
   try {
     await api(`cylinders/${activeCylinder.id}/transactions`, {method: 'POST', body: JSON.stringify(payload)});
     event.currentTarget.reset();
@@ -165,6 +196,7 @@ async function saveCylinderOperation(event) {
     await openCylinder(activeCylinder.id, false);
     toast('Movimento registrato');
   } catch (error) {
+    formError('#cylinder-operation-error', error.message);
     toast(error.message, true);
   }
 }
@@ -190,7 +222,10 @@ async function deleteActiveCylinder() {
 }
 
 $('#go-cylinders').addEventListener('click', () => $('#cylinders').scrollIntoView({behavior: 'smooth', block: 'start'}));
-$('#new-cylinder').addEventListener('click', () => $('#new-cylinder-dialog').showModal());
+$('#new-cylinder').addEventListener('click', () => {
+  formError('#new-cylinder-error');
+  $('#new-cylinder-dialog').showModal();
+});
 $('#close-new-cylinder').addEventListener('click', () => $('#new-cylinder-dialog').close());
 $('#close-cylinder').addEventListener('click', closeCylinderDialog);
 $('#cylinder-dialog').addEventListener('cancel', event => {
@@ -210,6 +245,8 @@ $('#operation-total').addEventListener('input', updateOperationPreview);
 $('#operation-amount').addEventListener('input', updateOperationPreview);
 $('#cylinder-operation-form').addEventListener('submit', saveCylinderOperation);
 $('#delete-cylinder').addEventListener('click', deleteActiveCylinder);
+$('#cylinder-qr').addEventListener('load', () => formError('#cylinder-qr-error'));
+$('#cylinder-qr').addEventListener('error', () => formError('#cylinder-qr-error', 'Impossibile generare il QR. Chiudi e riapri la scheda oppure riavvia l’add-on.'));
 $('#download-all-cylinders-pdf').addEventListener('click', event => {
   if (!cylinderItems.length) {
     event.preventDefault();

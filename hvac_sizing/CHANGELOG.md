@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2
+
+- Corretto il salvataggio delle bombole da iPhone e tastiere italiane con pesi inseriti usando la virgola decimale.
+- Accettati automaticamente sia `4,250` sia `4.250` per tara, peso totale e quantità dei movimenti.
+- Errori di salvataggio mostrati direttamente dentro la finestra della bombola.
+- Stato di generazione QR visibile con messaggio dedicato in caso di errore.
+
 ## 0.5.1
 
 - Scheda PDF A4 scaricabile per ogni bombola.

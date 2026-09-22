@@ -79,6 +79,16 @@ def number(value: object, field: str, *, required: bool = True) -> float | None:
             raise ValueError(f"Inserisci {field}")
         return None
     try:
+        if isinstance(value, str):
+            normalized = value.strip().replace(" ", "").replace("\u00a0", "")
+            if "," in normalized and "." in normalized:
+                if normalized.rfind(",") > normalized.rfind("."):
+                    normalized = normalized.replace(".", "").replace(",", ".")
+                else:
+                    normalized = normalized.replace(",", "")
+            else:
+                normalized = normalized.replace(",", ".")
+            value = normalized
         result = round(float(value), 3)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"{field.capitalize()} non valido") from exc
@@ -109,7 +119,7 @@ def safe_filename(value: object) -> str:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HVACSizing/0.5.1"
+    server_version = "HVACSizing/0.5.2"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"{self.address_string()} - {fmt % args}", flush=True)
@@ -168,7 +178,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = self._path()
         if path == "/api/health":
-            self._send_json({"status": "ok", "version": "0.5.1"})
+            self._send_json({"status": "ok", "version": "0.5.2"})
             return
         if path == "/api/projects":
             with db_connection() as db:

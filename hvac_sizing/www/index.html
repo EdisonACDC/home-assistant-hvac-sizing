@@ -158,12 +158,13 @@
         <label>Codice identificativo<input name="code" required maxlength="50" placeholder="es. R32-001"></label>
         <label>Refrigerante<input name="refrigerant" list="refrigerant-list" required maxlength="30" value="R32" autocomplete="off"></label>
         <datalist id="refrigerant-list"><option value="R32"><option value="R410A"><option value="R134a"><option value="R290"><option value="R404A"><option value="R407C"><option value="R1234yf"><option value="R454B"><option value="R513A"></datalist>
-        <label>Tara bombola kg<input id="new-cylinder-tare" name="tare_kg" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="es. 4,250"></label>
-        <label>Peso totale attuale kg<input id="new-cylinder-total" name="total_weight_kg" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="bombola + gas"></label>
-        <label>Capacità refrigerante kg (opzionale)<input name="capacity_kg" type="number" min="0" step="0.001" inputmode="decimal"></label>
+        <label>Tara bombola kg<input id="new-cylinder-tare" name="tare_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 4,250"></label>
+        <label>Peso totale attuale kg<input id="new-cylinder-total" name="total_weight_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="bombola + gas"></label>
+        <label>Capacità refrigerante kg (opzionale)<input name="capacity_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 5,000"></label>
       </div>
       <div class="net-preview"><span>Gas effettivo calcolato</span><strong id="new-cylinder-net">0,000 kg</strong><small>Peso totale − tara</small></div>
       <label>Note<textarea name="notes" rows="2" maxlength="500" placeholder="Marca, numero di serie, proprietà…"></textarea></label>
+      <div id="new-cylinder-error" class="form-error hidden" role="alert"></div>
       <button class="button primary full" type="submit">Salva bombola e crea QR</button>
     </form>
   </dialog>
@@ -182,15 +183,17 @@
               <option value="add">Aggiunta refrigerante</option>
             </select>
           </label>
-          <label id="weighing-field">Peso totale sulla bilancia kg<input id="operation-total" name="total_weight_kg" type="number" min="0" step="0.001" inputmode="decimal" placeholder="bombola + gas"></label>
-          <label id="amount-field" class="hidden">Quantità refrigerante kg<input id="operation-amount" name="amount_kg" type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="es. 0,650"></label>
+          <label id="weighing-field">Peso totale sulla bilancia kg<input id="operation-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="bombola + gas"></label>
+          <label id="amount-field" class="hidden">Quantità refrigerante kg<input id="operation-amount" name="amount_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 0,650"></label>
           <div id="operation-preview" class="operation-preview"></div>
           <label>Note / impianto / cliente<textarea name="notes" rows="2" maxlength="500"></textarea></label>
+          <div id="cylinder-operation-error" class="form-error hidden" role="alert"></div>
           <button class="button primary full" type="submit">Registra movimento</button>
         </form>
         <div class="qr-card">
           <h3>QR code bombola</h3>
           <img id="cylinder-qr" alt="QR code della bombola">
+          <div id="cylinder-qr-error" class="form-error hidden" role="alert">Impossibile generare il QR. Chiudi e riapri la scheda oppure riavvia l’add-on.</div>
           <p>Scansionandolo si apre direttamente questa scheda.</p>
           <div class="qr-actions"><a id="download-cylinder-qr" class="button secondary" download>Scarica QR</a><button id="print-cylinder-qr" class="button ghost" type="button">Stampa</button></div>
         </div>
