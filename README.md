@@ -2,7 +2,7 @@
 
 Add-on/Home Assistant App per stimare la potenza frigorifera e termica richiesta da ogni locale.
 
-## Versione 0.1.0
+## Versione 0.5.0
 
 - calcolo rapido parametrico in W/m³;
 - calcolo professionale a bilancio termico;
@@ -13,6 +13,9 @@ Add-on/Home Assistant App per stimare la potenza frigorifera e termica richiesta
 - risultati e totali distinti per locale;
 - progetti salvati in modo persistente;
 - interfaccia responsive tramite Ingress di Home Assistant.
+- magazzino bombole con tara, peso totale e residuo netto sempre aggiornato;
+- QR code individuale per aprire la scheda della bombola dal telefono;
+- storico di pesature, aggiunte e prelievi di refrigerante.
 
 ## Installazione locale
 
