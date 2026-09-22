@@ -19,17 +19,15 @@
         <button class="language-button" type="button" data-language="it">IT</button>
         <button class="language-button" type="button" data-language="de">DE</button>
       </div>
-      <button id="go-cylinders" class="button ghost">Bombole</button>
-      <button id="go-performance" class="button ghost">Diagnosi</button>
-      <button id="go-commissioning" class="button ghost">Vuoto</button>
-      <button id="new-project" class="button ghost">Nuovo</button>
-      <button id="open-projects" class="button ghost">Progetti</button>
-      <button id="save-project" class="button primary">Salva</button>
+      <button id="go-sizing" class="button ghost page-nav" data-page-button="sizing">Dimensionamento</button>
+      <button id="go-cylinders" class="button ghost page-nav" data-page-button="cylinders">Bombole</button>
+      <button id="go-performance" class="button ghost page-nav" data-page-button="performance">Diagnosi</button>
+      <button id="go-commissioning" class="button ghost page-nav" data-page-button="commissioning">Vuoto</button>
     </div>
   </header>
 
   <main>
-    <section class="panel project-panel">
+    <section class="panel project-panel" data-app-page="sizing">
       <label>Nome progetto<input id="project-name" value="Nuovo impianto"></label>
       <label>Cliente<input id="customer" placeholder="Nome o ragione sociale"></label>
       <label>Località<input id="location" placeholder="Città"></label>
@@ -37,9 +35,14 @@
         <button class="method active" data-method="quick">Calcolo rapido</button>
         <button class="method" data-method="professional">Calcolo professionale</button>
       </div>
+      <div class="project-actions">
+        <button id="new-project" class="button ghost">Nuovo</button>
+        <button id="open-projects" class="button ghost">Progetti</button>
+        <button id="save-project" class="button primary">Salva</button>
+      </div>
     </section>
 
-    <section id="cylinders" class="panel cylinders-panel">
+    <section id="cylinders" class="panel cylinders-panel" data-app-page="cylinders">
       <div class="section-title cylinders-title">
         <div><p class="eyebrow">MAGAZZINO REFRIGERANTE</p><h2>Bombole e quantità residue</h2></div>
         <div class="cylinder-main-actions">
@@ -55,7 +58,7 @@
       <div id="cylinders-list" class="cylinders-list"></div>
     </section>
 
-    <section id="performance-test" class="panel performance-panel">
+    <section id="performance-test" class="panel performance-panel" data-app-page="performance">
       <div class="section-title commissioning-title">
         <div><p class="eyebrow">DIAGNOSI PRESTAZIONI</p><h2>Controllo tecnico macchina in funzione</h2></div>
         <span class="status-pill">Diagnosi professionale</span>
@@ -106,7 +109,7 @@
       <p class="disclaimer safety-note"><strong>Metodo:</strong> con una sola presa di servizio la diagnosi usa soprattutto ΔT aria, temperatura di evaporazione, surriscaldamento, condizioni ambiente e assorbimento. L'assenza dell'alta non viene trattata come errore. Su inverter/EEV i dati vanno interpretati a macchina stabilizzata e le specifiche del costruttore prevalgono sempre.</p>
     </section>
 
-    <section id="commissioning" class="panel commissioning-panel">
+    <section id="commissioning" class="panel commissioning-panel" data-app-page="commissioning">
       <div class="section-title commissioning-title">
         <div><p class="eyebrow">VUOTO E MESSA IN SERVIZIO</p><h2>Diagnosi evacuazione impianto</h2></div>
         <span class="status-pill">Assistente tecnico</span>
@@ -135,7 +138,7 @@
       <p class="disclaimer safety-note"><strong>Sicurezza:</strong> azoto secco solo con riduttore. Non immettere azoto mentre la pompa del vuoto sta aspirando. Isola la pompa, rompi il vuoto con azoto, poi evacua di nuovo.</p>
     </section>
 
-    <section id="climate-panel" class="panel climate hidden">
+    <section id="climate-panel" class="panel climate hidden" data-app-page="sizing">
       <div class="section-title"><div><p class="eyebrow">CONDIZIONI DI PROGETTO</p><h2>Clima interno ed esterno</h2></div></div>
       <div class="grid six">
         <label>Estate esterna °C<input id="summer-outdoor" type="number" value="35" step="0.1"></label>
@@ -147,10 +150,10 @@
       </div>
     </section>
 
-    <section class="section-title rooms-heading"><div><p class="eyebrow">LOCALI</p><h2>Dati per il calcolo</h2></div><button id="add-room" class="button secondary">+ Aggiungi locale</button></section>
-    <div id="rooms"></div>
-    <div class="calculate-bar"><div><strong id="room-count">1 locale</strong><span>I risultati restano separati per ogni ambiente</span></div><button id="calculate" class="button calculate">Calcola potenze</button></div>
-    <section id="results" class="results hidden"></section>
+    <section class="section-title rooms-heading" data-app-page="sizing"><div><p class="eyebrow">LOCALI</p><h2>Dati per il calcolo</h2></div><button id="add-room" class="button secondary">+ Aggiungi locale</button></section>
+    <div id="rooms" data-app-page="sizing"></div>
+    <div class="calculate-bar" data-app-page="sizing"><div><strong id="room-count">1 locale</strong><span>I risultati restano separati per ogni ambiente</span></div><button id="calculate" class="button calculate">Calcola potenze</button></div>
+    <section id="results" class="results hidden" data-app-page="sizing"></section>
   </main>
 
   <dialog id="projects-dialog"><div class="dialog-head"><h2>Progetti salvati</h2><button id="close-projects" class="icon-button">×</button></div><div id="projects-list" class="projects-list"></div></dialog>

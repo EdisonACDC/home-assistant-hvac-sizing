@@ -7,6 +7,53 @@ let method = 'quick';
 let currentProjectId = null;
 let rooms = [];
 let lastCalculationResult = null;
+const APP_PAGES = new Set(['sizing', 'cylinders', 'performance', 'commissioning']);
+
+function routeUrls() {
+  const urls = [new URL(window.location.href)];
+  try {
+    if (window.parent && window.parent !== window) urls.push(new URL(window.parent.location.href));
+  } catch (_) {}
+  try {
+    if (document.referrer) urls.push(new URL(document.referrer));
+  } catch (_) {}
+  return urls;
+}
+
+function getAppRoute() {
+  let page = '';
+  let cylinderId = '';
+  for (const url of routeUrls()) {
+    page ||= url.searchParams.get('page') || '';
+    cylinderId ||= url.searchParams.get('bombola') || '';
+    const hash = decodeURIComponent(url.hash.replace(/^#/, ''));
+    const [hashPage, hashId] = hash.split('/');
+    if (APP_PAGES.has(hashPage)) page ||= hashPage;
+    if (hashPage === 'cylinders' && hashId) cylinderId ||= hashId;
+  }
+  if (cylinderId) page = 'cylinders';
+  return {page: APP_PAGES.has(page) ? page : 'sizing', cylinderId};
+}
+
+function updateAppRoute(page, cylinderId = '') {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('page');
+  url.searchParams.delete('bombola');
+  url.hash = cylinderId ? `${page}/${encodeURIComponent(cylinderId)}` : page;
+  history.replaceState({}, '', url);
+}
+
+function showAppPage(page, updateUrl = true) {
+  const selected = APP_PAGES.has(page) ? page : 'sizing';
+  $$('[data-app-page]').forEach(node => node.classList.toggle('page-hidden', node.dataset.appPage !== selected));
+  $$('[data-page-button]').forEach(button => button.classList.toggle('active', button.dataset.pageButton === selected));
+  if (updateUrl) updateAppRoute(selected);
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+window.getAppRoute = getAppRoute;
+window.updateAppRoute = updateAppRoute;
+window.showAppPage = showAppPage;
 
 const defaults = () => ({
   id: crypto.randomUUID(), name: 'Locale 1', length: 5, width: 4, height: 2.7,
@@ -324,7 +371,7 @@ $('#save-project').addEventListener('click', saveProject);
 $('#open-projects').addEventListener('click', showProjects);
 $('#close-projects').addEventListener('click', () => $('#projects-dialog').close());
 $('#new-project').addEventListener('click', newProject);
-$('#go-commissioning').addEventListener('click', () => $('#commissioning').scrollIntoView({behavior: 'smooth', block: 'start'}));
+$$('[data-page-button]').forEach(button => button.addEventListener('click', () => showAppPage(button.dataset.pageButton)));
 $('#analyze-vacuum').addEventListener('click', analyzeVacuum);
 $('#reset-vacuum').addEventListener('click', resetVacuum);
 $('#projects-list').addEventListener('click', async event => {
@@ -334,3 +381,4 @@ $('#projects-list').addEventListener('click', async event => {
 });
 
 newProject();
+showAppPage(getAppRoute().page, false);

@@ -27,17 +27,15 @@ function formError(selector, message = '') {
   node.classList.toggle('hidden', !message);
 }
 
-function cylinderLink(id) {
-  const url = new URL(window.location.href);
-  url.hash = '';
-  url.searchParams.set('bombola', id);
+function cylinderBaseLink() {
+  const url = new URL('/hassio/ingress/hvac_sizing_pro', window.location.origin);
+  url.searchParams.set('page', 'cylinders');
   return url;
 }
 
-function cylinderBaseLink() {
-  const url = new URL(window.location.href);
-  url.hash = '';
-  url.searchParams.delete('bombola');
+function cylinderLink(id) {
+  const url = cylinderBaseLink();
+  url.searchParams.set('bombola', id);
   return url;
 }
 
@@ -58,7 +56,7 @@ async function loadCylinders(openFromQr = false) {
   try {
     cylinderItems = await api('cylinders');
     renderCylinders();
-    const cylinderId = new URL(window.location.href).searchParams.get('bombola');
+    const cylinderId = window.getAppRoute?.().cylinderId || '';
     if (openFromQr && cylinderId) await openCylinder(cylinderId, false);
   } catch (error) {
     toast(error.message, true);
@@ -128,7 +126,7 @@ async function openCylinder(id, updateUrl = true) {
     $('#download-cylinder-pdf').href = cylinderPdfUrl(id, true);
     $('#download-cylinder-pdf').download = `scheda-bombola-${activeCylinder.code}.pdf`;
     $('.qr-card h3').textContent = `${activeCylinder.code} · ${activeCylinder.refrigerant}`;
-    if (updateUrl) history.replaceState({}, '', directUrl);
+    if (updateUrl) window.updateAppRoute?.('cylinders', id);
     if (!$('#cylinder-dialog').open) $('#cylinder-dialog').showModal();
   } catch (error) {
     toast(error.message, true);
@@ -206,9 +204,7 @@ async function saveCylinderOperation(event) {
 function closeCylinderDialog() {
   $('#cylinder-dialog').close();
   activeCylinder = null;
-  const url = new URL(window.location.href);
-  url.searchParams.delete('bombola');
-  history.replaceState({}, '', url);
+  window.updateAppRoute?.('cylinders');
 }
 
 async function deleteActiveCylinder() {
@@ -226,7 +222,6 @@ async function deleteActiveCylinder() {
   }
 }
 
-$('#go-cylinders').addEventListener('click', () => $('#cylinders').scrollIntoView({behavior: 'smooth', block: 'start'}));
 $('#new-cylinder').addEventListener('click', () => {
   formError('#new-cylinder-error');
   $('#new-cylinder-dialog').showModal();

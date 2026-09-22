@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1
+
+- Corretto il QR: non usa più l'indirizzo temporaneo dell'iframe Ingress.
+- Il QR apre Home Assistant, entra nella pagina Bombole e mostra direttamente la bombola selezionata.
+- Separate Dimensionamento, Bombole, Diagnosi e Vuoto in pagine dedicate.
+- Spostati Nuovo, Progetti e Salva nella pagina Dimensionamento.
+
 ## 0.6.0
 
 - Aggiunto selettore Italiano / Deutsch con preferenza memorizzata.

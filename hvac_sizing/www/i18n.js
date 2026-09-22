@@ -2,7 +2,7 @@
   const messages = {
     'Dimensionamento Climatizzazione Pro': 'Klimaanlagen-Dimensionierung Pro',
     'HVAC · CARICHI TERMICI · COLLAUDO': 'HVAC · KÜHLLAST · INBETRIEBNAHME',
-    'Dimensionamento Climatizzazione': 'Klimaanlagen-Dimensionierung',
+    'Dimensionamento Climatizzazione': 'Klimaanlagen-Dimensionierung', 'Dimensionamento': 'Auslegung',
     'Bombole': 'Flaschen', 'Diagnosi': 'Diagnose', 'Vuoto': 'Vakuum', 'Nuovo': 'Neu', 'Progetti': 'Projekte', 'Salva': 'Speichern',
     'Nome progetto': 'Projektname', 'Nuovo impianto': 'Neue Anlage', 'Cliente': 'Kunde', 'Nome o ragione sociale': 'Name oder Firma', 'Località': 'Ort', 'Città': 'Stadt',
     'Metodo di calcolo': 'Berechnungsmethode', 'Calcolo rapido': 'Schnellberechnung', 'Calcolo professionale': 'Fachberechnung',

@@ -119,7 +119,7 @@ def safe_filename(value: object) -> str:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HVACSizing/0.6.0"
+    server_version = "HVACSizing/0.6.1"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"{self.address_string()} - {fmt % args}", flush=True)
@@ -178,7 +178,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = self._path()
         if path == "/api/health":
-            self._send_json({"status": "ok", "version": "0.6.0"})
+            self._send_json({"status": "ok", "version": "0.6.1"})
             return
         if path == "/api/projects":
             with db_connection() as db:

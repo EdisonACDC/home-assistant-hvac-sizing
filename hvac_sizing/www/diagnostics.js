@@ -234,7 +234,6 @@
   $d('#perf-access')?.addEventListener('change', updateAccessUI);
   $d('#analyze-performance')?.addEventListener('click', analyzePerformance);
   $d('#reset-performance')?.addEventListener('click', resetPerformance);
-  $d('#go-performance')?.addEventListener('click', () => $d('#performance-test')?.scrollIntoView({behavior:'smooth', block:'start'}));
   window.addEventListener('app-language-changed', () => {
     if (!$d('#performance-result')?.classList.contains('hidden')) analyzePerformance();
   });
