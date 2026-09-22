@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0
+
+- Nuovo portale esterno bombole separato dall'interfaccia amministrativa.
+- QR con token HMAC casuale, revocabile e non collegato all'indirizzo locale di Home Assistant.
+- Accesso operatore limitato a una sola bombola, con pesatura, aggiunta e prelievo.
+- PIN operatore obbligatorio, limite tentativi e nome operatore nel registro.
+- App completa riservata agli amministratori Home Assistant tramite Ingress.
+- Porta pubblica 8100 predisposta per Cloudflare Tunnel e dominio HTTPS configurabile.
+- PDF aggiornati con i nuovi collegamenti QR protetti.
+
 ## 0.6.1
 
 - Corretto il QR: non usa più l'indirizzo temporaneo dell'iframe Ingress.

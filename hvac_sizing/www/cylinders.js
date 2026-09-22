@@ -27,21 +27,9 @@ function formError(selector, message = '') {
   node.classList.toggle('hidden', !message);
 }
 
-function cylinderBaseLink() {
-  const url = new URL('/hassio/ingress/hvac_sizing_pro', window.location.origin);
-  url.searchParams.set('page', 'cylinders');
-  return url;
-}
-
-function cylinderLink(id) {
-  const url = cylinderBaseLink();
-  url.searchParams.set('bombola', id);
-  return url;
-}
-
 function cylinderPdfUrl(id = null, download = false) {
   const path = id ? `api/cylinders/${encodeURIComponent(id)}/pdf` : 'api/cylinders/pdf';
-  const parameters = new URLSearchParams({url: cylinderBaseLink().href});
+  const parameters = new URLSearchParams();
   parameters.set('lang', window.AppI18n?.getLanguage() || 'it');
   if (download) parameters.set('download', '1');
   return `${path}?${parameters}`;
@@ -117,8 +105,7 @@ async function openCylinder(id, updateUrl = true) {
     $('#cylinder-detail-name').textContent = activeCylinder.name;
     renderCylinderDetail();
     setOperationFields();
-    const directUrl = cylinderLink(id);
-    const qrUrl = `api/cylinders/${encodeURIComponent(id)}/qr?url=${encodeURIComponent(directUrl.href)}`;
+    const qrUrl = `api/cylinders/${encodeURIComponent(id)}/qr?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
     formError('#cylinder-qr-error');
     $('#cylinder-qr').src = qrUrl;
     $('#download-cylinder-qr').href = qrUrl;
@@ -222,6 +209,19 @@ async function deleteActiveCylinder() {
   }
 }
 
+async function rotateActiveCylinderQr() {
+  if (!activeCylinder) return;
+  const question = window.AppI18n?.getLanguage() === 'de'
+    ? 'Den bisherigen QR-Code widerrufen und einen neuen erstellen? Der alte Ausdruck funktioniert danach nicht mehr.'
+    : 'Revocare il QR attuale e crearne uno nuovo? La vecchia stampa non funzionerà più.';
+  if (!confirm(question)) return;
+  try {
+    await api(`cylinders/${activeCylinder.id}/rotate-qr`, {method: 'POST', body: '{}'});
+    await openCylinder(activeCylinder.id, false);
+    toast('Accesso QR rigenerato. Ristampa il nuovo codice.');
+  } catch (error) { toast(error.message, true); }
+}
+
 $('#new-cylinder').addEventListener('click', () => {
   formError('#new-cylinder-error');
   $('#new-cylinder-dialog').showModal();
@@ -245,6 +245,7 @@ $('#operation-total').addEventListener('input', updateOperationPreview);
 $('#operation-amount').addEventListener('input', updateOperationPreview);
 $('#cylinder-operation-form').addEventListener('submit', saveCylinderOperation);
 $('#delete-cylinder').addEventListener('click', deleteActiveCylinder);
+$('#rotate-cylinder-qr').addEventListener('click', rotateActiveCylinderQr);
 $('#cylinder-qr').addEventListener('load', () => formError('#cylinder-qr-error'));
 $('#cylinder-qr').addEventListener('error', () => formError('#cylinder-qr-error', 'Impossibile generare il QR. Chiudi e riapri la scheda oppure riavvia l’add-on.'));
 $('#download-all-cylinders-pdf').addEventListener('click', event => {
@@ -272,5 +273,8 @@ window.addEventListener('app-language-changed', () => {
   if (activeCylinder) {
     renderCylinderDetail();
     $('#download-cylinder-pdf').href = cylinderPdfUrl(activeCylinder.id, true);
+    const qrUrl = `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
+    $('#cylinder-qr').src = qrUrl;
+    $('#download-cylinder-qr').href = qrUrl;
   }
 });

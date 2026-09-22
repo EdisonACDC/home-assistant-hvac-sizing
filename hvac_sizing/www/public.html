@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07131e">
+  <title>Registro bombola refrigerante</title>
+  <link rel="stylesheet" href="/public.css">
+</head>
+<body>
+  <header class="portal-head">
+    <div><p class="eyebrow" data-t="secure_portal">PORTALE SICURO BOMBOLE</p><h1 data-t="title">Registro refrigerante</h1></div>
+    <div class="language"><button type="button" data-lang="it">IT</button><button type="button" data-lang="de">DE</button></div>
+  </header>
+
+  <main>
+    <section id="loading" class="panel centered" data-t="loading">Caricamento scheda…</section>
+    <section id="error" class="panel error hidden" role="alert"></section>
+
+    <div id="content" class="hidden">
+      <section class="panel cylinder-head">
+        <div><p id="cylinder-code" class="eyebrow"></p><h2 id="cylinder-name"></h2><span id="cylinder-refrigerant" class="pill"></span></div>
+        <div class="access-badge"><strong data-t="limited_access">Accesso limitato</strong><small data-t="single_cylinder">Solo questa bombola</small></div>
+      </section>
+
+      <section class="metrics">
+        <div class="metric primary"><span data-t="gas_remaining">Gas effettivo residuo</span><strong id="gas-remaining">—</strong></div>
+        <div class="metric"><span data-t="total_weight">Peso totale</span><strong id="total-weight">—</strong></div>
+        <div class="metric"><span data-t="tare">Tara bombola</span><strong id="tare">—</strong></div>
+        <div class="metric"><span data-t="capacity">Capacità</span><strong id="capacity">—</strong></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-title"><div><p class="eyebrow" data-t="register">REGISTRAZIONE</p><h2 data-t="movement">Carico, scarico o pesatura</h2></div></div>
+        <form id="operation-form">
+          <div class="grid two">
+            <label><span data-t="operator">Nome operatore</span><input name="operator_name" maxlength="120" required autocomplete="name"></label>
+            <label><span data-t="pin">PIN operatore</span><input name="pin" type="password" inputmode="numeric" maxlength="12" required autocomplete="off"></label>
+            <label><span data-t="operation">Operazione</span>
+              <select id="operation" name="operation">
+                <option value="weighing" data-t="weighing">Pesatura bombola</option>
+                <option value="add" data-t="add">Aggiunta refrigerante</option>
+                <option value="remove" data-t="remove">Prelievo refrigerante</option>
+              </select>
+            </label>
+            <label id="total-field"><span data-t="scale_weight">Peso totale sulla bilancia kg</span><input name="total_weight_kg" inputmode="decimal" autocomplete="off"></label>
+            <label id="amount-field" class="hidden"><span data-t="amount">Quantità refrigerante kg</span><input name="amount_kg" inputmode="decimal" autocomplete="off"></label>
+          </div>
+          <label><span data-t="notes">Note / impianto / cliente</span><textarea name="notes" rows="2" maxlength="500"></textarea></label>
+          <div id="form-error" class="form-error hidden" role="alert"></div>
+          <button id="submit" class="primary-button" type="submit" data-t="save">Registra movimento</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="section-title"><div><p class="eyebrow" data-t="audit">REGISTRO</p><h2 data-t="history">Storico movimenti</h2></div></div>
+        <div id="history" class="history"></div>
+      </section>
+
+      <section class="security-note">
+        <strong data-t="security">Sicurezza</strong>
+        <p data-t="security_text">Questo collegamento autorizza soltanto la bombola mostrata. Il PIN non viene salvato sul telefono.</p>
+        <a id="admin-link" href="homeassistant://navigate/hassio/ingress/hvac_sizing_pro" data-t="admin">Accesso amministratore Home Assistant</a>
+      </section>
+    </div>
+  </main>
+  <script src="/public.js"></script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 Add-on/Home Assistant App per stimare la potenza frigorifera e termica richiesta da ogni locale.
 
-## Versione 0.6.1
+## Versione 0.7.0
 
 - calcolo rapido parametrico in W/m³;
 - calcolo professionale a bilancio termico;
@@ -20,6 +20,19 @@ Add-on/Home Assistant App per stimare la potenza frigorifera e termica richiesta
 - interfaccia selezionabile in italiano o tedesco, compresi i PDF delle bombole.
 - pagine separate per Dimensionamento, Bombole, Diagnosi e Vuoto.
 - QR delle bombole con collegamento stabile a Home Assistant e apertura diretta della scheda corretta.
+- portale esterno separato sulla porta 8100, limitato alla singola bombola;
+- QR protetti con token firmato e revocabile, senza indirizzo locale di Home Assistant;
+- PIN operatore, blocco dopo tentativi errati e registrazione del nome dell'operatore;
+- applicazione completa disponibile soltanto agli amministratori Home Assistant.
+
+## Portale esterno sicuro
+
+1. Nelle opzioni dell'add-on imposta `external_url` su `https://bombole.hausmaistercarellas.com`.
+2. Imposta un `operator_pin` personale; non inserirlo nel QR e non stamparlo sull'etichetta.
+3. Nel Cloudflare Tunnel inoltra il dominio alla porta `8100` del dispositivo Home Assistant.
+4. Mantieni la porta privata `8099` disponibile esclusivamente tramite Ingress.
+
+Il portale pubblico espone soltanto lettura e movimenti della bombola autorizzata. Progetti, diagnosi, vuoto, elenco completo, eliminazione e impostazioni non sono disponibili sulla porta pubblica.
 
 ## Installazione locale
 

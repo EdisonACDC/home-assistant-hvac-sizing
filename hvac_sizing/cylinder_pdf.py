@@ -218,7 +218,7 @@ def generate_cylinder_pdf(cylinders: list[dict], base_url: str, language: str = 
     for index, cylinder in enumerate(cylinders):
         if index:
             story.append(PageBreak())
-        target = cylinder_url(base_url, cylinder["id"])
+        target = str(cylinder.get("public_url") or cylinder_url(base_url, cylinder["id"]))
         story.extend(cylinder_story(cylinder, target, style, language))
     if not story:
         story.append(KeepTogether([Paragraph(tr("Nessuna bombola registrata", language), style["title"])]))

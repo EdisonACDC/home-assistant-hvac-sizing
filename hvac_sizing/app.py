@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import io
+import base64
+import hashlib
+import hmac
+import ipaddress
 import json
 import os
 import re
+import secrets
 import sqlite3
+import threading
+import time
 import uuid
 from datetime import datetime, timezone
 from http import HTTPStatus
@@ -26,6 +33,55 @@ WWW_DIR = APP_DIR / "www"
 DATA_DIR = Path(os.environ.get("HVAC_DATA_DIR", APP_DIR / ".data"))
 DB_PATH = DATA_DIR / "projects.db"
 PORT = int(os.environ.get("HVAC_PORT", "8099"))
+PUBLIC_PORT = int(os.environ.get("HVAC_PUBLIC_PORT", "8100"))
+OPTIONS_PATH = DATA_DIR / "options.json"
+QR_SECRET_PATH = DATA_DIR / "qr-secret.key"
+FAILED_PIN_ATTEMPTS: dict[str, list[float]] = {}
+FAILED_PIN_LOCK = threading.Lock()
+
+
+def load_options() -> dict:
+    try:
+        value = json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def external_url() -> str:
+    value = str(load_options().get("external_url") or "").strip().rstrip("/")
+    return value if valid_web_url(value) and urlparse(value).scheme == "https" else ""
+
+
+def qr_secret() -> bytes:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        secret = QR_SECRET_PATH.read_bytes()
+        if len(secret) >= 32:
+            return secret
+    except OSError:
+        pass
+    secret = secrets.token_bytes(32)
+    try:
+        descriptor = os.open(QR_SECRET_PATH, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return QR_SECRET_PATH.read_bytes()
+    with os.fdopen(descriptor, "wb") as stream:
+        stream.write(secret)
+    return secret
+
+
+def cylinder_access_token(cylinder_id: str, version: int) -> str:
+    digest = hmac.new(qr_secret(), f"{cylinder_id}:{version}".encode(), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(digest).decode().rstrip("=")
+
+
+def public_cylinder_url(cylinder: dict | sqlite3.Row) -> str:
+    base = external_url()
+    if not base:
+        return ""
+    token = cylinder_access_token(str(cylinder["id"]), int(cylinder["qr_version"]))
+    return f"{base}/c/{cylinder['id']}/{token}"
 
 
 def db_connection() -> sqlite3.Connection:
@@ -69,6 +125,12 @@ def db_connection() -> sqlite3.Connection:
             FOREIGN KEY (cylinder_id) REFERENCES cylinders(id) ON DELETE CASCADE
         )"""
     )
+    cylinder_columns = {row[1] for row in connection.execute("PRAGMA table_info(cylinders)")}
+    if "qr_version" not in cylinder_columns:
+        connection.execute("ALTER TABLE cylinders ADD COLUMN qr_version INTEGER NOT NULL DEFAULT 1")
+    transaction_columns = {row[1] for row in connection.execute("PRAGMA table_info(cylinder_transactions)")}
+    if "operator_name" not in transaction_columns:
+        connection.execute("ALTER TABLE cylinder_transactions ADD COLUMN operator_name TEXT NOT NULL DEFAULT ''")
     connection.execute("CREATE INDEX IF NOT EXISTS idx_cylinder_transactions_cylinder ON cylinder_transactions(cylinder_id, created_at DESC)")
     return connection
 
@@ -118,8 +180,92 @@ def safe_filename(value: object) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "-", str(value or "bombola")).strip("-.") or "bombola"
 
 
+def public_access_allowed(cylinder: sqlite3.Row, token: str) -> bool:
+    expected = cylinder_access_token(str(cylinder["id"]), int(cylinder["qr_version"]))
+    return bool(token) and secrets.compare_digest(token, expected)
+
+
+def pin_rate_limited(address: str) -> bool:
+    cutoff = time.monotonic() - 900
+    with FAILED_PIN_LOCK:
+        attempts = [stamp for stamp in FAILED_PIN_ATTEMPTS.get(address, []) if stamp >= cutoff]
+        FAILED_PIN_ATTEMPTS[address] = attempts
+        return len(attempts) >= 5
+
+
+def verify_operator_pin(address: str, supplied: object) -> bool:
+    configured = str(load_options().get("operator_pin") or "")
+    if len(configured) < 4 or pin_rate_limited(address):
+        return False
+    valid = secrets.compare_digest(str(supplied or ""), configured)
+    with FAILED_PIN_LOCK:
+        if valid:
+            FAILED_PIN_ATTEMPTS.pop(address, None)
+        else:
+            FAILED_PIN_ATTEMPTS.setdefault(address, []).append(time.monotonic())
+    return valid
+
+
+def public_cylinder_payload(cylinder: sqlite3.Row, history: list[sqlite3.Row]) -> dict:
+    full = cylinder_payload(cylinder)
+    return {
+        "id": full["id"], "code": full["code"], "name": full["name"],
+        "refrigerant": full["refrigerant"], "tare_kg": full["tare_kg"],
+        "capacity_kg": full["capacity_kg"], "current_gas_kg": full["current_gas_kg"],
+        "total_weight_kg": full["total_weight_kg"], "updated_at": full["updated_at"],
+        "history": [
+            {
+                "operation": item["operation"], "amount_kg": item["amount_kg"],
+                "total_weight_kg": item["total_weight_kg"], "gas_after_kg": item["gas_after_kg"],
+                "notes": item["notes"], "operator_name": item["operator_name"],
+                "created_at": item["created_at"],
+            }
+            for item in history[:50]
+        ],
+    }
+
+
+def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: str = "") -> dict:
+    operation = str(payload.get("operation") or "")
+    if operation not in {"weighing", "add", "remove"}:
+        raise ValueError("Operazione non valida")
+    now = datetime.now(timezone.utc).isoformat()
+    with db_connection() as db:
+        row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+        if not row:
+            raise LookupError("Bombola non trovata")
+        before = round(row["current_gas_kg"], 3)
+        total = None
+        amount = None
+        if operation == "weighing":
+            total = number(payload.get("total_weight_kg"), "il peso totale")
+            if total < row["tare_kg"]:
+                raise ValueError("Il peso totale non può essere inferiore alla tara")
+            after = round(total - row["tare_kg"], 3)
+            amount = round(after - before, 3)
+        else:
+            amount = number(payload.get("amount_kg"), "la quantità")
+            if amount <= 0:
+                raise ValueError("La quantità deve essere maggiore di zero")
+            after = round(before + amount if operation == "add" else before - amount, 3)
+        if after < 0:
+            raise ValueError("Il prelievo supera il refrigerante disponibile")
+        if row["capacity_kg"] is not None and after > row["capacity_kg"]:
+            raise ValueError("Il refrigerante risultante supera la capacità della bombola")
+        transaction_id = str(uuid.uuid4())
+        notes = str(payload.get("notes") or "").strip()[:500]
+        operator = str(operator_name or "").strip()[:120]
+        db.execute("UPDATE cylinders SET current_gas_kg = ?, updated_at = ? WHERE id = ?", (after, now, cylinder_id))
+        db.execute(
+            "INSERT INTO cylinder_transactions (id, cylinder_id, operation, amount_kg, total_weight_kg, gas_before_kg, gas_after_kg, notes, operator_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (transaction_id, cylinder_id, operation, amount, total, before, after, notes, operator, now),
+        )
+        updated = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+    return cylinder_payload(updated)
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HVACSizing/0.6.1"
+    server_version = "HVACSizing/0.7.0"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"{self.address_string()} - {fmt % args}", flush=True)
@@ -141,13 +287,20 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("Il contenuto deve essere un oggetto JSON")
         return value
 
+    def _security_headers(self) -> None:
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
     def _send_json(self, value: object, status: int = 200) -> None:
         encoded = json.dumps(value, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(encoded)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
+        self._security_headers()
         self.end_headers()
         self.wfile.write(encoded)
 
@@ -157,7 +310,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Disposition", f'inline; filename="{filename}"')
         self.send_header("Content-Length", str(len(content)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
+        self._security_headers()
         self.end_headers()
         self.wfile.write(content)
 
@@ -168,7 +321,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Disposition", f'{disposition}; filename="{safe_filename(filename)}"')
         self.send_header("Content-Length", str(len(content)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
+        self._security_headers()
         self.end_headers()
         self.wfile.write(content)
 
@@ -178,7 +331,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = self._path()
         if path == "/api/health":
-            self._send_json({"status": "ok", "version": "0.6.1"})
+            self._send_json({"status": "ok", "version": "0.7.0"})
             return
         if path == "/api/projects":
             with db_connection() as db:
@@ -202,9 +355,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/cylinders/pdf":
             query = parse_qs(urlparse(self.path).query)
-            base_url = str(query.get("url", [""])[0])
-            if not valid_web_url(base_url):
-                self._error("Indirizzo per i QR non valido")
+            if not external_url():
+                self._error("Configura external_url nelle opzioni dell’add-on prima di creare i QR", 503)
                 return
             with db_connection() as db:
                 rows = db.execute("SELECT * FROM cylinders ORDER BY refrigerant, name COLLATE NOCASE").fetchall()
@@ -213,23 +365,24 @@ class Handler(BaseHTTPRequestHandler):
                     history = db.execute(
                         "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (row["id"],)
                     ).fetchall()
-                    cylinders.append(cylinder_payload(row, history))
+                    item = cylinder_payload(row, history)
+                    item["public_url"] = public_cylinder_url(row)
+                    cylinders.append(item)
             language = "de" if query.get("lang", [""])[0] == "de" else "it"
-            pdf = generate_cylinder_pdf(cylinders, base_url, language)
+            pdf = generate_cylinder_pdf(cylinders, "", language)
             download = query.get("download", [""])[0] == "1"
             self._send_pdf(pdf, "magazzino-bombole.pdf", download)
             return
         if path.startswith("/api/cylinders/") and path.endswith("/qr"):
             cylinder_id = path.split("/")[3]
-            query = parse_qs(urlparse(self.path).query)
-            target_url = str(query.get("url", [""])[0])
-            if not valid_web_url(target_url):
-                self._error("Indirizzo QR non valido")
-                return
             with db_connection() as db:
-                row = db.execute("SELECT code FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+                row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
             if not row:
                 self._error("Bombola non trovata", 404)
+                return
+            target_url = public_cylinder_url(row)
+            if not target_url:
+                self._error("Configura external_url nelle opzioni dell’add-on prima di creare i QR", 503)
                 return
             qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=4)
             qr.add_data(target_url)
@@ -241,9 +394,8 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/cylinders/") and path.endswith("/pdf"):
             cylinder_id = path.split("/")[3]
             query = parse_qs(urlparse(self.path).query)
-            base_url = str(query.get("url", [""])[0])
-            if not valid_web_url(base_url):
-                self._error("Indirizzo per il QR non valido")
+            if not external_url():
+                self._error("Configura external_url nelle opzioni dell’add-on prima di creare i QR", 503)
                 return
             with db_connection() as db:
                 row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
@@ -254,8 +406,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._error("Bombola non trovata", 404)
                 return
             cylinder = cylinder_payload(row, history)
+            cylinder["public_url"] = public_cylinder_url(row)
             language = "de" if query.get("lang", [""])[0] == "de" else "it"
-            pdf = generate_cylinder_pdf([cylinder], base_url, language)
+            pdf = generate_cylinder_pdf([cylinder], "", language)
             download = query.get("download", [""])[0] == "1"
             self._send_pdf(pdf, f"scheda-bombola-{safe_filename(row['code'])}.pdf", download)
             return
@@ -332,49 +485,23 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/cylinders/") and path.endswith("/transactions"):
                 cylinder_id = path.split("/")[3]
-                operation = str(payload.get("operation") or "")
-                if operation not in {"weighing", "add", "remove"}:
-                    raise ValueError("Operazione non valida")
-                now = datetime.now(timezone.utc).isoformat()
+                self._send_json(record_cylinder_transaction(cylinder_id, payload, "Amministratore"), HTTPStatus.CREATED)
+                return
+            if path.startswith("/api/cylinders/") and path.endswith("/rotate-qr"):
+                cylinder_id = path.split("/")[3]
                 with db_connection() as db:
+                    cursor = db.execute("UPDATE cylinders SET qr_version = qr_version + 1 WHERE id = ?", (cylinder_id,))
                     row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
-                    if not row:
-                        self._error("Bombola non trovata", 404)
-                        return
-                    before = round(row["current_gas_kg"], 3)
-                    total = None
-                    amount = None
-                    if operation == "weighing":
-                        total = number(payload.get("total_weight_kg"), "il peso totale")
-                        if total < row["tare_kg"]:
-                            raise ValueError("Il peso totale non può essere inferiore alla tara")
-                        after = round(total - row["tare_kg"], 3)
-                        amount = round(after - before, 3)
-                    else:
-                        amount = number(payload.get("amount_kg"), "la quantità")
-                        if amount <= 0:
-                            raise ValueError("La quantità deve essere maggiore di zero")
-                        after = round(before + amount if operation == "add" else before - amount, 3)
-                    if after < 0:
-                        raise ValueError("Il prelievo supera il refrigerante disponibile")
-                    if row["capacity_kg"] is not None and after > row["capacity_kg"]:
-                        raise ValueError("Il refrigerante risultante supera la capacità della bombola")
-                    transaction_id = str(uuid.uuid4())
-                    notes = str(payload.get("notes") or "").strip()[:500]
-                    db.execute(
-                        "UPDATE cylinders SET current_gas_kg = ?, updated_at = ? WHERE id = ?",
-                        (after, now, cylinder_id),
-                    )
-                    db.execute(
-                        "INSERT INTO cylinder_transactions (id, cylinder_id, operation, amount_kg, total_weight_kg, gas_before_kg, gas_after_kg, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (transaction_id, cylinder_id, operation, amount, total, before, after, notes, now),
-                    )
-                    updated = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
-                self._send_json(cylinder_payload(updated), HTTPStatus.CREATED)
+                if not cursor.rowcount or not row:
+                    self._error("Bombola non trovata", 404)
+                    return
+                self._send_json({"rotated": cylinder_id, "public_url": public_cylinder_url(row)})
                 return
             self._error("Endpoint non trovato", 404)
         except (ValueError, json.JSONDecodeError) as exc:
             self._error(str(exc))
+        except LookupError as exc:
+            self._error(str(exc), 404)
         except Exception as exc:  # keep details in logs, not in the browser
             print(f"Errore: {exc!r}", flush=True)
             self._error("Errore interno durante l’elaborazione", 500)
@@ -417,13 +544,137 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", content_types[file_path.suffix])
         self.send_header("Content-Length", str(len(content)))
         self.send_header("Cache-Control", "no-cache")
-        self.send_header("X-Content-Type-Options", "nosniff")
+        self._security_headers()
         self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:")
         self.end_headers()
         self.wfile.write(content)
 
 
+class PublicHandler(Handler):
+    """Portale esterno limitato: nessuna API amministrativa viene esposta."""
+
+    server_version = "HVACCylinderPortal/0.7.0"
+
+    def log_message(self, fmt: str, *args: object) -> None:
+        # Non scrivere nei log token QR presenti nel percorso.
+        print(f"{self.address_string()} - richiesta portale bombole", flush=True)
+
+    def _parts(self) -> list[str]:
+        return [part for part in unquote(urlparse(self.path).path).split("/") if part]
+
+    def _client_key(self) -> str:
+        candidate = self.headers.get("CF-Connecting-IP", "").strip()
+        try:
+            return str(ipaddress.ip_address(candidate)) if candidate else self.client_address[0]
+        except ValueError:
+            return self.client_address[0]
+
+    def _authorized_cylinder(self, cylinder_id: str, token: str) -> sqlite3.Row | None:
+        with db_connection() as db:
+            row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+        return row if row and public_access_allowed(row, token) else None
+
+    def _serve_public_asset(self, filename: str) -> None:
+        allowed = {"public.html", "public.js", "public.css"}
+        if filename not in allowed:
+            self._error("Risorsa non trovata", 404)
+            return
+        file_path = WWW_DIR / filename
+        content = file_path.read_bytes()
+        content_types = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
+        self.send_response(200)
+        self.send_header("Content-Type", content_types[file_path.suffix])
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Cache-Control", "no-store")
+        self._security_headers()
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; base-uri 'none'; object-src 'none'; style-src 'self'; "
+            "script-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'",
+        )
+        self.end_headers()
+        self.wfile.write(content)
+
+    def do_GET(self) -> None:
+        parts = self._parts()
+        if parts == ["health"]:
+            self._send_json({"status": "ok", "service": "cylinder-portal", "version": "0.7.0"})
+            return
+        if parts in (["public.js"], ["public.css"]):
+            self._serve_public_asset(parts[0])
+            return
+        if len(parts) == 3 and parts[0] == "c":
+            if not self._authorized_cylinder(parts[1], parts[2]):
+                self._error("Collegamento QR non valido o revocato", 404)
+                return
+            self._serve_public_asset("public.html")
+            return
+        if len(parts) == 5 and parts[:3] == ["api", "public", "cylinders"]:
+            cylinder = self._authorized_cylinder(parts[3], parts[4])
+            if not cylinder:
+                self._error("Collegamento QR non valido o revocato", 404)
+                return
+            with db_connection() as db:
+                history = db.execute(
+                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (parts[3],)
+                ).fetchall()
+            self._send_json(public_cylinder_payload(cylinder, history))
+            return
+        self._error("Pagina non trovata", 404)
+
+    def do_POST(self) -> None:
+        parts = self._parts()
+        if len(parts) != 6 or parts[:3] != ["api", "public", "cylinders"] or parts[5] != "transactions":
+            self._error("Operazione non consentita", 404)
+            return
+        cylinder = self._authorized_cylinder(parts[3], parts[4])
+        if not cylinder:
+            self._error("Collegamento QR non valido o revocato", 404)
+            return
+        address = self._client_key()
+        if pin_rate_limited(address):
+            self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
+            return
+        try:
+            payload = self._json_body()
+            if len(str(load_options().get("operator_pin") or "")) < 4:
+                self._error("Configura un PIN operatore di almeno 4 caratteri", 503)
+                return
+            if not verify_operator_pin(address, payload.pop("pin", "")):
+                self._error("PIN non valido", 403)
+                return
+            operator_name = str(payload.pop("operator_name", "")).strip()
+            if not operator_name:
+                raise ValueError("Inserisci il nome dell’operatore")
+            result = record_cylinder_transaction(parts[3], payload, operator_name)
+            self._send_json(result, HTTPStatus.CREATED)
+        except (ValueError, json.JSONDecodeError) as exc:
+            self._error(str(exc))
+        except LookupError as exc:
+            self._error(str(exc), 404)
+        except Exception as exc:
+            print(f"Errore portale bombole: {type(exc).__name__}", flush=True)
+            self._error("Errore interno durante l’elaborazione", 500)
+
+    def do_DELETE(self) -> None:
+        self._error("Operazione non consentita", 405)
+
+    def do_PUT(self) -> None:
+        self._error("Operazione non consentita", 405)
+
+    def do_PATCH(self) -> None:
+        self._error("Operazione non consentita", 405)
+
+    def do_OPTIONS(self) -> None:
+        # Nessun CORS: il portale accetta richieste soltanto dalla propria origine.
+        self._error("Operazione non consentita", 405)
+
+
 if __name__ == "__main__":
     db_connection().close()
-    print(f"HVAC Sizing in ascolto sulla porta {PORT}", flush=True)
+    qr_secret()
+    public_server = ThreadingHTTPServer(("0.0.0.0", PUBLIC_PORT), PublicHandler)
+    threading.Thread(target=public_server.serve_forever, name="cylinder-portal", daemon=True).start()
+    print(f"Portale bombole sicuro in ascolto sulla porta {PUBLIC_PORT}", flush=True)
+    print(f"HVAC Sizing privato in ascolto sulla porta {PORT}", flush=True)
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
