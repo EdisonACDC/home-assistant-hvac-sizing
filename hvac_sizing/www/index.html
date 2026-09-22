@@ -15,6 +15,7 @@
       <h1>Dimensionamento Climatizzazione</h1>
     </div>
     <div class="top-actions">
+      <button id="go-cylinders" class="button ghost">Bombole</button>
       <button id="go-performance" class="button ghost">Diagnosi</button>
       <button id="go-commissioning" class="button ghost">Vuoto</button>
       <button id="new-project" class="button ghost">Nuovo</button>
@@ -32,6 +33,18 @@
         <button class="method active" data-method="quick">Calcolo rapido</button>
         <button class="method" data-method="professional">Calcolo professionale</button>
       </div>
+    </section>
+
+    <section id="cylinders" class="panel cylinders-panel">
+      <div class="section-title cylinders-title">
+        <div><p class="eyebrow">MAGAZZINO REFRIGERANTE</p><h2>Bombole e quantità residue</h2></div>
+        <button id="new-cylinder" class="button primary">+ Nuova bombola</button>
+      </div>
+      <div id="cylinder-summary" class="cylinder-summary"></div>
+      <label class="cylinder-search">Cerca bombola
+        <input id="cylinder-search" type="search" placeholder="Nome, codice o refrigerante" autocomplete="off">
+      </label>
+      <div id="cylinders-list" class="cylinders-list"></div>
     </section>
 
     <section id="performance-test" class="panel performance-panel">
@@ -133,8 +146,58 @@
   </main>
 
   <dialog id="projects-dialog"><div class="dialog-head"><h2>Progetti salvati</h2><button id="close-projects" class="icon-button">×</button></div><div id="projects-list" class="projects-list"></div></dialog>
+  <dialog id="new-cylinder-dialog" class="cylinder-dialog">
+    <div class="dialog-head"><h2>Registra nuova bombola</h2><button id="close-new-cylinder" class="icon-button" aria-label="Chiudi">×</button></div>
+    <form id="new-cylinder-form" class="dialog-body">
+      <div class="grid two">
+        <label>Nome bombola<input name="name" required maxlength="120" placeholder="es. R32 nuova 01"></label>
+        <label>Codice identificativo<input name="code" required maxlength="50" placeholder="es. R32-001"></label>
+        <label>Refrigerante<input name="refrigerant" list="refrigerant-list" required maxlength="30" value="R32" autocomplete="off"></label>
+        <datalist id="refrigerant-list"><option value="R32"><option value="R410A"><option value="R134a"><option value="R290"><option value="R404A"><option value="R407C"><option value="R1234yf"><option value="R454B"><option value="R513A"></datalist>
+        <label>Tara bombola kg<input id="new-cylinder-tare" name="tare_kg" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="es. 4,250"></label>
+        <label>Peso totale attuale kg<input id="new-cylinder-total" name="total_weight_kg" type="number" min="0" step="0.001" inputmode="decimal" required placeholder="bombola + gas"></label>
+        <label>Capacità refrigerante kg (opzionale)<input name="capacity_kg" type="number" min="0" step="0.001" inputmode="decimal"></label>
+      </div>
+      <div class="net-preview"><span>Gas effettivo calcolato</span><strong id="new-cylinder-net">0,000 kg</strong><small>Peso totale − tara</small></div>
+      <label>Note<textarea name="notes" rows="2" maxlength="500" placeholder="Marca, numero di serie, proprietà…"></textarea></label>
+      <button class="button primary full" type="submit">Salva bombola e crea QR</button>
+    </form>
+  </dialog>
+
+  <dialog id="cylinder-dialog" class="cylinder-dialog wide">
+    <div class="dialog-head"><div><p class="eyebrow" id="cylinder-detail-code"></p><h2 id="cylinder-detail-name">Bombola</h2></div><button id="close-cylinder" class="icon-button" aria-label="Chiudi">×</button></div>
+    <div class="dialog-body">
+      <div id="cylinder-detail-metrics" class="cylinder-detail-metrics"></div>
+      <div class="cylinder-workspace">
+        <form id="cylinder-operation-form" class="operation-card">
+          <h3>Registra movimento</h3>
+          <label>Operazione
+            <select id="cylinder-operation" name="operation">
+              <option value="weighing">Pesatura bombola</option>
+              <option value="remove">Prelievo refrigerante</option>
+              <option value="add">Aggiunta refrigerante</option>
+            </select>
+          </label>
+          <label id="weighing-field">Peso totale sulla bilancia kg<input id="operation-total" name="total_weight_kg" type="number" min="0" step="0.001" inputmode="decimal" placeholder="bombola + gas"></label>
+          <label id="amount-field" class="hidden">Quantità refrigerante kg<input id="operation-amount" name="amount_kg" type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="es. 0,650"></label>
+          <div id="operation-preview" class="operation-preview"></div>
+          <label>Note / impianto / cliente<textarea name="notes" rows="2" maxlength="500"></textarea></label>
+          <button class="button primary full" type="submit">Registra movimento</button>
+        </form>
+        <div class="qr-card">
+          <h3>QR code bombola</h3>
+          <img id="cylinder-qr" alt="QR code della bombola">
+          <p>Scansionandolo si apre direttamente questa scheda.</p>
+          <div class="qr-actions"><a id="download-cylinder-qr" class="button secondary" download>Scarica QR</a><button id="print-cylinder-qr" class="button ghost" type="button">Stampa</button></div>
+        </div>
+      </div>
+      <div class="history-head"><h3>Storico movimenti</h3><button id="delete-cylinder" class="delete-room" type="button">Elimina bombola</button></div>
+      <div id="cylinder-history" class="history-list"></div>
+    </div>
+  </dialog>
   <div id="toast" class="toast" role="status"></div>
   <script src="app.js"></script>
   <script src="diagnostics.js"></script>
+  <script src="cylinders.js"></script>
 </body>
 </html>
