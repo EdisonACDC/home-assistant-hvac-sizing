@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+
+- Aggiunto nel registro QR il pulsante “Chiudi e disconnetti”.
+- Alla chiusura la sessione dell'operatore viene eliminata immediatamente dal telefono.
+- Su iPhone/Safari, se la scheda non può essere chiusa automaticamente, il portale torna alla pagina precedente mantenendo l'utente disconnesso.
+
 ## 0.8.1
 
 - Corretto su Safari/iPhone il salvataggio degli operatori: la lista si aggiorna subito senza chiudere e riaprire la finestra.

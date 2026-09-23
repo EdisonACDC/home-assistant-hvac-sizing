@@ -1,6 +1,6 @@
 FROM ghcr.io/home-assistant/base:latest
 
-ARG BUILD_VERSION=0.8.1
+ARG BUILD_VERSION=0.8.2
 ARG BUILD_ARCH
 
 LABEL \
