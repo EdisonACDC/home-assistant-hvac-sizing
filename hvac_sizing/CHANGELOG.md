@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2
+
+- Risolto il conflitto di avvio con la porta host 8100 già occupata.
+- Il portale continua ad ascoltare sulla porta interna 8100, ma usa per impostazione predefinita la porta host 48100.
+
 ## 0.7.1
 
 - Impediti invii multipli durante il salvataggio di bombole e movimenti su dispositivi mobili.
