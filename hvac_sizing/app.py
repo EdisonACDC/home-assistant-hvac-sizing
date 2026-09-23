@@ -341,7 +341,7 @@ def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: 
     return cylinder_payload(updated)
 
 
-APP_VERSION = "0.8.0"
+APP_VERSION = "0.8.1"
 
 
 class Handler(BaseHTTPRequestHandler):

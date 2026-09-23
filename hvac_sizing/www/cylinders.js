@@ -81,16 +81,17 @@ function updateNewCylinderPreview() {
 
 async function createCylinder(event) {
   event.preventDefault();
+  const formElement = event.currentTarget;
   formError('#new-cylinder-error');
-  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  const submitButton = formElement.querySelector('[type="submit"]');
   if (submitButton?.disabled) return;
   if (submitButton) submitButton.disabled = true;
-  const form = new FormData(event.currentTarget);
+  const form = new FormData(formElement);
   const payload = Object.fromEntries(form.entries());
   ['tare_kg', 'total_weight_kg', 'capacity_kg'].forEach(key => { payload[key] = decimalText(payload[key]); });
   try {
     const created = await api('cylinders', {method: 'POST', body: JSON.stringify(payload)});
-    event.currentTarget.reset();
+    formElement.reset();
     updateNewCylinderPreview();
     $('#new-cylinder-dialog').close();
     await loadCylinders();
@@ -174,18 +175,19 @@ function updateOperationPreview() {
 
 async function saveCylinderOperation(event) {
   event.preventDefault();
+  const formElement = event.currentTarget;
   formError('#cylinder-operation-error');
-  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  const submitButton = formElement.querySelector('[type="submit"]');
   if (submitButton?.disabled) return;
   if (submitButton) submitButton.disabled = true;
-  const form = new FormData(event.currentTarget);
+  const form = new FormData(formElement);
   const payload = Object.fromEntries(form.entries());
   ['total_weight_kg', 'amount_kg'].forEach(key => {
     if (key in payload) payload[key] = decimalText(payload[key]);
   });
   try {
     await api(`cylinders/${activeCylinder.id}/transactions`, {method: 'POST', body: JSON.stringify(payload)});
-    event.currentTarget.reset();
+    formElement.reset();
     $('#cylinder-operation').value = 'weighing';
     setOperationFields();
     await loadCylinders();
@@ -253,14 +255,15 @@ function renderOperators() {
 
 async function createOperator(event) {
   event.preventDefault();
+  const formElement = event.currentTarget;
   formError('#operator-form-error');
-  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  const submitButton = formElement.querySelector('[type="submit"]');
   if (submitButton?.disabled) return;
   if (submitButton) submitButton.disabled = true;
   try {
-    const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const payload = Object.fromEntries(new FormData(formElement).entries());
     await api('operators', {method: 'POST', body: JSON.stringify(payload)});
-    event.currentTarget.reset();
+    formElement.reset();
     await loadOperators();
     toast('Operatore aggiunto');
   } catch (error) {

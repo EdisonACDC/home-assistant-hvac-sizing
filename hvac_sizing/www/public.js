@@ -83,14 +83,15 @@
   }
   $('#login-form').addEventListener('submit',async event=>{
     event.preventDefault();
+    const formElement=event.currentTarget;
     $('#login-error').classList.add('hidden');
     $('#login-submit').disabled=true;
     try {
-      const payload=Object.fromEntries(new FormData(event.currentTarget).entries());
+      const payload=Object.fromEntries(new FormData(formElement).entries());
       const result=await api(`${endpoint}/login`,{method:'POST',body:JSON.stringify(payload)},false);
       sessionToken=result.session_token;
       sessionStorage.setItem(sessionKey,sessionToken);
-      event.currentTarget.querySelector('[name="pin"]').value='';
+      formElement.querySelector('[name="pin"]').value='';
       await load();
     } catch(error) {
       $('#login-error').textContent=error.message;
@@ -99,17 +100,18 @@
   });
   $('#operation-form').addEventListener('submit',async event=>{
     event.preventDefault();
+    const formElement=event.currentTarget;
     $('#form-error').classList.add('hidden');
-    const form=new FormData(event.currentTarget);
+    const form=new FormData(formElement);
     const payload=Object.fromEntries(form.entries());
     payload.total_weight_kg=decimal(payload.total_weight_kg);
     payload.amount_kg=decimal(payload.amount_kg);
     $('#submit').disabled=true;
     try {
       await api(`${endpoint}/transactions`,{method:'POST',body:JSON.stringify(payload)});
-      event.currentTarget.querySelector('[name="total_weight_kg"]').value='';
-      event.currentTarget.querySelector('[name="amount_kg"]').value='';
-      event.currentTarget.querySelector('[name="notes"]').value='';
+      formElement.querySelector('[name="total_weight_kg"]').value='';
+      formElement.querySelector('[name="amount_kg"]').value='';
+      formElement.querySelector('[name="notes"]').value='';
       cylinder=await api(endpoint);
       render();
       $('#form-error').textContent=t('saved','Movimento registrato correttamente');

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.1
+
+- Corretto su Safari/iPhone il salvataggio degli operatori: la lista si aggiorna subito senza chiudere e riaprire la finestra.
+- Corretto l'accesso al registro tramite QR con nome operatore e PIN.
+- Resa stabile la gestione asincrona dei moduli per bombole e movimenti.
+
 ## 0.8.0
 
 - Gestione amministrativa degli operatori autorizzati al registro bombole.
