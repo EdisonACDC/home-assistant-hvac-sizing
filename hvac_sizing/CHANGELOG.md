@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.3
+
+- Interfaccia del registro QR adattata automaticamente a iPhone, Android, tablet e computer.
+- Eliminato lo scorrimento orizzontale causato da moduli, collegamenti e contenuti lunghi.
+- Finestre amministrative a schermo intero sui telefoni e comandi ridisposti sui display più stretti.
+- Campi ottimizzati per evitare lo zoom automatico durante la compilazione su iPhone.
+
 ## 0.8.2
 
 - Aggiunto nel registro QR il pulsante “Chiudi e disconnetti”.

@@ -14,7 +14,9 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: radial-gradient(circle at 85% 0%, #123856 0, var(--bg) 38rem); color: var(--text); min-height: 100vh; }
+html { width: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { width: 100%; margin: 0; overflow-x: hidden; background: radial-gradient(circle at 85% 0%, #123856 0, var(--bg) 38rem); color: var(--text); min-height: 100vh; min-height: 100dvh; }
+.topbar > *, main > *, .grid > *, .project-panel > *, .section-title > *, .dialog-head > *, .operator-row > *, .history-row > * { min-width: 0; }
 .topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem); background: rgba(7, 19, 30, .9); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }
 h1, h2, h3, p { margin: 0; }
 h1 { font-size: clamp(1.15rem, 3vw, 1.7rem); }
@@ -28,7 +30,8 @@ main { max-width: 1260px; margin: 0 auto; padding: 1.2rem clamp(.8rem, 3vw, 2rem
 .project-panel .method-switch { grid-column: 1 / span 2; }
 .project-actions { grid-column: 3; display: flex; justify-content: flex-end; gap: .55rem; }
 label { display: flex; flex-direction: column; gap: .4rem; color: var(--muted); font-size: .76rem; font-weight: 700; }
-input, select, textarea { width: 100%; min-height: 42px; border: 1px solid var(--line); border-radius: 10px; background: #071b2a; color: var(--text); padding: .65rem .72rem; font: inherit; outline: none; }
+input, select, textarea, button, .button { max-width: 100%; }
+input, select, textarea { width: 100%; min-width: 0; min-height: 42px; border: 1px solid var(--line); border-radius: 10px; background: #071b2a; color: var(--text); padding: .65rem .72rem; font: inherit; outline: none; }
 input:focus, select:focus, textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(59,201,219,.12); }
 textarea { resize: vertical; }
 .button, .method, .icon-button { border: 0; border-radius: 11px; color: var(--text); font-weight: 800; cursor: pointer; min-height: 42px; padding: .65rem .95rem; }
@@ -70,7 +73,7 @@ textarea { resize: vertical; }
 .result-table th { color: var(--muted); font-size: .72rem; text-transform: uppercase; }
 .disclaimer { color: var(--muted); font-size: .76rem; margin-top: 1rem; line-height: 1.5; }
 .hidden { display: none !important; }
-dialog { color: var(--text); width: min(620px, calc(100vw - 2rem)); border: 1px solid var(--line); padding: 0; }
+dialog { color: var(--text); width: min(620px, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); max-height: calc(100dvh - 2rem); border: 1px solid var(--line); padding: 0; }
 dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .dialog-head { padding: 1rem; border-bottom: 1px solid var(--line); }
 .icon-button { background: transparent; font-size: 1.5rem; padding: .2rem .6rem; }
@@ -174,8 +177,8 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 }
 @media (max-width: 620px) {
   .topbar { align-items: flex-start; flex-direction: column; }
-  .top-actions { width: 100%; overflow-x: auto; }
-  .top-actions .button { flex: 1; padding-inline: .45rem; white-space: nowrap; }
+  .top-actions { width: 100%; flex-wrap: wrap; overflow: visible; }
+  .top-actions .button { flex: 1 1 auto; padding-inline: .45rem; white-space: normal; }
   .project-panel, .grid.six, .grid.four { grid-template-columns: 1fr 1fr; }
   .project-panel > label:first-child { grid-column: 1 / -1; }
   .project-actions { justify-content: stretch; }
@@ -204,6 +207,20 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
   .operator-row { grid-template-columns: 1fr; }
   .operator-actions { justify-content: stretch; }
   .operator-actions .button { flex: 1; }
+  input, select, textarea { font-size: 16px; }
+  dialog, .cylinder-dialog.wide { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; }
+  .dialog-body { max-height: calc(100dvh - 72px); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 420px) {
+  main { padding-inline: .7rem; }
+  .panel, .room-body { padding: .85rem; }
+  .project-panel, .grid.six, .grid.four, .totals, .cylinder-detail-metrics { grid-template-columns: minmax(0, 1fr); }
+  .cylinders-list { grid-template-columns: minmax(0, 1fr); }
+  .cylinder-main-actions .button, .operator-actions .button, .sheet-actions .button { flex: 1 1 100%; }
+  .history-row { grid-template-columns: minmax(0, 1fr); }
+  .history-row time { grid-column: auto; }
+  .history-value { text-align: left; }
 }
 
 @media print {
