@@ -264,8 +264,11 @@ def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: 
     return cylinder_payload(updated)
 
 
+APP_VERSION = "0.7.1"
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HVACSizing/0.7.0"
+    server_version = f"HVACSizing/{APP_VERSION}"
 
     def log_message(self, fmt: str, *args: object) -> None:
         print(f"{self.address_string()} - {fmt % args}", flush=True)
@@ -331,7 +334,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         path = self._path()
         if path == "/api/health":
-            self._send_json({"status": "ok", "version": "0.7.0"})
+            self._send_json({"status": "ok", "version": APP_VERSION})
             return
         if path == "/api/projects":
             with db_connection() as db:
@@ -553,7 +556,7 @@ class Handler(BaseHTTPRequestHandler):
 class PublicHandler(Handler):
     """Portale esterno limitato: nessuna API amministrativa viene esposta."""
 
-    server_version = "HVACCylinderPortal/0.7.0"
+    server_version = f"HVACCylinderPortal/{APP_VERSION}"
 
     def log_message(self, fmt: str, *args: object) -> None:
         # Non scrivere nei log token QR presenti nel percorso.
@@ -598,7 +601,7 @@ class PublicHandler(Handler):
     def do_GET(self) -> None:
         parts = self._parts()
         if parts == ["health"]:
-            self._send_json({"status": "ok", "service": "cylinder-portal", "version": "0.7.0"})
+            self._send_json({"status": "ok", "service": "cylinder-portal", "version": APP_VERSION})
             return
         if parts in (["public.js"], ["public.css"]):
             self._serve_public_asset(parts[0])

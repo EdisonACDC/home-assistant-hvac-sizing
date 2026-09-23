@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+- Impediti invii multipli durante il salvataggio di bombole e movimenti su dispositivi mobili.
+- Forzato l'aggiornamento dell'add-on per sostituire i vecchi QR Ingress con il portale esterno sicuro.
+- Uniformata la versione delle API private e pubbliche.
+
 ## 0.7.0
 
 - Nuovo portale esterno bombole separato dall'interfaccia amministrativa.

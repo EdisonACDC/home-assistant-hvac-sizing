@@ -81,6 +81,9 @@ function updateNewCylinderPreview() {
 async function createCylinder(event) {
   event.preventDefault();
   formError('#new-cylinder-error');
+  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  if (submitButton?.disabled) return;
+  if (submitButton) submitButton.disabled = true;
   const form = new FormData(event.currentTarget);
   const payload = Object.fromEntries(form.entries());
   ['tare_kg', 'total_weight_kg', 'capacity_kg'].forEach(key => { payload[key] = decimalText(payload[key]); });
@@ -95,6 +98,8 @@ async function createCylinder(event) {
   } catch (error) {
     formError('#new-cylinder-error', error.message);
     toast(error.message, true);
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
@@ -169,6 +174,9 @@ function updateOperationPreview() {
 async function saveCylinderOperation(event) {
   event.preventDefault();
   formError('#cylinder-operation-error');
+  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  if (submitButton?.disabled) return;
+  if (submitButton) submitButton.disabled = true;
   const form = new FormData(event.currentTarget);
   const payload = Object.fromEntries(form.entries());
   ['total_weight_kg', 'amount_kg'].forEach(key => {
@@ -185,6 +193,8 @@ async function saveCylinderOperation(event) {
   } catch (error) {
     formError('#cylinder-operation-error', error.message);
     toast(error.message, true);
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
 
