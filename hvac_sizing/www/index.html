@@ -46,6 +46,7 @@
       <div class="section-title cylinders-title">
         <div><p class="eyebrow">MAGAZZINO REFRIGERANTE</p><h2>Bombole e quantità residue</h2></div>
         <div class="cylinder-main-actions">
+          <button id="manage-operators" class="button ghost" type="button">Operatori QR</button>
           <a id="download-all-cylinders-pdf" class="button secondary" download>PDF magazzino</a>
           <button id="print-all-cylinders" class="button ghost" type="button">Stampa schede</button>
           <button id="new-cylinder" class="button primary">+ Nuova bombola</button>
@@ -215,6 +216,22 @@
       </div>
       <div class="history-head"><h3>Storico movimenti</h3><button id="delete-cylinder" class="delete-room" type="button">Elimina bombola</button></div>
       <div id="cylinder-history" class="history-list"></div>
+    </div>
+  </dialog>
+  <dialog id="operators-dialog" class="cylinder-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">ACCESSI QR</p><h2>Operatori autorizzati</h2></div><button id="close-operators" class="icon-button" aria-label="Chiudi">×</button></div>
+    <div class="dialog-body">
+      <p class="operator-help">Solo gli operatori attivi possono visualizzare il registro dopo avere inserito nome e PIN. Ogni operazione viene registrata con il loro nome.</p>
+      <form id="new-operator-form" class="operator-form">
+        <div class="grid two">
+          <label>Nome operatore<input name="name" required maxlength="120" autocomplete="off" placeholder="es. Mario Rossi"></label>
+          <label>PIN personale<input name="pin" type="password" required minlength="4" maxlength="32" autocomplete="new-password" inputmode="numeric" placeholder="Minimo 4 caratteri"></label>
+        </div>
+        <div id="operator-form-error" class="form-error hidden" role="alert"></div>
+        <button class="button primary full" type="submit">Aggiungi operatore</button>
+      </form>
+      <div class="history-head"><h3>Elenco operatori</h3><small id="operator-count"></small></div>
+      <div id="operators-list" class="operators-list"></div>
     </div>
   </dialog>
   <div id="toast" class="toast" role="status"></div>

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0
+
+- Gestione amministrativa degli operatori autorizzati al registro bombole.
+- Nome e PIN personale obbligatori prima di visualizzare i dati della bombola.
+- PIN memorizzati soltanto come hash PBKDF2 con salt casuale.
+- Sessioni temporanee limitate alla singola bombola e revocabili disattivando l'operatore, cambiando il PIN o rigenerando il QR.
+- Ogni movimento riporta automaticamente il nome dell'operatore autenticato.
+
 ## 0.7.2
 
 - Risolto il conflitto di avvio con la porta host 8100 già occupata.

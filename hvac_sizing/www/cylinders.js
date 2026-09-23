@@ -1,5 +1,6 @@
 let cylinderItems = [];
 let activeCylinder = null;
+let operatorItems = [];
 const ctr = value => window.AppI18n?.translate(value) || value;
 
 const kg = value => `${Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg`;
@@ -232,10 +233,83 @@ async function rotateActiveCylinderQr() {
   } catch (error) { toast(error.message, true); }
 }
 
+async function loadOperators() {
+  operatorItems = await api('operators');
+  renderOperators();
+}
+
+function renderOperators() {
+  $('#operator-count').textContent = `${operatorItems.length} ${operatorItems.length === 1 ? 'operatore' : 'operatori'}`;
+  $('#operators-list').innerHTML = operatorItems.length ? operatorItems.map(operator => `
+    <div class="operator-row" data-operator="${operator.id}">
+      <div><strong>${escapeHtml(operator.name)}</strong><span class="operator-status${operator.active ? '' : ' inactive'}">${operator.active ? 'ATTIVO' : 'DISATTIVATO'}</span><small>${operator.active ? 'Può accedere dai QR' : 'Accesso revocato'}</small></div>
+      <div class="operator-actions">
+        <button class="button secondary" type="button" data-operator-action="toggle">${operator.active ? 'Disattiva' : 'Attiva'}</button>
+        <button class="button ghost" type="button" data-operator-action="pin">Cambia PIN</button>
+        <button class="delete-room" type="button" data-operator-action="delete">Elimina</button>
+      </div>
+    </div>`).join('') : '<div class="empty-state">Nessun operatore autorizzato.</div>';
+}
+
+async function createOperator(event) {
+  event.preventDefault();
+  formError('#operator-form-error');
+  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  if (submitButton?.disabled) return;
+  if (submitButton) submitButton.disabled = true;
+  try {
+    const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    await api('operators', {method: 'POST', body: JSON.stringify(payload)});
+    event.currentTarget.reset();
+    await loadOperators();
+    toast('Operatore aggiunto');
+  } catch (error) {
+    formError('#operator-form-error', error.message);
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
+}
+
+async function handleOperatorAction(event) {
+  const button = event.target.closest('[data-operator-action]');
+  const row = event.target.closest('[data-operator]');
+  if (!button || !row) return;
+  const operator = operatorItems.find(item => item.id === row.dataset.operator);
+  if (!operator) return;
+  try {
+    if (button.dataset.operatorAction === 'toggle') {
+      await api(`operators/${operator.id}/toggle`, {method: 'POST', body: '{}'});
+      toast(operator.active ? 'Accesso operatore revocato' : 'Operatore riattivato');
+    } else if (button.dataset.operatorAction === 'pin') {
+      const pin = prompt(ctr('Inserisci il nuovo PIN personale'));
+      if (pin === null) return;
+      await api(`operators/${operator.id}/pin`, {method: 'POST', body: JSON.stringify({pin})});
+      toast('PIN aggiornato e sessioni precedenti revocate');
+    } else if (button.dataset.operatorAction === 'delete') {
+      if (!confirm(`${ctr('Eliminare operatore')} ${operator.name}?`)) return;
+      await api(`operators/${operator.id}`, {method: 'DELETE'});
+      toast('Operatore eliminato');
+    }
+    await loadOperators();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
 $('#new-cylinder').addEventListener('click', () => {
   formError('#new-cylinder-error');
   $('#new-cylinder-dialog').showModal();
 });
+$('#manage-operators').addEventListener('click', async () => {
+  formError('#operator-form-error');
+  try {
+    await loadOperators();
+    $('#operators-dialog').showModal();
+  } catch (error) { toast(error.message, true); }
+});
+$('#close-operators').addEventListener('click', () => $('#operators-dialog').close());
+$('#new-operator-form').addEventListener('submit', createOperator);
+$('#operators-list').addEventListener('click', handleOperatorAction);
 $('#close-new-cylinder').addEventListener('click', () => $('#new-cylinder-dialog').close());
 $('#close-cylinder').addEventListener('click', closeCylinderDialog);
 $('#cylinder-dialog').addEventListener('cancel', event => {

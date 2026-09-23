@@ -1,10 +1,10 @@
 (() => {
   const dictionary = {
     it: {
-      secure_portal:'PORTALE SICURO BOMBOLE', title:'Registro refrigerante', loading:'Caricamento scheda…', limited_access:'Accesso limitato', single_cylinder:'Solo questa bombola', gas_remaining:'Gas effettivo residuo', total_weight:'Peso totale', tare:'Tara bombola', capacity:'Capacità', register:'REGISTRAZIONE', movement:'Carico, scarico o pesatura', operator:'Nome operatore', pin:'PIN operatore', operation:'Operazione', weighing:'Pesatura bombola', add:'Aggiunta refrigerante', remove:'Prelievo refrigerante', scale_weight:'Peso totale sulla bilancia kg', amount:'Quantità refrigerante kg', notes:'Note / impianto / cliente', save:'Registra movimento', audit:'REGISTRO', history:'Storico movimenti', security:'Sicurezza', security_text:'Questo collegamento autorizza soltanto la bombola mostrata. Il PIN non viene salvato sul telefono.', admin:'Accesso amministratore Home Assistant', empty:'Nessun movimento registrato.', initial:'Registrazione iniziale', saved:'Movimento registrato correttamente', invalid_link:'Collegamento QR non valido'
+      secure_portal:'PORTALE SICURO BOMBOLE', title:'Registro refrigerante', loading:'Caricamento scheda…', operator_access:'ACCESSO OPERATORE', identify:'Identificati per visualizzare il registro', authorized_only:'Possono entrare soltanto gli operatori salvati e attivati dall’amministratore.', login:'Accedi al registro', logged_as:'Operatore collegato', logout:'Esci', limited_access:'Accesso limitato', single_cylinder:'Solo questa bombola', gas_remaining:'Gas effettivo residuo', total_weight:'Peso totale', tare:'Tara bombola', capacity:'Capacità', register:'REGISTRAZIONE', movement:'Carico, scarico o pesatura', operator:'Nome operatore', pin:'PIN personale', operation:'Operazione', weighing:'Pesatura bombola', add:'Aggiunta refrigerante', remove:'Prelievo refrigerante', scale_weight:'Peso totale sulla bilancia kg', amount:'Quantità refrigerante kg', notes:'Note / impianto / cliente', save:'Registra movimento', audit:'REGISTRO', history:'Storico movimenti', security:'Sicurezza', security_text:'L’accesso è personale, temporaneo e limitato alla bombola mostrata. Il PIN non viene salvato sul telefono.', admin:'Accesso amministratore Home Assistant', empty:'Nessun movimento registrato.', initial:'Registrazione iniziale', saved:'Movimento registrato correttamente', invalid_link:'Collegamento QR non valido'
     },
     de: {
-      secure_portal:'SICHERES FLASCHENPORTAL', title:'Kältemittelregister', loading:'Datenblatt wird geladen…', limited_access:'Eingeschränkter Zugriff', single_cylinder:'Nur diese Flasche', gas_remaining:'Tatsächlicher Restinhalt', total_weight:'Gesamtgewicht', tare:'Flaschen-Tara', capacity:'Kapazität', register:'ERFASSUNG', movement:'Zugabe, Entnahme oder Wägung', operator:'Name des Bedieners', pin:'Bediener-PIN', operation:'Vorgang', weighing:'Flasche wiegen', add:'Kältemittel hinzufügen', remove:'Kältemittel entnehmen', scale_weight:'Gesamtgewicht auf der Waage kg', amount:'Kältemittelmenge kg', notes:'Notizen / Anlage / Kunde', save:'Vorgang erfassen', audit:'REGISTER', history:'Bewegungsverlauf', security:'Sicherheit', security_text:'Dieser Link berechtigt ausschließlich zum Zugriff auf die angezeigte Flasche. Die PIN wird nicht auf dem Telefon gespeichert.', admin:'Administratorzugang über Home Assistant', empty:'Keine Bewegung erfasst.', initial:'Ersterfassung', saved:'Vorgang erfolgreich erfasst', invalid_link:'Ungültiger oder widerrufener QR-Link'
+      secure_portal:'SICHERES FLASCHENPORTAL', title:'Kältemittelregister', loading:'Datenblatt wird geladen…', operator_access:'BEDIENERZUGANG', identify:'Identifizieren Sie sich, um das Register anzuzeigen', authorized_only:'Nur vom Administrator gespeicherte und aktivierte Bediener dürfen sich anmelden.', login:'Register öffnen', logged_as:'Angemeldeter Bediener', logout:'Abmelden', limited_access:'Eingeschränkter Zugriff', single_cylinder:'Nur diese Flasche', gas_remaining:'Tatsächlicher Restinhalt', total_weight:'Gesamtgewicht', tare:'Flaschen-Tara', capacity:'Kapazität', register:'ERFASSUNG', movement:'Zugabe, Entnahme oder Wägung', operator:'Name des Bedieners', pin:'Persönliche PIN', operation:'Vorgang', weighing:'Flasche wiegen', add:'Kältemittel hinzufügen', remove:'Kältemittel entnehmen', scale_weight:'Gesamtgewicht auf der Waage kg', amount:'Kältemittelmenge kg', notes:'Notizen / Anlage / Kunde', save:'Vorgang erfassen', audit:'REGISTER', history:'Bewegungsverlauf', security:'Sicherheit', security_text:'Der Zugriff ist persönlich, zeitlich begrenzt und auf die angezeigte Flasche beschränkt. Die PIN wird nicht auf dem Telefon gespeichert.', admin:'Administratorzugang über Home Assistant', empty:'Keine Bewegung erfasst.', initial:'Ersterfassung', saved:'Vorgang erfolgreich erfasst', invalid_link:'Ungültiger oder widerrufener QR-Link'
     }
   };
   const $ = selector => document.querySelector(selector);
@@ -15,6 +15,8 @@
   const cylinderId = parts[0] === 'c' ? parts[1] : '';
   const token = parts[0] === 'c' ? parts[2] : '';
   const endpoint = `/api/public/cylinders/${encodeURIComponent(cylinderId)}/${encodeURIComponent(token)}`;
+  const sessionKey = `cylinder-session-${cylinderId}`;
+  let sessionToken = sessionStorage.getItem(sessionKey) || '';
 
   function t(key, fallback) { return dictionary[language]?.[key] || fallback || key; }
   function applyLanguage() {
@@ -30,8 +32,9 @@
     else normalized=normalized.replace(',','.');
     return normalized;
   }
-  async function api(url, options={}) {
-    const response = await fetch(url,{headers:{'Content-Type':'application/json'},...options});
+  async function api(url, options={}, authenticated=true) {
+    const headers={'Content-Type':'application/json',...(authenticated&&sessionToken?{'Authorization':`Bearer ${sessionToken}`}:{})};
+    const response = await fetch(url,{...options,headers:{...headers,...(options.headers||{})}});
     const data = await response.json().catch(()=>({error:'Errore di comunicazione'}));
     if (!response.ok) throw new Error(data.error || 'Operazione non riuscita');
     return data;
@@ -64,11 +67,36 @@
   }
   async function load() {
     if (!cylinderId || !token) throw new Error(t('invalid_link','Collegamento QR non valido'));
-    cylinder=await api(endpoint);
     $('#loading').classList.add('hidden');
-    $('#content').classList.remove('hidden');
-    render();
+    if (!sessionToken) { $('#login-panel').classList.remove('hidden'); return; }
+    try {
+      cylinder=await api(endpoint);
+      $('#logged-operator').textContent=cylinder.operator_name;
+      $('#login-panel').classList.add('hidden');
+      $('#content').classList.remove('hidden');
+      render();
+    } catch(error) {
+      sessionToken=''; sessionStorage.removeItem(sessionKey);
+      $('#content').classList.add('hidden');
+      $('#login-panel').classList.remove('hidden');
+    }
   }
+  $('#login-form').addEventListener('submit',async event=>{
+    event.preventDefault();
+    $('#login-error').classList.add('hidden');
+    $('#login-submit').disabled=true;
+    try {
+      const payload=Object.fromEntries(new FormData(event.currentTarget).entries());
+      const result=await api(`${endpoint}/login`,{method:'POST',body:JSON.stringify(payload)},false);
+      sessionToken=result.session_token;
+      sessionStorage.setItem(sessionKey,sessionToken);
+      event.currentTarget.querySelector('[name="pin"]').value='';
+      await load();
+    } catch(error) {
+      $('#login-error').textContent=error.message;
+      $('#login-error').classList.remove('hidden');
+    } finally { $('#login-submit').disabled=false; }
+  });
   $('#operation-form').addEventListener('submit',async event=>{
     event.preventDefault();
     $('#form-error').classList.add('hidden');
@@ -79,7 +107,6 @@
     $('#submit').disabled=true;
     try {
       await api(`${endpoint}/transactions`,{method:'POST',body:JSON.stringify(payload)});
-      event.currentTarget.querySelector('[name="pin"]').value='';
       event.currentTarget.querySelector('[name="total_weight_kg"]').value='';
       event.currentTarget.querySelector('[name="amount_kg"]').value='';
       event.currentTarget.querySelector('[name="notes"]').value='';
@@ -97,6 +124,7 @@
     } finally { $('#submit').disabled=false; }
   });
   $('#operation').addEventListener('change',operationFields);
+  $('#logout').addEventListener('click',()=>{sessionToken='';sessionStorage.removeItem(sessionKey);cylinder=null;$('#content').classList.add('hidden');$('#login-panel').classList.remove('hidden');});
   document.querySelectorAll('[data-lang]').forEach(button=>button.addEventListener('click',()=>{language=button.dataset.lang;localStorage.setItem('cylinder-portal-language',language);applyLanguage();}));
   applyLanguage(); operationFields();
   load().catch(error=>{$('#loading').classList.add('hidden');$('#error').textContent=error.message;$('#error').classList.remove('hidden');});

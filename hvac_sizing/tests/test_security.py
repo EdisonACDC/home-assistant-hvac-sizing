@@ -33,12 +33,17 @@ class PublicPortalSecurityTests(unittest.TestCase):
         app.OPTIONS_PATH = root / "options.json"
         app.QR_SECRET_PATH = root / "qr-secret.key"
         app.FAILED_PIN_ATTEMPTS.clear()
-        app.OPTIONS_PATH.write_text(json.dumps({"external_url": "https://bombole.example", "operator_pin": "2468"}))
+        app.OPTIONS_PATH.write_text(json.dumps({"external_url": "https://bombole.example"}))
         now = datetime.now(timezone.utc).isoformat()
+        salt, pin_hash = app.hash_operator_pin("2468")
         with app.db_connection() as db:
             db.execute(
                 "INSERT INTO cylinders (id,code,name,refrigerant,tare_kg,capacity_kg,current_gas_kg,notes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 ("c1", "R32-1", "Prova", "R32", 4.0, 5.0, 2.0, "privata", now, now),
+            )
+            db.execute(
+                "INSERT INTO cylinder_operators (id,name,pin_salt,pin_hash,active,auth_version,created_at,updated_at) VALUES (?,?,?,?,1,1,?,?)",
+                ("o1", "Tecnico", salt, pin_hash, now, now),
             )
         self.token = app.cylinder_access_token("c1", 1)
         self.server = app.ThreadingHTTPServer(("127.0.0.1", 0), app.PublicHandler)
@@ -50,9 +55,10 @@ class PublicPortalSecurityTests(unittest.TestCase):
         self.server.server_close()
         self.temporary.cleanup()
 
-    def request(self, path, payload=None, method=None):
+    def request(self, path, payload=None, method=None, headers=None):
         body = None if payload is None else json.dumps(payload).encode()
-        request = urllib.request.Request(self.base + path, data=body, method=method, headers={"Content-Type": "application/json"})
+        request_headers = {"Content-Type": "application/json", **(headers or {})}
+        request = urllib.request.Request(self.base + path, data=body, method=method, headers=request_headers)
         try:
             with urllib.request.urlopen(request, timeout=3) as response:
                 return response.status, json.loads(response.read())
@@ -60,22 +66,40 @@ class PublicPortalSecurityTests(unittest.TestCase):
             return error.code, json.loads(error.read())
 
     def test_public_port_exposes_only_authorized_cylinder(self):
-        status, payload = self.request(f"/api/public/cylinders/c1/{self.token}")
+        endpoint = f"/api/public/cylinders/c1/{self.token}"
+        self.assertEqual(self.request(endpoint)[0], 401)
+        status, login = self.request(f"{endpoint}/login", {"operator_name": "tecnico", "pin": "2468"}, "POST")
+        self.assertEqual(status, 200)
+        headers = {"Authorization": f"Bearer {login['session_token']}"}
+        status, payload = self.request(endpoint, headers=headers)
         self.assertEqual(status, 200)
         self.assertEqual(payload["code"], "R32-1")
+        self.assertEqual(payload["operator_name"], "Tecnico")
         self.assertNotIn("notes", payload)
         self.assertEqual(self.request("/api/projects")[0], 404)
         self.assertEqual(self.request("/api/public/cylinders/c1/falso")[0], 404)
         self.assertEqual(self.request(f"/api/public/cylinders/c1/{self.token}", {}, "DELETE")[0], 405)
         self.assertEqual(self.request(f"/api/public/cylinders/c1/{self.token}", {}, "PUT")[0], 405)
 
-    def test_pin_transaction_and_qr_revocation(self):
-        endpoint = f"/api/public/cylinders/c1/{self.token}/transactions"
-        self.assertEqual(self.request(endpoint, {"pin": "0000", "operator_name": "Tecnico", "operation": "add", "amount_kg": 0.5}, "POST")[0], 403)
-        self.assertEqual(self.request(endpoint, {"pin": "2468", "operator_name": "Tecnico", "operation": "add", "amount_kg": 0.5}, "POST")[0], 201)
+    def test_operator_login_transaction_and_revocation(self):
+        base = f"/api/public/cylinders/c1/{self.token}"
+        self.assertEqual(self.request(f"{base}/login", {"operator_name": "Tecnico", "pin": "0000"}, "POST")[0], 403)
+        status, login = self.request(f"{base}/login", {"operator_name": "Tecnico", "pin": "2468"}, "POST")
+        self.assertEqual(status, 200)
+        headers = {"Authorization": f"Bearer {login['session_token']}"}
+        endpoint = f"{base}/transactions"
+        self.assertEqual(self.request(endpoint, {"operation": "add", "amount_kg": 0.5}, "POST", headers)[0], 201)
+        with app.db_connection() as db:
+            db.execute("UPDATE cylinder_operators SET active = 0, auth_version = auth_version + 1 WHERE id = ?", ("o1",))
+        self.assertEqual(self.request(base, headers=headers)[0], 401)
+
+    def test_qr_revocation_invalidates_operator_session(self):
+        base = f"/api/public/cylinders/c1/{self.token}"
+        _, login = self.request(f"{base}/login", {"operator_name": "Tecnico", "pin": "2468"}, "POST")
+        headers = {"Authorization": f"Bearer {login['session_token']}"}
         with app.db_connection() as db:
             db.execute("UPDATE cylinders SET qr_version = qr_version + 1 WHERE id = ?", ("c1",))
-        self.assertEqual(self.request(f"/api/public/cylinders/c1/{self.token}")[0], 404)
+        self.assertEqual(self.request(base, headers=headers)[0], 404)
 
 
 if __name__ == "__main__":

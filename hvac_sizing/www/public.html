@@ -17,7 +17,21 @@
     <section id="loading" class="panel centered" data-t="loading">Caricamento scheda…</section>
     <section id="error" class="panel error hidden" role="alert"></section>
 
+    <section id="login-panel" class="panel login-panel hidden">
+      <p class="eyebrow" data-t="operator_access">ACCESSO OPERATORE</p>
+      <h2 data-t="identify">Identificati per visualizzare il registro</h2>
+      <p class="login-help" data-t="authorized_only">Possono entrare soltanto gli operatori salvati e attivati dall’amministratore.</p>
+      <form id="login-form">
+        <label><span data-t="operator">Nome operatore</span><input name="operator_name" maxlength="120" required autocomplete="username"></label>
+        <label><span data-t="pin">PIN personale</span><input name="pin" type="password" minlength="4" maxlength="32" required autocomplete="current-password" inputmode="numeric"></label>
+        <div id="login-error" class="form-error hidden" role="alert"></div>
+        <button id="login-submit" class="primary-button" type="submit" data-t="login">Accedi al registro</button>
+      </form>
+      <a class="admin-login-link" href="homeassistant://navigate/hassio/ingress/hvac_sizing_pro" data-t="admin">Accesso amministratore Home Assistant</a>
+    </section>
+
     <div id="content" class="hidden">
+      <section class="operator-session"><span data-t="logged_as">Operatore collegato</span><strong id="logged-operator"></strong><button id="logout" type="button" data-t="logout">Esci</button></section>
       <section class="panel cylinder-head">
         <div><p id="cylinder-code" class="eyebrow"></p><h2 id="cylinder-name"></h2><span id="cylinder-refrigerant" class="pill"></span></div>
         <div class="access-badge"><strong data-t="limited_access">Accesso limitato</strong><small data-t="single_cylinder">Solo questa bombola</small></div>
@@ -34,8 +48,6 @@
         <div class="section-title"><div><p class="eyebrow" data-t="register">REGISTRAZIONE</p><h2 data-t="movement">Carico, scarico o pesatura</h2></div></div>
         <form id="operation-form">
           <div class="grid two">
-            <label><span data-t="operator">Nome operatore</span><input name="operator_name" maxlength="120" required autocomplete="name"></label>
-            <label><span data-t="pin">PIN operatore</span><input name="pin" type="password" inputmode="numeric" maxlength="12" required autocomplete="off"></label>
             <label><span data-t="operation">Operazione</span>
               <select id="operation" name="operation">
                 <option value="weighing" data-t="weighing">Pesatura bombola</option>
@@ -59,7 +71,7 @@
 
       <section class="security-note">
         <strong data-t="security">Sicurezza</strong>
-        <p data-t="security_text">Questo collegamento autorizza soltanto la bombola mostrata. Il PIN non viene salvato sul telefono.</p>
+        <p data-t="security_text">L’accesso è personale, temporaneo e limitato alla bombola mostrata. Il PIN non viene salvato sul telefono.</p>
         <a id="admin-link" href="homeassistant://navigate/hassio/ingress/hvac_sizing_pro" data-t="admin">Accesso amministratore Home Assistant</a>
       </section>
     </div>

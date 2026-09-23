@@ -38,6 +38,7 @@ OPTIONS_PATH = DATA_DIR / "options.json"
 QR_SECRET_PATH = DATA_DIR / "qr-secret.key"
 FAILED_PIN_ATTEMPTS: dict[str, list[float]] = {}
 FAILED_PIN_LOCK = threading.Lock()
+OPERATOR_SESSION_SECONDS = 8 * 60 * 60
 
 
 def load_options() -> dict:
@@ -125,6 +126,18 @@ def db_connection() -> sqlite3.Connection:
             FOREIGN KEY (cylinder_id) REFERENCES cylinders(id) ON DELETE CASCADE
         )"""
     )
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS cylinder_operators (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            pin_salt TEXT NOT NULL,
+            pin_hash TEXT NOT NULL,
+            active INTEGER NOT NULL DEFAULT 1,
+            auth_version INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )"""
+    )
     cylinder_columns = {row[1] for row in connection.execute("PRAGMA table_info(cylinders)")}
     if "qr_version" not in cylinder_columns:
         connection.execute("ALTER TABLE cylinders ADD COLUMN qr_version INTEGER NOT NULL DEFAULT 1")
@@ -193,6 +206,11 @@ def pin_rate_limited(address: str) -> bool:
         return len(attempts) >= 5
 
 
+def record_failed_pin_attempt(address: str) -> None:
+    with FAILED_PIN_LOCK:
+        FAILED_PIN_ATTEMPTS.setdefault(address, []).append(time.monotonic())
+
+
 def verify_operator_pin(address: str, supplied: object) -> bool:
     configured = str(load_options().get("operator_pin") or "")
     if len(configured) < 4 or pin_rate_limited(address):
@@ -204,6 +222,65 @@ def verify_operator_pin(address: str, supplied: object) -> bool:
         else:
             FAILED_PIN_ATTEMPTS.setdefault(address, []).append(time.monotonic())
     return valid
+
+
+def hash_operator_pin(pin: object, salt: bytes | None = None) -> tuple[str, str]:
+    value = str(pin or "")
+    if len(value) < 4 or len(value) > 32:
+        raise ValueError("Il PIN deve contenere da 4 a 32 caratteri")
+    salt = salt or secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", value.encode(), salt, 310_000)
+    return base64.urlsafe_b64encode(salt).decode(), base64.urlsafe_b64encode(digest).decode()
+
+
+def operator_pin_matches(operator: sqlite3.Row, supplied: object) -> bool:
+    try:
+        salt = base64.urlsafe_b64decode(operator["pin_salt"].encode())
+        _, candidate = hash_operator_pin(supplied, salt)
+    except (ValueError, TypeError):
+        return False
+    return secrets.compare_digest(candidate, operator["pin_hash"])
+
+
+def operator_payload(operator: sqlite3.Row) -> dict:
+    return {
+        "id": operator["id"], "name": operator["name"], "active": bool(operator["active"]),
+        "created_at": operator["created_at"], "updated_at": operator["updated_at"],
+    }
+
+
+def operator_session_token(operator: sqlite3.Row, cylinder: sqlite3.Row) -> str:
+    payload = json.dumps({
+        "o": operator["id"], "ov": int(operator["auth_version"]), "c": cylinder["id"],
+        "qv": int(cylinder["qr_version"]), "exp": int(time.time()) + OPERATOR_SESSION_SECONDS,
+    }, separators=(",", ":"), sort_keys=True).encode()
+    encoded = base64.urlsafe_b64encode(payload).decode().rstrip("=")
+    signature = hmac.new(qr_secret(), f"operator:{encoded}".encode(), hashlib.sha256).digest()
+    return f"{encoded}.{base64.urlsafe_b64encode(signature).decode().rstrip('=')}"
+
+
+def operator_from_session(cylinder: sqlite3.Row, authorization: str) -> sqlite3.Row | None:
+    if not authorization.startswith("Bearer "):
+        return None
+    try:
+        encoded, supplied_signature = authorization[7:].strip().split(".", 1)
+        expected = hmac.new(qr_secret(), f"operator:{encoded}".encode(), hashlib.sha256).digest()
+        supplied = base64.urlsafe_b64decode(supplied_signature + "=" * (-len(supplied_signature) % 4))
+        if not secrets.compare_digest(supplied, expected):
+            return None
+        raw = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
+        payload = json.loads(raw)
+        if payload.get("c") != cylinder["id"] or int(payload.get("qv", 0)) != int(cylinder["qr_version"]):
+            return None
+        if int(payload.get("exp", 0)) < int(time.time()):
+            return None
+        with db_connection() as db:
+            operator = db.execute("SELECT * FROM cylinder_operators WHERE id = ?", (payload.get("o"),)).fetchone()
+        if not operator or not operator["active"] or int(payload.get("ov", 0)) != int(operator["auth_version"]):
+            return None
+        return operator
+    except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return None
 
 
 def public_cylinder_payload(cylinder: sqlite3.Row, history: list[sqlite3.Row]) -> dict:
@@ -264,7 +341,7 @@ def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: 
     return cylinder_payload(updated)
 
 
-APP_VERSION = "0.7.2"
+APP_VERSION = "0.8.0"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -355,6 +432,11 @@ class Handler(BaseHTTPRequestHandler):
             with db_connection() as db:
                 rows = db.execute("SELECT * FROM cylinders ORDER BY refrigerant, name COLLATE NOCASE").fetchall()
             self._send_json([cylinder_payload(row) for row in rows])
+            return
+        if path == "/api/operators":
+            with db_connection() as db:
+                rows = db.execute("SELECT * FROM cylinder_operators ORDER BY name COLLATE NOCASE").fetchall()
+            self._send_json([operator_payload(row) for row in rows])
             return
         if path == "/api/cylinders/pdf":
             query = parse_qs(urlparse(self.path).query)
@@ -486,6 +568,53 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Esiste già una bombola con questo codice") from exc
                 self._send_json(cylinder_payload(row), HTTPStatus.CREATED)
                 return
+            if path == "/api/operators":
+                name = " ".join(str(payload.get("name") or "").strip().split())[:120]
+                if not name:
+                    raise ValueError("Inserisci il nome dell’operatore")
+                salt, pin_hash = hash_operator_pin(payload.get("pin"))
+                now = datetime.now(timezone.utc).isoformat()
+                operator_id = str(uuid.uuid4())
+                try:
+                    with db_connection() as db:
+                        db.execute(
+                            "INSERT INTO cylinder_operators (id,name,pin_salt,pin_hash,active,auth_version,created_at,updated_at) VALUES (?,?,?,?,1,1,?,?)",
+                            (operator_id, name, salt, pin_hash, now, now),
+                        )
+                        row = db.execute("SELECT * FROM cylinder_operators WHERE id = ?", (operator_id,)).fetchone()
+                except sqlite3.IntegrityError as exc:
+                    raise ValueError("Esiste già un operatore con questo nome") from exc
+                self._send_json(operator_payload(row), HTTPStatus.CREATED)
+                return
+            if path.startswith("/api/operators/") and path.endswith("/toggle"):
+                operator_id = path.split("/")[3]
+                now = datetime.now(timezone.utc).isoformat()
+                with db_connection() as db:
+                    row = db.execute("SELECT * FROM cylinder_operators WHERE id = ?", (operator_id,)).fetchone()
+                    if not row:
+                        self._error("Operatore non trovato", 404)
+                        return
+                    db.execute(
+                        "UPDATE cylinder_operators SET active = ?, auth_version = auth_version + 1, updated_at = ? WHERE id = ?",
+                        (0 if row["active"] else 1, now, operator_id),
+                    )
+                    updated = db.execute("SELECT * FROM cylinder_operators WHERE id = ?", (operator_id,)).fetchone()
+                self._send_json(operator_payload(updated))
+                return
+            if path.startswith("/api/operators/") and path.endswith("/pin"):
+                operator_id = path.split("/")[3]
+                salt, pin_hash = hash_operator_pin(payload.get("pin"))
+                now = datetime.now(timezone.utc).isoformat()
+                with db_connection() as db:
+                    cursor = db.execute(
+                        "UPDATE cylinder_operators SET pin_salt = ?, pin_hash = ?, auth_version = auth_version + 1, updated_at = ? WHERE id = ?",
+                        (salt, pin_hash, now, operator_id),
+                    )
+                if not cursor.rowcount:
+                    self._error("Operatore non trovato", 404)
+                    return
+                self._send_json({"updated": operator_id})
+                return
             if path.startswith("/api/cylinders/") and path.endswith("/transactions"):
                 cylinder_id = path.split("/")[3]
                 self._send_json(record_cylinder_transaction(cylinder_id, payload, "Amministratore"), HTTPStatus.CREATED)
@@ -511,6 +640,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self) -> None:
         path = self._path()
+        if path.startswith("/api/operators/"):
+            operator_id = path.split("/")[3]
+            with db_connection() as db:
+                cursor = db.execute("DELETE FROM cylinder_operators WHERE id = ?", (operator_id,))
+            if not cursor.rowcount:
+                self._error("Operatore non trovato", 404)
+                return
+            self._send_json({"deleted": operator_id})
+            return
         if path.startswith("/api/cylinders/"):
             cylinder_id = path.split("/")[3]
             with db_connection() as db:
@@ -617,17 +755,23 @@ class PublicHandler(Handler):
             if not cylinder:
                 self._error("Collegamento QR non valido o revocato", 404)
                 return
+            operator = operator_from_session(cylinder, self.headers.get("Authorization", ""))
+            if not operator:
+                self._error("Accedi con un operatore autorizzato", 401)
+                return
             with db_connection() as db:
                 history = db.execute(
                     "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (parts[3],)
                 ).fetchall()
-            self._send_json(public_cylinder_payload(cylinder, history))
+            result = public_cylinder_payload(cylinder, history)
+            result["operator_name"] = operator["name"]
+            self._send_json(result)
             return
         self._error("Pagina non trovata", 404)
 
     def do_POST(self) -> None:
         parts = self._parts()
-        if len(parts) != 6 or parts[:3] != ["api", "public", "cylinders"] or parts[5] != "transactions":
+        if len(parts) != 6 or parts[:3] != ["api", "public", "cylinders"] or parts[5] not in {"login", "transactions"}:
             self._error("Operazione non consentita", 404)
             return
         cylinder = self._authorized_cylinder(parts[3], parts[4])
@@ -640,16 +784,28 @@ class PublicHandler(Handler):
             return
         try:
             payload = self._json_body()
-            if len(str(load_options().get("operator_pin") or "")) < 4:
-                self._error("Configura un PIN operatore di almeno 4 caratteri", 503)
+            if parts[5] == "login":
+                operator_name = " ".join(str(payload.get("operator_name") or "").strip().split())[:120]
+                with db_connection() as db:
+                    operator = db.execute(
+                        "SELECT * FROM cylinder_operators WHERE name = ? COLLATE NOCASE AND active = 1", (operator_name,)
+                    ).fetchone()
+                if not operator or not operator_pin_matches(operator, payload.get("pin")):
+                    record_failed_pin_attempt(address)
+                    self._error("Nome operatore o PIN non valido", 403)
+                    return
+                with FAILED_PIN_LOCK:
+                    FAILED_PIN_ATTEMPTS.pop(address, None)
+                self._send_json({
+                    "session_token": operator_session_token(operator, cylinder),
+                    "operator": operator_payload(operator), "expires_in": OPERATOR_SESSION_SECONDS,
+                })
                 return
-            if not verify_operator_pin(address, payload.pop("pin", "")):
-                self._error("PIN non valido", 403)
+            operator = operator_from_session(cylinder, self.headers.get("Authorization", ""))
+            if not operator:
+                self._error("Sessione operatore scaduta o revocata", 401)
                 return
-            operator_name = str(payload.pop("operator_name", "")).strip()
-            if not operator_name:
-                raise ValueError("Inserisci il nome dell’operatore")
-            result = record_cylinder_transaction(parts[3], payload, operator_name)
+            result = record_cylinder_transaction(parts[3], payload, operator["name"])
             self._send_json(result, HTTPStatus.CREATED)
         except (ValueError, json.JSONDecodeError) as exc:
             self._error(str(exc))

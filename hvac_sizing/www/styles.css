@@ -148,6 +148,15 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .history-row time, .history-row small { color: var(--muted); font-size: .7rem; }
 .history-value { text-align: right; }
 .history-value strong { display: block; color: var(--green); }
+.operator-help { color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.operator-form { display: grid; gap: .8rem; padding: .9rem; border: 1px solid var(--line); border-radius: 14px; background: rgba(7,27,42,.72); }
+.operators-list { display: grid; gap: .6rem; }
+.operator-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .7rem; padding: .8rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(7,27,42,.72); }
+.operator-row small { display: block; margin-top: .2rem; color: var(--muted); }
+.operator-actions { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
+.operator-status { display: inline-block; margin-left: .4rem; padding: .18rem .4rem; border-radius: 999px; color: #062016; background: var(--green); font-size: .64rem; font-weight: 900; }
+.operator-status.inactive { color: #2b0909; background: var(--danger); }
+.operator-actions .button { min-height: 34px; padding: .35rem .55rem; font-size: .7rem; }
 .language-switch { display: inline-flex; align-items: center; padding: .18rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(7,27,42,.75); flex: 0 0 auto; }
 .language-button { border: 0; border-radius: 7px; padding: .48rem .58rem; color: var(--muted); background: transparent; font: inherit; font-size: .72rem; font-weight: 900; cursor: pointer; }
 .language-button.active { color: #06151e; background: var(--cyan); }
@@ -192,6 +201,9 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
   .sheet-actions .button { flex: 1; }
   .history-row { grid-template-columns: 1fr auto; }
   .history-row time { grid-column: 1 / -1; }
+  .operator-row { grid-template-columns: 1fr; }
+  .operator-actions { justify-content: stretch; }
+  .operator-actions .button { flex: 1; }
 }
 
 @media print {

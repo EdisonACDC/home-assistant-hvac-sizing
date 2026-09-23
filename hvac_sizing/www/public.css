@@ -11,6 +11,9 @@ main { max-width:900px; margin:0 auto; padding:1rem 1rem 3rem; }
 .panel,.metric { padding:1rem; border:1px solid var(--line); border-radius:16px; background:linear-gradient(145deg,rgba(16,45,69,.97),rgba(9,29,45,.97)); box-shadow:0 15px 40px rgba(0,0,0,.18); }
 .panel { margin-bottom:1rem; }.centered { text-align:center;color:var(--muted); }.error,.form-error.error { color:#ffd0d0; border-color:rgba(255,107,107,.6); background:rgba(255,107,107,.12); }.form-error.success { color:#bff5da; border-color:rgba(83,211,155,.55); background:rgba(83,211,155,.1); }
 .hidden { display:none!important; }
+.login-panel { max-width:520px; margin:2rem auto; }.login-help { margin-top:.55rem; color:var(--muted); font-size:.8rem; line-height:1.5; }
+.admin-login-link { display:block; margin-top:1rem; color:var(--cyan); text-align:center; font-size:.78rem; }
+.operator-session { display:flex; align-items:center; gap:.55rem; margin-bottom:1rem; padding:.65rem .8rem; border:1px solid rgba(83,211,155,.35); border-radius:12px; color:var(--muted); background:rgba(83,211,155,.08); font-size:.75rem; }.operator-session strong { color:var(--green); }.operator-session button { margin-left:auto; border:1px solid var(--line); border-radius:8px; padding:.4rem .65rem; color:var(--text); background:transparent; font-weight:800; }
 .cylinder-head,.section-title { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 .pill { display:inline-block; margin-top:.5rem; padding:.28rem .55rem; border-radius:999px; color:#06151e; background:var(--green); font-size:.72rem; font-weight:900; }
 .access-badge { min-width:130px; padding:.65rem; text-align:center; border:1px solid rgba(83,211,155,.4); border-radius:12px; background:rgba(83,211,155,.08); }
