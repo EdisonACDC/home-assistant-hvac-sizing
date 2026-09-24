@@ -23,6 +23,7 @@ main { width:100%; max-width:900px; margin:0 auto; padding:1rem max(1rem,env(saf
 .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:.7rem; margin-bottom:1rem; }
 .metric span { display:block; min-height:2em; color:var(--muted); font-size:.7rem; }.metric strong { display:block; margin-top:.35rem; font-size:1.25rem; }.metric.primary strong { color:var(--green); }
 form { display:grid; gap:.85rem; margin-top:1rem; }.grid { display:grid; gap:.8rem; }.grid.two { grid-template-columns:1fr 1fr; }
+.machine-fields { display:grid; gap:.75rem; padding:.85rem; border:1px solid rgba(59,201,219,.3); border-radius:12px; background:rgba(59,201,219,.06); }.machine-fields h3 { margin:0; color:var(--cyan); font-size:1rem; }.environment-preview { padding:.7rem; border:1px solid rgba(76,217,148,.3); border-radius:10px; color:var(--muted); background:rgba(76,217,148,.08); font-size:.76rem; line-height:1.55; }.environment-preview strong { color:var(--text); }.climate-detail { margin-top:.25rem; color:var(--cyan) !important; }
 label { display:flex; flex-direction:column; gap:.4rem; color:var(--muted); font-size:.76rem; font-weight:800; }
 input,select,textarea,button { max-width:100%; }
 input,select,textarea { width:100%; min-width:0; min-height:44px; padding:.68rem; color:var(--text); background:#071b2a; border:1px solid var(--line); border-radius:10px; font:inherit; }

@@ -195,6 +195,18 @@
           </label>
           <label id="weighing-field">Peso totale sulla bilancia kg<input id="operation-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="bombola + gas"></label>
           <label id="amount-field" class="hidden">Quantità refrigerante kg<input id="operation-amount" name="amount_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 0,650"></label>
+          <div id="machine-fields" class="machine-fields hidden">
+            <h4>Dati macchina e impatto climatico</h4>
+            <div class="grid two">
+              <label>Marca macchina<input name="machine_brand" maxlength="120" autocomplete="organization" placeholder="es. Toshiba"></label>
+              <label>Modello macchina<input name="machine_model" maxlength="120" autocomplete="off" placeholder="modello unità"></label>
+              <label>Matricola / numero di serie<input name="machine_serial" maxlength="120" autocomplete="off"></label>
+              <label>Carica macchina di targa kg<input name="machine_charge_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 2,400"></label>
+              <label>GWP refrigerante<input name="gwp" type="text" inputmode="decimal" autocomplete="off" required></label>
+              <label>Gas disperso / perdita stimata kg (opzionale)<input name="emitted_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+            </div>
+            <div id="environment-preview" class="environment-preview"></div>
+          </div>
           <div id="operation-preview" class="operation-preview"></div>
           <label>Note / impianto / cliente<textarea name="notes" rows="2" maxlength="500"></textarea></label>
           <div id="cylinder-operation-error" class="form-error hidden" role="alert"></div>
@@ -235,6 +247,18 @@
       </label>
       <label id="edit-transaction-total-field">Peso totale sulla bilancia kg<input id="edit-transaction-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off"></label>
       <label id="edit-transaction-amount-field"><span id="edit-transaction-amount-label">Quantità refrigerante kg</span><input id="edit-transaction-amount" name="amount_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+      <div id="edit-machine-fields" class="machine-fields hidden">
+        <h4>Dati macchina e impatto climatico</h4>
+        <div class="grid two">
+          <label>Marca macchina<input id="edit-machine-brand" name="machine_brand" maxlength="120" autocomplete="organization"></label>
+          <label>Modello macchina<input id="edit-machine-model" name="machine_model" maxlength="120" autocomplete="off"></label>
+          <label>Matricola / numero di serie<input id="edit-machine-serial" name="machine_serial" maxlength="120" autocomplete="off"></label>
+          <label>Carica macchina di targa kg<input id="edit-machine-charge" name="machine_charge_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+          <label>GWP refrigerante<input id="edit-transaction-gwp" name="gwp" type="text" inputmode="decimal" autocomplete="off"></label>
+          <label>Gas disperso / perdita stimata kg (opzionale)<input id="edit-emitted-kg" name="emitted_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+        </div>
+        <div id="edit-environment-preview" class="environment-preview"></div>
+      </div>
       <label>Note / impianto / cliente<textarea id="edit-transaction-notes" name="notes" rows="3" maxlength="500"></textarea></label>
       <label>Password amministratore per confermare<input id="edit-transaction-password" name="admin_password" type="password" required minlength="10" autocomplete="current-password"></label>
       <p class="operator-help">La password non viene salvata.</p>

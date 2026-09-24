@@ -58,6 +58,18 @@
             <label id="total-field"><span data-t="scale_weight">Peso totale sulla bilancia kg</span><input name="total_weight_kg" inputmode="decimal" autocomplete="off"></label>
             <label id="amount-field" class="hidden"><span data-t="amount">Quantità refrigerante kg</span><input name="amount_kg" inputmode="decimal" autocomplete="off"></label>
           </div>
+          <div id="machine-fields" class="machine-fields hidden">
+            <h3 data-t="machine_climate">Dati macchina e impatto climatico</h3>
+            <div class="grid two">
+              <label><span data-t="machine_brand">Marca macchina</span><input name="machine_brand" maxlength="120" autocomplete="organization"></label>
+              <label><span data-t="machine_model">Modello macchina</span><input name="machine_model" maxlength="120" autocomplete="off"></label>
+              <label><span data-t="machine_serial">Matricola / numero di serie</span><input name="machine_serial" maxlength="120" autocomplete="off"></label>
+              <label><span data-t="machine_charge">Carica macchina di targa kg</span><input name="machine_charge_kg" inputmode="decimal" autocomplete="off"></label>
+              <label><span data-t="gwp">GWP refrigerante</span><input name="gwp" inputmode="decimal" autocomplete="off" required></label>
+              <label><span data-t="emitted">Gas disperso / perdita stimata kg (opzionale)</span><input name="emitted_kg" inputmode="decimal" autocomplete="off"></label>
+            </div>
+            <div id="environment-preview" class="environment-preview"></div>
+          </div>
           <label><span data-t="notes">Note / impianto / cliente</span><textarea name="notes" rows="2" maxlength="500"></textarea></label>
           <div id="form-error" class="form-error hidden" role="alert"></div>
           <button id="submit" class="primary-button" type="submit" data-t="save">Registra movimento</button>

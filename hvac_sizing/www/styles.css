@@ -135,6 +135,11 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .operation-card, .qr-card { display: grid; gap: .75rem; padding: 1rem; border: 1px solid var(--line); border-radius: 14px; background: rgba(7,27,42,.72); }
 .operation-preview { min-height: 44px; padding: .7rem; border-radius: 10px; color: var(--muted); background: rgba(77,141,255,.08); border: 1px solid rgba(77,141,255,.22); }
 .operation-preview strong { color: var(--text); }
+.machine-fields { display: grid; gap: .75rem; padding: .85rem; border: 1px solid rgba(59,201,219,.3); border-radius: 12px; background: rgba(59,201,219,.06); }
+.machine-fields h4 { margin: 0; color: var(--cyan); }
+.environment-preview { padding: .7rem; border-radius: 10px; color: var(--muted); background: rgba(22,135,93,.09); border: 1px solid rgba(22,135,93,.28); font-size: .76rem; line-height: 1.55; }
+.environment-preview strong { color: var(--text); }
+.climate-detail { display: block; margin-top: .3rem; color: var(--cyan) !important; }
 .form-error { padding: .7rem .8rem; border: 1px solid rgba(255,107,107,.55); border-radius: 10px; background: rgba(255,107,107,.1); color: #ffb3b3; font-size: .78rem; font-weight: 800; line-height: 1.4; }
 .qr-card { align-content: start; text-align: center; }
 .qr-card img { width: min(100%, 220px); aspect-ratio: 1; margin: 0 auto; padding: .5rem; border-radius: 10px; background: white; }

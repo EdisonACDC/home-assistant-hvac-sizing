@@ -160,6 +160,19 @@ def db_connection() -> sqlite3.Connection:
         connection.execute("ALTER TABLE cylinder_transactions ADD COLUMN operator_name TEXT NOT NULL DEFAULT ''")
     if "edited_at" not in transaction_columns:
         connection.execute("ALTER TABLE cylinder_transactions ADD COLUMN edited_at TEXT")
+    environmental_columns = {
+        "machine_brand": "TEXT NOT NULL DEFAULT ''",
+        "machine_model": "TEXT NOT NULL DEFAULT ''",
+        "machine_serial": "TEXT NOT NULL DEFAULT ''",
+        "machine_charge_kg": "REAL",
+        "gwp": "REAL",
+        "co2_equivalent_kg": "REAL",
+        "emitted_kg": "REAL",
+        "emission_co2_equivalent_kg": "REAL",
+    }
+    for column, definition in environmental_columns.items():
+        if column not in transaction_columns:
+            connection.execute(f"ALTER TABLE cylinder_transactions ADD COLUMN {column} {definition}")
     connection.execute("CREATE INDEX IF NOT EXISTS idx_cylinder_transactions_cylinder ON cylinder_transactions(cylinder_id, created_at DESC)")
     return connection
 
@@ -188,6 +201,50 @@ def number(value: object, field: str, *, required: bool = True) -> float | None:
     return result
 
 
+REFRIGERANT_GWP = {
+    "R32": 675, "R134A": 1430, "R404A": 3922, "R407C": 1774,
+    "R407F": 1825, "R410A": 2088, "R422D": 2729, "R449A": 1282,
+    "R290": 3, "R600A": 3, "R744": 1, "R717": 0,
+    "R1234YF": 4, "R1234ZE": 7, "R454B": 466, "R513A": 631,
+}
+
+
+def refrigerant_gwp(refrigerant: object) -> float | None:
+    key = re.sub(r"[^A-Z0-9]", "", str(refrigerant or "").upper())
+    return REFRIGERANT_GWP.get(key)
+
+
+def transaction_payload(row: sqlite3.Row) -> dict:
+    result = dict(row)
+    for key in ("machine_charge_kg", "gwp", "co2_equivalent_kg", "emitted_kg", "emission_co2_equivalent_kg"):
+        if result.get(key) is not None:
+            result[key] = round(float(result[key]), 3)
+    result["co2_equivalent_t"] = None if result.get("co2_equivalent_kg") is None else round(result["co2_equivalent_kg"] / 1000, 6)
+    result["machine_co2_equivalent_kg"] = None
+    result["machine_co2_equivalent_t"] = None
+    if result.get("machine_charge_kg") is not None and result.get("gwp") is not None:
+        result["machine_co2_equivalent_kg"] = round(result["machine_charge_kg"] * result["gwp"], 3)
+        result["machine_co2_equivalent_t"] = round(result["machine_co2_equivalent_kg"] / 1000, 6)
+    result["emission_co2_equivalent_t"] = None if result.get("emission_co2_equivalent_kg") is None else round(result["emission_co2_equivalent_kg"] / 1000, 6)
+    return result
+
+
+def environmental_values(payload: dict, refrigerant: object, operation: str) -> tuple:
+    if operation not in {"add", "remove"}:
+        return "", "", "", None, None, None, None, None
+    brand = str(payload.get("machine_brand") or "").strip()[:120]
+    model = str(payload.get("machine_model") or "").strip()[:120]
+    serial = str(payload.get("machine_serial") or "").strip()[:120]
+    machine_charge = number(payload.get("machine_charge_kg"), "la carica della macchina", required=False)
+    default_gwp = refrigerant_gwp(refrigerant)
+    gwp = number(payload.get("gwp", default_gwp), "il GWP")
+    emitted = number(payload.get("emitted_kg"), "il gas disperso", required=False)
+    amount = number(payload.get("amount_kg"), "la quantità")
+    co2_equivalent = round(amount * gwp, 3)
+    emission_equivalent = None if emitted is None else round(emitted * gwp, 3)
+    return brand, model, serial, machine_charge, gwp, co2_equivalent, emitted, emission_equivalent
+
+
 def cylinder_payload(row: sqlite3.Row, history: list[sqlite3.Row] | None = None) -> dict:
     result = dict(row)
     result["tare_kg"] = round(result["tare_kg"], 3)
@@ -195,8 +252,9 @@ def cylinder_payload(row: sqlite3.Row, history: list[sqlite3.Row] | None = None)
     if result["capacity_kg"] is not None:
         result["capacity_kg"] = round(result["capacity_kg"], 3)
     result["total_weight_kg"] = round(result["tare_kg"] + result["current_gas_kg"], 3)
+    result["gwp"] = refrigerant_gwp(result["refrigerant"])
     if history is not None:
-        result["history"] = [dict(item) for item in history]
+        result["history"] = [transaction_payload(item) for item in history]
     return result
 
 
@@ -366,15 +424,8 @@ def public_cylinder_payload(cylinder: sqlite3.Row, history: list[sqlite3.Row]) -
         "refrigerant": full["refrigerant"], "tare_kg": full["tare_kg"],
         "capacity_kg": full["capacity_kg"], "current_gas_kg": full["current_gas_kg"],
         "total_weight_kg": full["total_weight_kg"], "updated_at": full["updated_at"],
-        "history": [
-            {
-                "operation": item["operation"], "amount_kg": item["amount_kg"],
-                "total_weight_kg": item["total_weight_kg"], "gas_after_kg": item["gas_after_kg"],
-                "notes": item["notes"], "operator_name": item["operator_name"],
-                "created_at": item["created_at"], "edited_at": item["edited_at"],
-            }
-            for item in history[:50]
-        ],
+        "gwp": refrigerant_gwp(full["refrigerant"]),
+        "history": [transaction_payload(item) for item in history[:50]],
     }
 
 
@@ -408,10 +459,15 @@ def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: 
         transaction_id = str(uuid.uuid4())
         notes = str(payload.get("notes") or "").strip()[:500]
         operator = str(operator_name or "").strip()[:120]
+        environmental = environmental_values(payload, row["refrigerant"], operation)
         db.execute("UPDATE cylinders SET current_gas_kg = ?, updated_at = ? WHERE id = ?", (after, now, cylinder_id))
         db.execute(
-            "INSERT INTO cylinder_transactions (id, cylinder_id, operation, amount_kg, total_weight_kg, gas_before_kg, gas_after_kg, notes, operator_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (transaction_id, cylinder_id, operation, amount, total, before, after, notes, operator, now),
+            """INSERT INTO cylinder_transactions
+            (id, cylinder_id, operation, amount_kg, total_weight_kg, gas_before_kg, gas_after_kg,
+             notes, operator_name, created_at, machine_brand, machine_model, machine_serial,
+             machine_charge_kg, gwp, co2_equivalent_kg, emitted_kg, emission_co2_equivalent_kg)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (transaction_id, cylinder_id, operation, amount, total, before, after, notes, operator, now, *environmental),
         )
         updated = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
     return cylinder_payload(updated)
@@ -487,10 +543,14 @@ def update_cylinder_transaction(cylinder_id: str, transaction_id: str, payload: 
                     raise ValueError("La quantità deve essere maggiore di zero")
                 total = None
         notes = str(payload.get("notes") or "").strip()[:500]
+        cylinder = db.execute("SELECT refrigerant FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+        environmental = environmental_values(payload, cylinder["refrigerant"], operation)
         edited_at = datetime.now(timezone.utc).isoformat()
         db.execute(
-            "UPDATE cylinder_transactions SET operation = ?, amount_kg = ?, total_weight_kg = ?, notes = ?, edited_at = ? WHERE id = ?",
-            (operation, amount, total, notes, edited_at, transaction_id),
+            """UPDATE cylinder_transactions SET operation = ?, amount_kg = ?, total_weight_kg = ?, notes = ?,
+            machine_brand = ?, machine_model = ?, machine_serial = ?, machine_charge_kg = ?, gwp = ?,
+            co2_equivalent_kg = ?, emitted_kg = ?, emission_co2_equivalent_kg = ?, edited_at = ? WHERE id = ?""",
+            (operation, amount, total, notes, *environmental, edited_at, transaction_id),
         )
         updated = recalculate_cylinder_transactions(db, cylinder_id)
         history = db.execute(
@@ -500,7 +560,7 @@ def update_cylinder_transaction(cylinder_id: str, transaction_id: str, payload: 
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.10.1"
+APP_VERSION = "0.11.0"
 
 
 class Handler(BaseHTTPRequestHandler):

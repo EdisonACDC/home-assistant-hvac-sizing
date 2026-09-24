@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0
+
+- Aggiunti marca, modello, matricola e carica di targa della macchina durante aggiunta e prelievo di refrigerante.
+- GWP compilato automaticamente per i refrigeranti più comuni e modificabile per miscele particolari.
+- Calcolo automatico in kg e tonnellate di CO₂ equivalente per gas movimentato e carica macchina.
+- Campo separato per il gas realmente disperso, con calcolo dell’emissione stimata in CO₂ equivalente.
+- Dati ambientali visibili nel registro amministratore, nel portale QR e nelle schede PDF.
+
 ## 0.10.1
 
 - Ogni modifica a un movimento del registro bombola richiede la password amministratore.

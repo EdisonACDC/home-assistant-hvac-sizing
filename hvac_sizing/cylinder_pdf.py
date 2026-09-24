@@ -42,6 +42,7 @@ GERMAN = {
     "Data": "Datum", "Operazione": "Vorgang", "Quantità / peso": "Menge / Gewicht", "Residuo": "Restmenge",
     "Registrazione iniziale": "Ersterfassung", "Pesatura": "Wägung", "Aggiunta": "Zugabe", "Prelievo": "Entnahme",
     "Totale": "Gesamt", "Nessun movimento": "Keine Bewegung", "Nessuna bombola registrata": "Keine Flasche erfasst",
+    "Macchina": "Anlage", "Carica targa": "Nennfüllung", "Gas movimentato": "Bewegte Gasmenge", "Emissione stimata": "Geschätzte Emission",
     "Dimensionamento Climatizzazione Pro · Magazzino bombole": "Klimaanlagen-Dimensionierung Pro · Kältemittellager",
     "Pagina": "Seite", "Schede bombole refrigerante": "Kältemittelflaschen-Datenblätter",
 }
@@ -53,6 +54,10 @@ def tr(value: str, language: str) -> str:
 
 def kg(value: object) -> str:
     return f"{float(value or 0):,.3f}".replace(",", "X").replace(".", ",").replace("X", ".") + " kg"
+
+
+def tco2(value: object) -> str:
+    return f"{float(value or 0) / 1000:,.6f}".replace(",", "X").replace(".", ",").replace("X", ".") + " t CO₂e"
 
 
 def safe(value: object) -> str:
@@ -158,12 +163,25 @@ def cylinder_story(cylinder: dict, target_url: str, style: dict, language: str) 
         else:
             sign = "-" if item["operation"] == "remove" else "+"
             measure = f"{sign}{kg(abs(item.get('amount_kg') or 0))}"
+        audit = []
+        machine = " · ".join(str(item.get(key) or "").strip() for key in ("machine_brand", "machine_model", "machine_serial") if item.get(key))
+        if machine:
+            audit.append(f"{tr('Macchina', language)}: {safe(machine)}")
+        if item.get("machine_charge_kg") is not None:
+            audit.append(f"{tr('Carica targa', language)}: {kg(item['machine_charge_kg'])}")
+        if item.get("gwp") is not None:
+            audit.append(f"GWP {float(item['gwp']):g} · {tr('Gas movimentato', language)}: {tco2(item.get('co2_equivalent_kg'))}")
+        if item.get("emission_co2_equivalent_kg") is not None:
+            audit.append(f"{tr('Emissione stimata', language)}: {tco2(item['emission_co2_equivalent_kg'])}")
+        note_text = safe(item.get("notes")) or "—"
+        if audit:
+            note_text += "<br/>" + "<br/>".join(audit)
         history_rows.append([
             date_time(item.get("created_at"), language),
             operation_names.get(item["operation"], item["operation"]),
             measure,
             kg(item.get("gas_after_kg")),
-            Paragraph(safe(item.get("notes")) or "—", style["small"]),
+            Paragraph(note_text, style["small"]),
         ])
     if len(history_rows) == 1:
         history_rows.append(["—", tr("Nessun movimento", language), "—", kg(cylinder["current_gas_kg"]), "—"])

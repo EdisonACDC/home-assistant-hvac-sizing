@@ -1,10 +1,10 @@
 (() => {
   const dictionary = {
     it: {
-      secure_portal:'PORTALE SICURO BOMBOLE', title:'Registro refrigerante', loading:'Caricamento scheda…', operator_access:'ACCESSO OPERATORE', identify:'Identificati per visualizzare il registro', authorized_only:'Possono entrare soltanto gli operatori salvati e attivati dall’amministratore.', login:'Accedi al registro', logged_as:'Operatore collegato', close_logout:'Chiudi e disconnetti', limited_access:'Accesso limitato', single_cylinder:'Solo questa bombola', gas_remaining:'Gas effettivo residuo', total_weight:'Peso totale', tare:'Tara bombola', capacity:'Capacità', register:'REGISTRAZIONE', movement:'Carico, scarico o pesatura', operator:'Nome operatore', pin:'PIN personale', operation:'Operazione', weighing:'Pesatura bombola', add:'Aggiunta refrigerante', remove:'Prelievo refrigerante', scale_weight:'Peso totale sulla bilancia kg', amount:'Quantità refrigerante kg', notes:'Note / impianto / cliente', save:'Registra movimento', audit:'REGISTRO', history:'Storico movimenti', security:'Sicurezza', security_text:'L’accesso è personale, temporaneo e limitato alla bombola mostrata. Il PIN non viene salvato sul telefono.', admin:'Accesso amministratore', empty:'Nessun movimento registrato.', initial:'Registrazione iniziale', saved:'Movimento registrato correttamente', invalid_link:'Collegamento QR non valido'
+      secure_portal:'PORTALE SICURO BOMBOLE', title:'Registro refrigerante', loading:'Caricamento scheda…', operator_access:'ACCESSO OPERATORE', identify:'Identificati per visualizzare il registro', authorized_only:'Possono entrare soltanto gli operatori salvati e attivati dall’amministratore.', login:'Accedi al registro', logged_as:'Operatore collegato', close_logout:'Chiudi e disconnetti', limited_access:'Accesso limitato', single_cylinder:'Solo questa bombola', gas_remaining:'Gas effettivo residuo', total_weight:'Peso totale', tare:'Tara bombola', capacity:'Capacità', register:'REGISTRAZIONE', movement:'Carico, scarico o pesatura', operator:'Nome operatore', pin:'PIN personale', operation:'Operazione', weighing:'Pesatura bombola', add:'Aggiunta refrigerante', remove:'Prelievo refrigerante', scale_weight:'Peso totale sulla bilancia kg', amount:'Quantità refrigerante kg', machine_climate:'Dati macchina e impatto climatico', machine_brand:'Marca macchina', machine_model:'Modello macchina', machine_serial:'Matricola / numero di serie', machine_charge:'Carica macchina di targa kg', gwp:'GWP refrigerante', emitted:'Gas disperso / perdita stimata kg (opzionale)', moved_co2:'CO₂e gas movimentato', machine_co2:'CO₂e carica macchina', emission_co2:'Emissione stimata', notes:'Note / impianto / cliente', save:'Registra movimento', audit:'REGISTRO', history:'Storico movimenti', security:'Sicurezza', security_text:'L’accesso è personale, temporaneo e limitato alla bombola mostrata. Il PIN non viene salvato sul telefono.', admin:'Accesso amministratore', empty:'Nessun movimento registrato.', initial:'Registrazione iniziale', saved:'Movimento registrato correttamente', invalid_link:'Collegamento QR non valido'
     },
     de: {
-      secure_portal:'SICHERES FLASCHENPORTAL', title:'Kältemittelregister', loading:'Datenblatt wird geladen…', operator_access:'BEDIENERZUGANG', identify:'Identifizieren Sie sich, um das Register anzuzeigen', authorized_only:'Nur vom Administrator gespeicherte und aktivierte Bediener dürfen sich anmelden.', login:'Register öffnen', logged_as:'Angemeldeter Bediener', close_logout:'Schließen und abmelden', limited_access:'Eingeschränkter Zugriff', single_cylinder:'Nur diese Flasche', gas_remaining:'Tatsächlicher Restinhalt', total_weight:'Gesamtgewicht', tare:'Flaschen-Tara', capacity:'Kapazität', register:'ERFASSUNG', movement:'Zugabe, Entnahme oder Wägung', operator:'Name des Bedieners', pin:'Persönliche PIN', operation:'Vorgang', weighing:'Flasche wiegen', add:'Kältemittel hinzufügen', remove:'Kältemittel entnehmen', scale_weight:'Gesamtgewicht auf der Waage kg', amount:'Kältemittelmenge kg', notes:'Notizen / Anlage / Kunde', save:'Vorgang erfassen', audit:'REGISTER', history:'Bewegungsverlauf', security:'Sicherheit', security_text:'Der Zugriff ist persönlich, zeitlich begrenzt und auf die angezeigte Flasche beschränkt. Die PIN wird nicht auf dem Telefon gespeichert.', admin:'Administratorzugang', empty:'Keine Bewegung erfasst.', initial:'Ersterfassung', saved:'Vorgang erfolgreich erfasst', invalid_link:'Ungültiger oder widerrufener QR-Link'
+      secure_portal:'SICHERES FLASCHENPORTAL', title:'Kältemittelregister', loading:'Datenblatt wird geladen…', operator_access:'BEDIENERZUGANG', identify:'Identifizieren Sie sich, um das Register anzuzeigen', authorized_only:'Nur vom Administrator gespeicherte und aktivierte Bediener dürfen sich anmelden.', login:'Register öffnen', logged_as:'Angemeldeter Bediener', close_logout:'Schließen und abmelden', limited_access:'Eingeschränkter Zugriff', single_cylinder:'Nur diese Flasche', gas_remaining:'Tatsächlicher Restinhalt', total_weight:'Gesamtgewicht', tare:'Flaschen-Tara', capacity:'Kapazität', register:'ERFASSUNG', movement:'Zugabe, Entnahme oder Wägung', operator:'Name des Bedieners', pin:'Persönliche PIN', operation:'Vorgang', weighing:'Flasche wiegen', add:'Kältemittel hinzufügen', remove:'Kältemittel entnehmen', scale_weight:'Gesamtgewicht auf der Waage kg', amount:'Kältemittelmenge kg', machine_climate:'Anlagendaten und Klimawirkung', machine_brand:'Anlagenhersteller', machine_model:'Anlagenmodell', machine_serial:'Seriennummer', machine_charge:'Nennfüllmenge der Anlage kg', gwp:'GWP des Kältemittels', emitted:'Ausgetretenes Gas / geschätzter Verlust kg (optional)', moved_co2:'CO₂e der bewegten Gasmenge', machine_co2:'CO₂e der Anlagenfüllung', emission_co2:'Geschätzte Emission', notes:'Notizen / Anlage / Kunde', save:'Vorgang erfassen', audit:'REGISTER', history:'Bewegungsverlauf', security:'Sicherheit', security_text:'Der Zugriff ist persönlich, zeitlich begrenzt und auf die angezeigte Flasche beschränkt. Die PIN wird nicht auf dem Telefon gespeichert.', admin:'Administratorzugang', empty:'Keine Bewegung erfasst.', initial:'Ersterfassung', saved:'Vorgang erfolgreich erfasst', invalid_link:'Ungültiger oder widerrufener QR-Link'
     }
   };
   const $ = selector => document.querySelector(selector);
@@ -44,6 +44,8 @@
     const de={initial:'Ersterfassung',weighing:'Wägung',add:'Zugabe',remove:'Entnahme'};
     return (language === 'de' ? de : it)[value] || value;
   }
+  const co2=value=>`${Number(value||0).toLocaleString(language==='de'?'de-DE':'it-IT',{minimumFractionDigits:3,maximumFractionDigits:3})} kg CO₂e`;
+  const tco2=value=>`${(Number(value||0)/1000).toLocaleString(language==='de'?'de-DE':'it-IT',{minimumFractionDigits:3,maximumFractionDigits:6})} t CO₂e`;
   function render() {
     $('#cylinder-code').textContent=cylinder.code;
     $('#cylinder-name').textContent=cylinder.name;
@@ -56,7 +58,9 @@
       const date=new Date(item.created_at).toLocaleString(language==='de'?'de-DE':'it-IT',{dateStyle:'short',timeStyle:'short'});
       const detail=item.operation==='weighing'?`${t('total_weight','Peso totale')} ${kg(item.total_weight_kg)}`:`${item.operation==='remove'?'−':'+'}${kg(Math.abs(item.amount_kg||0))}`;
       const edited=item.edited_at?` · ${language==='de'?'Vom Administrator korrigiert':'Corretto dall’amministratore'}`:'';
-      return `<div class="history-row"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(operationName(item.operation))}</strong><small>${escapeHtml(item.operator_name||'—')} · ${escapeHtml(detail)}${item.notes?` · ${escapeHtml(item.notes)}`:''}${escapeHtml(edited)}</small></div><div class="value">${kg(item.gas_after_kg)}</div></div>`;
+      const machine=[item.machine_brand,item.machine_model,item.machine_serial].filter(Boolean).join(' · ');
+      const climate=item.gwp==null?'':`${machine?`${machine} · `:''}GWP ${item.gwp} · ${tco2(item.co2_equivalent_kg)}${item.emission_co2_equivalent_kg==null?'':` · ${t('emission_co2','Emissione stimata')} ${tco2(item.emission_co2_equivalent_kg)}`}`;
+      return `<div class="history-row"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(operationName(item.operation))}</strong><small>${escapeHtml(item.operator_name||'—')} · ${escapeHtml(detail)}${item.notes?` · ${escapeHtml(item.notes)}`:''}${escapeHtml(edited)}</small>${climate?`<small class="climate-detail">${escapeHtml(climate)}</small>`:''}</div><div class="value">${kg(item.gas_after_kg)}</div></div>`;
     }).join(''):`<div class="empty">${t('empty','Nessun movimento registrato.')}</div>`;
   }
   function operationFields() {
@@ -65,6 +69,17 @@
     $('#amount-field').classList.toggle('hidden',weighing);
     $('#total-field input').required=weighing;
     $('#amount-field input').required=!weighing;
+    $('#machine-fields').classList.toggle('hidden',weighing);
+    const gwp=$('#operation-form [name="gwp"]');
+    gwp.required=!weighing;
+    if(!weighing&&!gwp.value) gwp.value=cylinder?.gwp??'';
+    updateEnvironmentPreview();
+  }
+  function updateEnvironmentPreview(){
+    if($('#operation').value==='weighing')return;
+    const form=$('#operation-form');
+    const amount=Number(decimal(form.elements.amount_kg.value)||0),gwp=Number(decimal(form.elements.gwp.value)||0),charge=Number(decimal(form.elements.machine_charge_kg.value)||0),emitted=Number(decimal(form.elements.emitted_kg.value)||0);
+    $('#environment-preview').innerHTML=`${t('moved_co2','CO₂e gas movimentato')}: <strong>${co2(amount*gwp)} · ${tco2(amount*gwp)}</strong><br>${t('machine_co2','CO₂e carica macchina')}: <strong>${co2(charge*gwp)}</strong>${emitted?`<br>${t('emission_co2','Emissione stimata')}: <strong>${co2(emitted*gwp)} · ${tco2(emitted*gwp)}</strong>`:''}`;
   }
   async function load() {
     if (!cylinderId || !token) throw new Error(t('invalid_link','Collegamento QR non valido'));
@@ -107,14 +122,19 @@
     const payload=Object.fromEntries(form.entries());
     payload.total_weight_kg=decimal(payload.total_weight_kg);
     payload.amount_kg=decimal(payload.amount_kg);
+    payload.machine_charge_kg=decimal(payload.machine_charge_kg);
+    payload.gwp=decimal(payload.gwp);
+    payload.emitted_kg=decimal(payload.emitted_kg);
     $('#submit').disabled=true;
     try {
       await api(`${endpoint}/transactions`,{method:'POST',body:JSON.stringify(payload)});
       formElement.querySelector('[name="total_weight_kg"]').value='';
       formElement.querySelector('[name="amount_kg"]').value='';
       formElement.querySelector('[name="notes"]').value='';
+      ['machine_brand','machine_model','machine_serial','machine_charge_kg','gwp','emitted_kg'].forEach(name=>formElement.elements[name].value='');
       cylinder=await api(endpoint);
       render();
+      operationFields();
       $('#form-error').textContent=t('saved','Movimento registrato correttamente');
       $('#form-error').classList.remove('hidden');
       $('#form-error').classList.remove('error');
@@ -127,6 +147,7 @@
     } finally { $('#submit').disabled=false; }
   });
   $('#operation').addEventListener('change',operationFields);
+  $('#operation-form').addEventListener('input',event=>{if(['amount_kg','machine_charge_kg','gwp','emitted_kg'].includes(event.target.name))updateEnvironmentPreview();});
   $('#logout').addEventListener('click',()=>{
     sessionToken='';
     sessionStorage.removeItem(sessionKey);

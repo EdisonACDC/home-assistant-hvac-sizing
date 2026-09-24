@@ -82,6 +82,35 @@ class CylinderRegisterTests(unittest.TestCase):
         self.assertEqual(cylinder["tare_kg"], 4.25)
         self.assertEqual(cylinder["current_gas_kg"], 2.5)
         self.assertEqual(cylinder["total_weight_kg"], 6.75)
+        self.assertEqual(cylinder["gwp"], 675)
+
+    def test_machine_data_gwp_and_co2_equivalent_are_recorded(self):
+        cylinder = self.create_cylinder()
+        status, _ = self.request(
+            f"/api/cylinders/{cylinder['id']}/transactions",
+            {
+                "operation": "add",
+                "amount_kg": 0.5,
+                "machine_brand": "Toshiba",
+                "machine_model": "RAS-5M34G3AVG-E",
+                "machine_serial": "TEST-123",
+                "machine_charge_kg": 2.4,
+                "emitted_kg": 0.2,
+            },
+            "POST",
+        )
+        self.assertEqual(status, 201)
+        _, detail = self.request(f"/api/cylinders/{cylinder['id']}")
+        movement = next(item for item in detail["history"] if item["operation"] == "add")
+        self.assertEqual(movement["machine_brand"], "Toshiba")
+        self.assertEqual(movement["machine_model"], "RAS-5M34G3AVG-E")
+        self.assertEqual(movement["gwp"], 675)
+        self.assertEqual(movement["co2_equivalent_kg"], 337.5)
+        self.assertEqual(movement["co2_equivalent_t"], 0.3375)
+        self.assertEqual(movement["machine_co2_equivalent_kg"], 1620.0)
+        self.assertEqual(movement["machine_co2_equivalent_t"], 1.62)
+        self.assertEqual(movement["emission_co2_equivalent_kg"], 135.0)
+        self.assertEqual(movement["emission_co2_equivalent_t"], 0.135)
 
     def test_qr_print_page_opens_as_standalone_html(self):
         cylinder = self.create_cylinder()

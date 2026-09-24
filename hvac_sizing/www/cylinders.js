@@ -5,6 +5,8 @@ let operatorItems = [];
 const ctr = value => window.AppI18n?.translate(value) || value;
 
 const kg = value => `${Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg`;
+const co2 = value => `${Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg CO₂e`;
+const tco2 = value => `${(Number(value || 0) / 1000).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 6})} t CO₂e`;
 
 function decimalText(value) {
   let normalized = String(value ?? '').trim().replace(/[\s\u00a0]/g, '');
@@ -144,7 +146,9 @@ function renderCylinderDetail() {
       ? `${ctr('Peso totale')} ${kg(item.total_weight_kg)}`
       : `${item.operation === 'remove' ? '−' : '+'}${kg(Math.abs(item.amount_kg || 0))}`;
     const edited = item.edited_at ? ` · ${ctr('Corretto dall’amministratore')}` : '';
-    return `<div class="history-row" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small></div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button></div></div>`;
+    const machine = [item.machine_brand, item.machine_model, item.machine_serial].filter(Boolean).join(' · ');
+    const climate = item.gwp == null ? '' : `${machine ? `${machine} · ` : ''}GWP ${item.gwp} · ${tco2(item.co2_equivalent_kg)} gas movimentato${item.emission_co2_equivalent_kg == null ? '' : ` · ${tco2(item.emission_co2_equivalent_kg)} emissione stimata`}`;
+    return `<div class="history-row" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small>${climate ? `<small class="climate-detail">${escapeHtml(climate)}</small>` : ''}</div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button></div></div>`;
   }).join('') : '<div class="empty-state">Nessun movimento registrato.</div>';
   updateOperationPreview();
 }
@@ -162,7 +166,21 @@ function setEditTransactionFields() {
   $('#edit-transaction-amount-field').classList.toggle('hidden', weighing);
   $('#edit-transaction-total').required = weighing;
   $('#edit-transaction-amount').required = !weighing;
+  const environmental = operation === 'add' || operation === 'remove';
+  $('#edit-machine-fields').classList.toggle('hidden', !environmental);
+  $('#edit-transaction-gwp').required = environmental;
   $('#edit-transaction-amount-label').textContent = ctr(initial ? 'Gas refrigerante iniziale kg' : 'Quantità refrigerante kg');
+  updateEditEnvironmentPreview();
+}
+
+function updateEditEnvironmentPreview() {
+  const operation = $('#edit-transaction-operation').value;
+  if (!['add', 'remove'].includes(operation)) return;
+  const amount = cylinderNumber($('#edit-transaction-amount').value);
+  const gwp = cylinderNumber($('#edit-transaction-gwp').value);
+  const charge = cylinderNumber($('#edit-machine-charge').value);
+  const emitted = cylinderNumber($('#edit-emitted-kg').value);
+  $('#edit-environment-preview').innerHTML = `${ctr('Gas movimentato')}: <strong>${co2(amount * gwp)} · ${tco2(amount * gwp)}</strong><br>${ctr('Carica macchina')}: <strong>${co2(charge * gwp)}</strong>${emitted ? `<br>${ctr('Emissione stimata')}: <strong>${co2(emitted * gwp)} · ${tco2(emitted * gwp)}</strong>` : ''}`;
 }
 
 function openTransactionEditor(transactionId) {
@@ -178,6 +196,12 @@ function openTransactionEditor(transactionId) {
     ? transactionInputValue(activeTransaction.gas_after_kg)
     : transactionInputValue(activeTransaction.amount_kg);
   $('#edit-transaction-notes').value = activeTransaction.notes || '';
+  $('#edit-machine-brand').value = activeTransaction.machine_brand || '';
+  $('#edit-machine-model').value = activeTransaction.machine_model || '';
+  $('#edit-machine-serial').value = activeTransaction.machine_serial || '';
+  $('#edit-machine-charge').value = transactionInputValue(activeTransaction.machine_charge_kg);
+  $('#edit-transaction-gwp').value = activeTransaction.gwp ?? activeCylinder.gwp ?? '';
+  $('#edit-emitted-kg').value = transactionInputValue(activeTransaction.emitted_kg);
   $('#edit-transaction-password').value = '';
   const date = new Date(activeTransaction.created_at).toLocaleString(window.AppI18n?.locale() || 'it-IT', {dateStyle: 'short', timeStyle: 'short'});
   $('#edit-transaction-meta').textContent = `${date} · ${activeTransaction.operator_name || ctr('Amministratore')}`;
@@ -205,6 +229,12 @@ async function saveTransactionEdit(event) {
     total_weight_kg: decimalText($('#edit-transaction-total').value),
     amount_kg: decimalText($('#edit-transaction-amount').value),
     notes: $('#edit-transaction-notes').value,
+    machine_brand: $('#edit-machine-brand').value,
+    machine_model: $('#edit-machine-model').value,
+    machine_serial: $('#edit-machine-serial').value,
+    machine_charge_kg: decimalText($('#edit-machine-charge').value),
+    gwp: decimalText($('#edit-transaction-gwp').value),
+    emitted_kg: decimalText($('#edit-emitted-kg').value),
     admin_password: $('#edit-transaction-password').value,
   };
   const cylinderId = activeCylinder.id;
@@ -230,7 +260,23 @@ function setOperationFields() {
   $('#amount-field').classList.toggle('hidden', weighing);
   $('#operation-total').required = weighing;
   $('#operation-amount').required = !weighing;
+  const environmental = !weighing;
+  $('#machine-fields').classList.toggle('hidden', !environmental);
+  const gwpInput = $('#cylinder-operation-form [name="gwp"]');
+  gwpInput.required = environmental;
+  if (environmental && !gwpInput.value) gwpInput.value = activeCylinder?.gwp ?? '';
   updateOperationPreview();
+  updateEnvironmentPreview();
+}
+
+function updateEnvironmentPreview() {
+  if (!activeCylinder || $('#cylinder-operation').value === 'weighing') return;
+  const form = $('#cylinder-operation-form');
+  const amount = cylinderNumber($('#operation-amount').value);
+  const gwp = cylinderNumber(form.elements.gwp.value);
+  const charge = cylinderNumber(form.elements.machine_charge_kg.value);
+  const emitted = cylinderNumber(form.elements.emitted_kg.value);
+  $('#environment-preview').innerHTML = `${ctr('Gas movimentato')}: <strong>${co2(amount * gwp)} · ${tco2(amount * gwp)}</strong><br>${ctr('Carica macchina')}: <strong>${co2(charge * gwp)}</strong>${emitted ? `<br>${ctr('Emissione stimata')}: <strong>${co2(emitted * gwp)} · ${tco2(emitted * gwp)}</strong>` : ''}`;
 }
 
 function updateOperationPreview() {
@@ -261,7 +307,7 @@ async function saveCylinderOperation(event) {
   if (submitButton) submitButton.disabled = true;
   const form = new FormData(formElement);
   const payload = Object.fromEntries(form.entries());
-  ['total_weight_kg', 'amount_kg'].forEach(key => {
+  ['total_weight_kg', 'amount_kg', 'machine_charge_kg', 'gwp', 'emitted_kg'].forEach(key => {
     if (key in payload) payload[key] = decimalText(payload[key]);
   });
   try {
@@ -408,13 +454,19 @@ $('#cylinders-list').addEventListener('click', event => {
 });
 $('#cylinder-operation').addEventListener('change', setOperationFields);
 $('#operation-total').addEventListener('input', updateOperationPreview);
-$('#operation-amount').addEventListener('input', updateOperationPreview);
+$('#operation-amount').addEventListener('input', () => { updateOperationPreview(); updateEnvironmentPreview(); });
+$('#cylinder-operation-form').addEventListener('input', event => {
+  if (['machine_charge_kg', 'gwp', 'emitted_kg'].includes(event.target.name)) updateEnvironmentPreview();
+});
 $('#cylinder-operation-form').addEventListener('submit', saveCylinderOperation);
 $('#cylinder-history').addEventListener('click', event => {
   const button = event.target.closest('[data-edit-transaction]');
   if (button) openTransactionEditor(button.dataset.editTransaction);
 });
 $('#edit-transaction-operation').addEventListener('change', setEditTransactionFields);
+$('#edit-transaction-form').addEventListener('input', event => {
+  if (['amount_kg', 'machine_charge_kg', 'gwp', 'emitted_kg'].includes(event.target.name)) updateEditEnvironmentPreview();
+});
 $('#edit-transaction-form').addEventListener('submit', saveTransactionEdit);
 $('#close-edit-transaction').addEventListener('click', closeTransactionEditor);
 $('#cancel-edit-transaction').addEventListener('click', closeTransactionEditor);
