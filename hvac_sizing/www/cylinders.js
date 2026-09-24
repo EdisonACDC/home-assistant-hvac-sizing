@@ -546,7 +546,8 @@ $('#print-cylinder-sheet').addEventListener('click', () => {
 });
 $('#print-cylinder-qr').addEventListener('click', () => {
   if (!activeCylinder) return;
-  openPdfForPrint(`api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr-print`);
+  if (!activeCylinder.qr_print_url) return toast('Configura external_url nelle opzioni dell’add-on prima di stampare il QR', true);
+  window.open(activeCylinder.qr_print_url, '_blank', 'noopener,noreferrer');
 });
 
 loadCylinders(true);

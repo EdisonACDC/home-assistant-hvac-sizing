@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.2
+
+- Stampa QR su pagina etichetta del portale esterno, senza dipendere dalla sessione Ingress di Home Assistant in Safari.
+- Pagina limitata al QR e identificativo della bombola, con token revocabile. Registro e accessi amministrativi restano protetti.
+
 ## 0.11.1
 
 - Aggiunto il pulsante “Elimina” ai movimenti del registro bombola.

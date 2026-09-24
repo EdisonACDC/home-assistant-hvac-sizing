@@ -253,6 +253,8 @@ def cylinder_payload(row: sqlite3.Row, history: list[sqlite3.Row] | None = None)
         result["capacity_kg"] = round(result["capacity_kg"], 3)
     result["total_weight_kg"] = round(result["tare_kg"] + result["current_gas_kg"], 3)
     result["gwp"] = refrigerant_gwp(result["refrigerant"])
+    target_url = public_cylinder_url(row)
+    result["qr_print_url"] = f"{target_url}/print" if target_url else ""
     if history is not None:
         result["history"] = [transaction_payload(item) for item in history]
     return result
@@ -579,7 +581,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.11.1"
+APP_VERSION = "0.11.2"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -732,12 +734,7 @@ class Handler(BaseHTTPRequestHandler):
             if not target_url:
                 self._error("Configura external_url nelle opzioni dell’add-on prima di stampare il QR", 503)
                 return
-            svg = qr_svg(target_url).decode("utf-8")
-            title = f"{html.escape(row['code'])} · {html.escape(row['refrigerant'])}"
-            page = f"""<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR {html.escape(row['code'])}</title><style>
-            *{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#102030;background:#eef3f6}}main{{width:min(92vw,520px);padding:24px;text-align:center;background:white;border-radius:18px;box-shadow:0 12px 40px #0002}}svg{{width:min(78vw,340px);height:auto}}h1{{font-size:22px}}p{{overflow-wrap:anywhere;color:#526675}}button{{min-height:48px;width:100%;border:0;border-radius:11px;background:#159dc0;color:white;font-size:17px;font-weight:800}}@media print{{body{{background:white}}main{{width:100%;box-shadow:none}}button,p{{display:none}}svg{{width:70mm}}}}
-            </style></head><body><main><h1>{title}</h1>{svg}<p>{html.escape(target_url)}</p><button type="button" onclick="window.print()">Stampa QR code</button></main><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),300));</script></body></html>"""
-            self._send_html(page, csp="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'")
+            self._send_qr_print(row, target_url)
             return
         if path.startswith("/api/cylinders/") and path.endswith("/pdf"):
             cylinder_id = path.split("/")[3]
@@ -988,6 +985,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._error("Endpoint non trovato", 404)
 
+    def _send_qr_print(self, row: sqlite3.Row, target_url: str) -> None:
+        svg = qr_svg(target_url).decode("utf-8")
+        title = f"{html.escape(row['code'])} · {html.escape(row['refrigerant'])}"
+        page = f"""<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR {html.escape(row['code'])}</title><style>
+        *{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#102030;background:#eef3f6}}main{{width:min(92vw,520px);padding:24px;text-align:center;background:white;border-radius:18px;box-shadow:0 12px 40px #0002}}svg{{width:min(78vw,340px);height:auto}}h1{{font-size:22px}}p{{overflow-wrap:anywhere;color:#526675}}button{{min-height:48px;width:100%;border:0;border-radius:11px;background:#159dc0;color:white;font-size:17px;font-weight:800}}@media print{{body{{background:white}}main{{width:100%;box-shadow:none}}button,p{{display:none}}svg{{width:70mm}}}}
+        </style></head><body><main><h1>{title}</h1>{svg}<p>{html.escape(target_url)}</p><button type="button" onclick="window.print()">Stampa QR code</button></main><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),300));</script></body></html>"""
+        self._send_html(page, csp="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'")
+
     def _serve_static(self, path: str) -> None:
         filename = path.rsplit("/", 1)[-1]
         if not filename or "." not in filename:
@@ -1206,6 +1211,13 @@ class PublicHandler(Handler):
                 self._serve_admin_asset(parts[1])
                 return
             self._error("Pagina non trovata", 404)
+            return
+        if len(parts) == 4 and parts[0] == "c" and parts[3] == "print":
+            row = self._authorized_cylinder(parts[1], parts[2])
+            if row is None:
+                self._error("Collegamento QR non valido o revocato", 404)
+                return
+            self._send_qr_print(row, public_cylinder_url(row))
             return
         if len(parts) == 3 and parts[0] == "c":
             if not self._authorized_cylinder(parts[1], parts[2]):

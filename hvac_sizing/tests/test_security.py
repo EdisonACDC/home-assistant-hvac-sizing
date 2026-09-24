@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 try:
     import qrcode  # noqa: F401
@@ -64,6 +65,21 @@ class PublicPortalSecurityTests(unittest.TestCase):
                 return response.status, json.loads(response.read())
         except urllib.error.HTTPError as error:
             return error.code, json.loads(error.read())
+
+    def test_print_label_without_ha_session_is_scoped_and_revocable(self):
+        path = f"/c/c1/{self.token}/print"
+        with mock.patch.object(app, "qr_svg", return_value=b"<svg></svg>"):
+            with urllib.request.urlopen(self.base + path, timeout=3) as response:
+                page = response.read().decode()
+                self.assertIn("text/html", response.headers["Content-Type"])
+                self.assertEqual(response.headers["Cache-Control"], "no-store")
+                self.assertIn("Stampa QR code", page)
+                self.assertNotIn("privata", page)
+        self.assertEqual(self.request("/c/c1/falso/print")[0], 404)
+        self.assertEqual(self.request(f"/api/public/cylinders/c1/{self.token}")[0], 401)
+        with app.db_connection() as db:
+            db.execute("UPDATE cylinders SET qr_version = 2 WHERE id = 'c1'")
+        self.assertEqual(self.request(path)[0], 404)
 
     def test_public_port_exposes_only_authorized_cylinder(self):
         endpoint = f"/api/public/cylinders/c1/{self.token}"
