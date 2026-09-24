@@ -167,10 +167,11 @@
         <label>Refrigerante<input name="refrigerant" list="refrigerant-list" required maxlength="30" value="R32" autocomplete="off"></label>
         <datalist id="refrigerant-list"><option value="R32"><option value="R410A"><option value="R134a"><option value="R290"><option value="R404A"><option value="R407C"><option value="R1234yf"><option value="R454B"><option value="R513A"></datalist>
         <label>Tara bombola kg<input id="new-cylinder-tare" name="tare_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 4,250"></label>
-        <label>Peso totale attuale kg<input id="new-cylinder-total" name="total_weight_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="bombola + gas"></label>
+        <label>Gas refrigerante presente kg<input id="new-cylinder-gas" name="current_gas_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 2,500"></label>
+        <label>Peso totale calcolato kg<input id="new-cylinder-total" name="total_weight_kg" type="text" readonly tabindex="-1" placeholder="tara + gas"></label>
         <label>Capacità refrigerante kg (opzionale)<input name="capacity_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 5,000"></label>
       </div>
-      <div class="net-preview"><span>Gas effettivo calcolato</span><strong id="new-cylinder-net">0,000 kg</strong><small>Peso totale − tara</small></div>
+      <div class="net-preview"><span>Peso totale automatico</span><strong id="new-cylinder-net">0,000 kg</strong><small>Tara + gas refrigerante presente</small></div>
       <label>Note<textarea name="notes" rows="2" maxlength="500" placeholder="Marca, numero di serie, proprietà…"></textarea></label>
       <div id="new-cylinder-error" class="form-error hidden" role="alert"></div>
       <button class="button primary full" type="submit">Salva bombola e crea QR</button>
@@ -217,6 +218,26 @@
       <div class="history-head"><h3>Storico movimenti</h3><button id="delete-cylinder" class="delete-room" type="button">Elimina bombola</button></div>
       <div id="cylinder-history" class="history-list"></div>
     </div>
+  </dialog>
+  <dialog id="edit-transaction-dialog" class="cylinder-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">MODIFICA REGISTRO</p><h2>Correggi movimento</h2></div><button id="close-edit-transaction" class="icon-button" type="button" aria-label="Chiudi">×</button></div>
+    <form id="edit-transaction-form" class="dialog-body">
+      <p class="operator-help">La data e il nome dell’operatore restano invariati. Dopo il salvataggio vengono ricalcolati tutti i residui successivi.</p>
+      <div id="edit-transaction-meta" class="transaction-meta"></div>
+      <label>Operazione
+        <select id="edit-transaction-operation" name="operation">
+          <option value="initial">Registrazione iniziale</option>
+          <option value="weighing">Pesatura bombola</option>
+          <option value="remove">Prelievo refrigerante</option>
+          <option value="add">Aggiunta refrigerante</option>
+        </select>
+      </label>
+      <label id="edit-transaction-total-field">Peso totale sulla bilancia kg<input id="edit-transaction-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label id="edit-transaction-amount-field"><span id="edit-transaction-amount-label">Quantità refrigerante kg</span><input id="edit-transaction-amount" name="amount_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label>Note / impianto / cliente<textarea id="edit-transaction-notes" name="notes" rows="3" maxlength="500"></textarea></label>
+      <div id="edit-transaction-error" class="form-error hidden" role="alert"></div>
+      <div class="transaction-edit-actions"><button id="cancel-edit-transaction" class="button ghost" type="button">Annulla</button><button class="button primary" type="submit">Salva modifica</button></div>
+    </form>
   </dialog>
   <dialog id="operators-dialog" class="cylinder-dialog">
     <div class="dialog-head"><div><p class="eyebrow">ACCESSI QR</p><h2>Operatori autorizzati</h2></div><button id="close-operators" class="icon-button" aria-label="Chiudi">×</button></div>

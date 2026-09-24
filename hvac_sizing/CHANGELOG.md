@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.0
+
+- L'amministratore può modificare i movimenti già presenti nel registro di ogni bombola.
+- Dopo una correzione vengono ricalcolati in ordine tutti i residui successivi e il valore attuale della bombola.
+- I movimenti corretti vengono contrassegnati nel registro mantenendo data e operatore originali.
+- Nella creazione della bombola si inseriscono tara e gas presente; il peso totale viene calcolato automaticamente.
+- Data e operatore dei movimenti restano invariati per mantenere la tracciabilità del registro.
+
 ## 0.8.3
 
 - Interfaccia del registro QR adattata automaticamente a iPhone, Android, tablet e computer.

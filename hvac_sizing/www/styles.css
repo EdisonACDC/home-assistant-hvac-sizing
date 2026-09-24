@@ -151,6 +151,11 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .history-row time, .history-row small { color: var(--muted); font-size: .7rem; }
 .history-value { text-align: right; }
 .history-value strong { display: block; color: var(--green); }
+.history-side { display: flex; align-items: center; justify-content: flex-end; gap: .55rem; }
+.history-edit { min-height: 34px; padding: .38rem .6rem; font-size: .7rem; }
+.transaction-meta { padding: .7rem .8rem; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: rgba(7,27,42,.72); font-size: .76rem; overflow-wrap: anywhere; }
+.transaction-edit-actions { display: flex; justify-content: flex-end; gap: .6rem; }
+.transaction-edit-actions .button { min-width: 130px; }
 .operator-help { color: var(--muted); font-size: .8rem; line-height: 1.5; }
 .operator-form { display: grid; gap: .8rem; padding: .9rem; border: 1px solid var(--line); border-radius: 14px; background: rgba(7,27,42,.72); }
 .operators-list { display: grid; gap: .6rem; }
@@ -204,6 +209,7 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
   .sheet-actions .button { flex: 1; }
   .history-row { grid-template-columns: 1fr auto; }
   .history-row time { grid-column: 1 / -1; }
+  .history-side { align-items: flex-end; flex-direction: column; }
   .operator-row { grid-template-columns: 1fr; }
   .operator-actions { justify-content: stretch; }
   .operator-actions .button { flex: 1; }
@@ -220,7 +226,11 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
   .cylinder-main-actions .button, .operator-actions .button, .sheet-actions .button { flex: 1 1 100%; }
   .history-row { grid-template-columns: minmax(0, 1fr); }
   .history-row time { grid-column: auto; }
+  .history-side { align-items: stretch; }
   .history-value { text-align: left; }
+  .history-edit { width: 100%; }
+  .transaction-edit-actions { flex-direction: column-reverse; }
+  .transaction-edit-actions .button { width: 100%; }
 }
 
 @media print {

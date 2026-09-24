@@ -55,7 +55,8 @@
     $('#history').innerHTML=cylinder.history.length ? cylinder.history.map(item=>{
       const date=new Date(item.created_at).toLocaleString(language==='de'?'de-DE':'it-IT',{dateStyle:'short',timeStyle:'short'});
       const detail=item.operation==='weighing'?`${t('total_weight','Peso totale')} ${kg(item.total_weight_kg)}`:`${item.operation==='remove'?'−':'+'}${kg(Math.abs(item.amount_kg||0))}`;
-      return `<div class="history-row"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(operationName(item.operation))}</strong><small>${escapeHtml(item.operator_name||'—')} · ${escapeHtml(detail)}${item.notes?` · ${escapeHtml(item.notes)}`:''}</small></div><div class="value">${kg(item.gas_after_kg)}</div></div>`;
+      const edited=item.edited_at?` · ${language==='de'?'Vom Administrator korrigiert':'Corretto dall’amministratore'}`:'';
+      return `<div class="history-row"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(operationName(item.operation))}</strong><small>${escapeHtml(item.operator_name||'—')} · ${escapeHtml(detail)}${item.notes?` · ${escapeHtml(item.notes)}`:''}${escapeHtml(edited)}</small></div><div class="value">${kg(item.gas_after_kg)}</div></div>`;
     }).join(''):`<div class="empty">${t('empty','Nessun movimento registrato.')}</div>`;
   }
   function operationFields() {

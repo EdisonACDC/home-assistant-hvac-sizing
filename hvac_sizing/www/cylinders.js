@@ -1,5 +1,6 @@
 let cylinderItems = [];
 let activeCylinder = null;
+let activeTransaction = null;
 let operatorItems = [];
 const ctr = value => window.AppI18n?.translate(value) || value;
 
@@ -74,9 +75,11 @@ function renderCylinders() {
 
 function updateNewCylinderPreview() {
   const tare = cylinderNumber($('#new-cylinder-tare').value);
-  const total = cylinderNumber($('#new-cylinder-total').value);
-  const net = Math.max(0, total - tare);
-  $('#new-cylinder-net').textContent = kg(net);
+  const gas = cylinderNumber($('#new-cylinder-gas').value);
+  const total = Math.max(0, tare + gas);
+  const formatted = total.toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3});
+  $('#new-cylinder-total').value = ($('#new-cylinder-tare').value || $('#new-cylinder-gas').value) ? formatted : '';
+  $('#new-cylinder-net').textContent = kg(total);
 }
 
 async function createCylinder(event) {
@@ -88,7 +91,7 @@ async function createCylinder(event) {
   if (submitButton) submitButton.disabled = true;
   const form = new FormData(formElement);
   const payload = Object.fromEntries(form.entries());
-  ['tare_kg', 'total_weight_kg', 'capacity_kg'].forEach(key => { payload[key] = decimalText(payload[key]); });
+  ['tare_kg', 'current_gas_kg', 'total_weight_kg', 'capacity_kg'].forEach(key => { payload[key] = decimalText(payload[key]); });
   try {
     const created = await api('cylinders', {method: 'POST', body: JSON.stringify(payload)});
     formElement.reset();
@@ -140,9 +143,80 @@ function renderCylinderDetail() {
     const detail = item.operation === 'weighing'
       ? `${ctr('Peso totale')} ${kg(item.total_weight_kg)}`
       : `${item.operation === 'remove' ? '−' : '+'}${kg(Math.abs(item.amount_kg || 0))}`;
-    return `<div class="history-row"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}</small></div><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div></div>`;
+    const edited = item.edited_at ? ` · ${ctr('Corretto dall’amministratore')}` : '';
+    return `<div class="history-row" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small></div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button></div></div>`;
   }).join('') : '<div class="empty-state">Nessun movimento registrato.</div>';
   updateOperationPreview();
+}
+
+function transactionInputValue(value) {
+  if (value == null || value === '') return '';
+  return Number(value).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3});
+}
+
+function setEditTransactionFields() {
+  const operation = $('#edit-transaction-operation').value;
+  const weighing = operation === 'weighing';
+  const initial = operation === 'initial';
+  $('#edit-transaction-total-field').classList.toggle('hidden', !weighing);
+  $('#edit-transaction-amount-field').classList.toggle('hidden', weighing);
+  $('#edit-transaction-total').required = weighing;
+  $('#edit-transaction-amount').required = !weighing;
+  $('#edit-transaction-amount-label').textContent = ctr(initial ? 'Gas refrigerante iniziale kg' : 'Quantità refrigerante kg');
+}
+
+function openTransactionEditor(transactionId) {
+  if (!activeCylinder) return;
+  activeTransaction = activeCylinder.history.find(item => item.id === transactionId) || null;
+  if (!activeTransaction) return;
+  const initial = activeTransaction.operation === 'initial';
+  const operation = $('#edit-transaction-operation');
+  operation.value = activeTransaction.operation;
+  operation.disabled = initial;
+  $('#edit-transaction-total').value = activeTransaction.operation === 'weighing' ? transactionInputValue(activeTransaction.total_weight_kg) : '';
+  $('#edit-transaction-amount').value = initial
+    ? transactionInputValue(activeTransaction.gas_after_kg)
+    : transactionInputValue(activeTransaction.amount_kg);
+  $('#edit-transaction-notes').value = activeTransaction.notes || '';
+  const date = new Date(activeTransaction.created_at).toLocaleString(window.AppI18n?.locale() || 'it-IT', {dateStyle: 'short', timeStyle: 'short'});
+  $('#edit-transaction-meta').textContent = `${date} · ${activeTransaction.operator_name || ctr('Amministratore')}`;
+  formError('#edit-transaction-error');
+  setEditTransactionFields();
+  $('#edit-transaction-dialog').showModal();
+}
+
+function closeTransactionEditor() {
+  $('#edit-transaction-dialog').close();
+  activeTransaction = null;
+}
+
+async function saveTransactionEdit(event) {
+  event.preventDefault();
+  if (!activeCylinder || !activeTransaction) return;
+  const formElement = event.currentTarget;
+  const submitButton = formElement.querySelector('[type="submit"]');
+  if (submitButton?.disabled) return;
+  if (submitButton) submitButton.disabled = true;
+  formError('#edit-transaction-error');
+  const payload = {
+    operation: activeTransaction.operation === 'initial' ? 'initial' : $('#edit-transaction-operation').value,
+    total_weight_kg: decimalText($('#edit-transaction-total').value),
+    amount_kg: decimalText($('#edit-transaction-amount').value),
+    notes: $('#edit-transaction-notes').value,
+  };
+  const cylinderId = activeCylinder.id;
+  try {
+    await api(`cylinders/${cylinderId}/transactions/${activeTransaction.id}`, {method: 'PUT', body: JSON.stringify(payload)});
+    closeTransactionEditor();
+    await loadCylinders();
+    await openCylinder(cylinderId, false);
+    toast('Movimento modificato e residui ricalcolati');
+  } catch (error) {
+    formError('#edit-transaction-error', error.message);
+    toast(error.message, true);
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
 }
 
 function setOperationFields() {
@@ -321,7 +395,7 @@ $('#cylinder-dialog').addEventListener('cancel', event => {
 });
 $('#new-cylinder-form').addEventListener('submit', createCylinder);
 $('#new-cylinder-tare').addEventListener('input', updateNewCylinderPreview);
-$('#new-cylinder-total').addEventListener('input', updateNewCylinderPreview);
+$('#new-cylinder-gas').addEventListener('input', updateNewCylinderPreview);
 $('#cylinder-search').addEventListener('input', renderCylinders);
 $('#cylinders-list').addEventListener('click', event => {
   const card = event.target.closest('[data-cylinder]');
@@ -331,6 +405,15 @@ $('#cylinder-operation').addEventListener('change', setOperationFields);
 $('#operation-total').addEventListener('input', updateOperationPreview);
 $('#operation-amount').addEventListener('input', updateOperationPreview);
 $('#cylinder-operation-form').addEventListener('submit', saveCylinderOperation);
+$('#cylinder-history').addEventListener('click', event => {
+  const button = event.target.closest('[data-edit-transaction]');
+  if (button) openTransactionEditor(button.dataset.editTransaction);
+});
+$('#edit-transaction-operation').addEventListener('change', setEditTransactionFields);
+$('#edit-transaction-form').addEventListener('submit', saveTransactionEdit);
+$('#close-edit-transaction').addEventListener('click', closeTransactionEditor);
+$('#cancel-edit-transaction').addEventListener('click', closeTransactionEditor);
+$('#edit-transaction-dialog').addEventListener('cancel', event => { event.preventDefault(); closeTransactionEditor(); });
 $('#delete-cylinder').addEventListener('click', deleteActiveCylinder);
 $('#rotate-cylinder-qr').addEventListener('click', rotateActiveCylinderQr);
 $('#cylinder-qr').addEventListener('load', () => formError('#cylinder-qr-error'));

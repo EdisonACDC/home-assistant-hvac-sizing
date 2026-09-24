@@ -144,6 +144,8 @@ def db_connection() -> sqlite3.Connection:
     transaction_columns = {row[1] for row in connection.execute("PRAGMA table_info(cylinder_transactions)")}
     if "operator_name" not in transaction_columns:
         connection.execute("ALTER TABLE cylinder_transactions ADD COLUMN operator_name TEXT NOT NULL DEFAULT ''")
+    if "edited_at" not in transaction_columns:
+        connection.execute("ALTER TABLE cylinder_transactions ADD COLUMN edited_at TEXT")
     connection.execute("CREATE INDEX IF NOT EXISTS idx_cylinder_transactions_cylinder ON cylinder_transactions(cylinder_id, created_at DESC)")
     return connection
 
@@ -295,7 +297,7 @@ def public_cylinder_payload(cylinder: sqlite3.Row, history: list[sqlite3.Row]) -
                 "operation": item["operation"], "amount_kg": item["amount_kg"],
                 "total_weight_kg": item["total_weight_kg"], "gas_after_kg": item["gas_after_kg"],
                 "notes": item["notes"], "operator_name": item["operator_name"],
-                "created_at": item["created_at"],
+                "created_at": item["created_at"], "edited_at": item["edited_at"],
             }
             for item in history[:50]
         ],
@@ -341,7 +343,90 @@ def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: 
     return cylinder_payload(updated)
 
 
-APP_VERSION = "0.8.3"
+def recalculate_cylinder_transactions(db: sqlite3.Connection, cylinder_id: str) -> sqlite3.Row:
+    cylinder = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+    if not cylinder:
+        raise LookupError("Bombola non trovata")
+    transactions = db.execute(
+        "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at ASC, rowid ASC",
+        (cylinder_id,),
+    ).fetchall()
+    balance = 0.0
+    for transaction in transactions:
+        operation = transaction["operation"]
+        total = transaction["total_weight_kg"]
+        if operation == "initial":
+            amount = number(transaction["amount_kg"], "il gas iniziale")
+            after = amount
+            total = round(cylinder["tare_kg"] + after, 3)
+        elif operation == "weighing":
+            total = number(total, "il peso totale")
+            if total < cylinder["tare_kg"]:
+                raise ValueError("Una pesatura del registro è inferiore alla tara")
+            after = round(total - cylinder["tare_kg"], 3)
+            amount = round(after - balance, 3)
+        elif operation in {"add", "remove"}:
+            amount = number(transaction["amount_kg"], "la quantità")
+            if amount <= 0:
+                raise ValueError("La quantità deve essere maggiore di zero")
+            after = round(balance + amount if operation == "add" else balance - amount, 3)
+            total = None
+        else:
+            raise ValueError("Il registro contiene un’operazione non valida")
+        if after < 0:
+            raise ValueError("La modifica rende negativo il refrigerante in un movimento successivo")
+        if cylinder["capacity_kg"] is not None and after > cylinder["capacity_kg"]:
+            raise ValueError("La modifica supera la capacità della bombola in un movimento del registro")
+        db.execute(
+            "UPDATE cylinder_transactions SET amount_kg = ?, total_weight_kg = ?, gas_before_kg = ?, gas_after_kg = ? WHERE id = ?",
+            (amount, total, balance, after, transaction["id"]),
+        )
+        balance = after
+    now = datetime.now(timezone.utc).isoformat()
+    db.execute("UPDATE cylinders SET current_gas_kg = ?, updated_at = ? WHERE id = ?", (balance, now, cylinder_id))
+    return db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+
+
+def update_cylinder_transaction(cylinder_id: str, transaction_id: str, payload: dict) -> dict:
+    with db_connection() as db:
+        transaction = db.execute(
+            "SELECT * FROM cylinder_transactions WHERE id = ? AND cylinder_id = ?",
+            (transaction_id, cylinder_id),
+        ).fetchone()
+        if not transaction:
+            raise LookupError("Movimento non trovato")
+        operation = str(payload.get("operation") or transaction["operation"])
+        if transaction["operation"] == "initial":
+            if operation != "initial":
+                raise ValueError("La registrazione iniziale non può cambiare tipo")
+            amount = number(payload.get("amount_kg"), "il gas iniziale")
+            total = None
+        else:
+            if operation not in {"weighing", "add", "remove"}:
+                raise ValueError("Operazione non valida")
+            if operation == "weighing":
+                total = number(payload.get("total_weight_kg"), "il peso totale")
+                amount = 0.0
+            else:
+                amount = number(payload.get("amount_kg"), "la quantità")
+                if amount <= 0:
+                    raise ValueError("La quantità deve essere maggiore di zero")
+                total = None
+        notes = str(payload.get("notes") or "").strip()[:500]
+        edited_at = datetime.now(timezone.utc).isoformat()
+        db.execute(
+            "UPDATE cylinder_transactions SET operation = ?, amount_kg = ?, total_weight_kg = ?, notes = ?, edited_at = ? WHERE id = ?",
+            (operation, amount, total, notes, edited_at, transaction_id),
+        )
+        updated = recalculate_cylinder_transactions(db, cylinder_id)
+        history = db.execute(
+            "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC, rowid DESC",
+            (cylinder_id,),
+        ).fetchall()
+    return cylinder_payload(updated, history)
+
+
+APP_VERSION = "0.9.0"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -540,13 +625,17 @@ class Handler(BaseHTTPRequestHandler):
                 code = str(payload.get("code") or "").strip().upper()[:50]
                 refrigerant = str(payload.get("refrigerant") or "").strip().upper()[:30]
                 tare = number(payload.get("tare_kg"), "la tara")
-                total = number(payload.get("total_weight_kg"), "il peso totale")
+                if payload.get("current_gas_kg") not in (None, ""):
+                    gas = number(payload.get("current_gas_kg"), "il gas refrigerante")
+                    total = round(tare + gas, 3)
+                else:
+                    total = number(payload.get("total_weight_kg"), "il peso totale")
+                    gas = round(total - tare, 3)
                 capacity = number(payload.get("capacity_kg"), "la capacità", required=False)
                 if not name or not code or not refrigerant:
                     raise ValueError("Nome, codice e refrigerante sono obbligatori")
                 if total < tare:
                     raise ValueError("Il peso totale non può essere inferiore alla tara")
-                gas = round(total - tare, 3)
                 if capacity is not None and gas > capacity:
                     raise ValueError("Il refrigerante calcolato supera la capacità impostata")
                 now = datetime.now(timezone.utc).isoformat()
@@ -628,6 +717,24 @@ class Handler(BaseHTTPRequestHandler):
                     self._error("Bombola non trovata", 404)
                     return
                 self._send_json({"rotated": cylinder_id, "public_url": public_cylinder_url(row)})
+                return
+            self._error("Endpoint non trovato", 404)
+        except (ValueError, json.JSONDecodeError) as exc:
+            self._error(str(exc))
+        except LookupError as exc:
+            self._error(str(exc), 404)
+        except Exception as exc:  # keep details in logs, not in the browser
+            print(f"Errore: {exc!r}", flush=True)
+            self._error("Errore interno durante l’elaborazione", 500)
+
+    def do_PUT(self) -> None:
+        path = self._path()
+        try:
+            payload = self._json_body()
+            parts = path.strip("/").split("/")
+            if len(parts) == 5 and parts[:2] == ["api", "cylinders"] and parts[3] == "transactions":
+                result = update_cylinder_transaction(parts[2], parts[4], payload)
+                self._send_json(result)
                 return
             self._error("Endpoint non trovato", 404)
         except (ValueError, json.JSONDecodeError) as exc:
