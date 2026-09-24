@@ -38,6 +38,7 @@ textarea { resize: vertical; }
 .button.primary, .button.calculate { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #04111b; }
 .button.secondary { background: var(--panel-2); border: 1px solid #315774; }
 .button.ghost { background: transparent; border: 1px solid var(--line); }
+.logout-button { color: #ffd0d0; background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.5); }
 .page-nav.active { color: #06151e; border-color: transparent; background: linear-gradient(135deg, var(--cyan), var(--blue)); }
 .page-hidden { display: none !important; }
 .method-switch { display: flex; background: #071b2a; border: 1px solid var(--line); border-radius: 12px; padding: .22rem; }

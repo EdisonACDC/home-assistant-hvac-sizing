@@ -7,6 +7,7 @@ import unittest
 import urllib.error
 import urllib.request
 from pathlib import Path
+from unittest import mock
 
 try:
     import qrcode  # noqa: F401
@@ -31,7 +32,7 @@ class CylinderRegisterTests(unittest.TestCase):
         app.DB_PATH = root / "projects.db"
         app.OPTIONS_PATH = root / "options.json"
         app.QR_SECRET_PATH = root / "qr-secret.key"
-        app.OPTIONS_PATH.write_text("{}")
+        app.OPTIONS_PATH.write_text(json.dumps({"external_url": "https://bombole.example"}))
         self.server = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.base = f"http://127.0.0.1:{self.server.server_port}"
@@ -76,6 +77,17 @@ class CylinderRegisterTests(unittest.TestCase):
         self.assertEqual(cylinder["tare_kg"], 4.25)
         self.assertEqual(cylinder["current_gas_kg"], 2.5)
         self.assertEqual(cylinder["total_weight_kg"], 6.75)
+
+    def test_qr_print_page_opens_as_standalone_html(self):
+        cylinder = self.create_cylinder()
+        with mock.patch.object(app, "qr_svg", return_value=b'<svg xmlns="http://www.w3.org/2000/svg"></svg>'):
+            with urllib.request.urlopen(
+                self.base + f"/api/cylinders/{cylinder['id']}/qr-print", timeout=3
+            ) as response:
+                page = response.read().decode()
+                self.assertEqual(response.status, 200)
+                self.assertIn("text/html", response.headers["Content-Type"])
+                self.assertIn("Stampa QR code", page)
 
     def test_admin_edit_recalculates_following_register(self):
         cylinder = self.create_cylinder()

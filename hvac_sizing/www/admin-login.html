@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07131e">
+  <title>Accesso amministratore</title>
+  <link rel="stylesheet" href="admin-login.css">
+</head>
+<body>
+  <main class="login-card">
+    <p class="eyebrow">DIMENSIONAMENTO CLIMATIZZAZIONE PRO</p>
+    <h1>Accesso amministratore</h1>
+    <p class="help">Inserisci la password amministratore configurata nelle opzioni dell’add-on.</p>
+    <form id="admin-login-form">
+      <label>Password amministratore
+        <input id="admin-password" name="password" type="password" minlength="10" required autocomplete="current-password">
+      </label>
+      <div id="admin-login-error" class="error hidden" role="alert"></div>
+      <button id="admin-login-submit" type="submit">Accedi</button>
+    </form>
+    <p class="security">Connessione protetta · sessione temporanea di 8 ore</p>
+  </main>
+  <script src="admin-login.js"></script>
+</body>
+</html>

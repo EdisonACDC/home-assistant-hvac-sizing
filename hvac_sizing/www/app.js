@@ -2,6 +2,13 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const n = value => Number(value || 0);
 const tr = value => window.AppI18n?.translate(value) || value;
+const EXTERNAL_ADMIN = window.location.pathname.startsWith('/admin/');
+
+function cookieValue(name) {
+  const prefix = `${name}=`;
+  const item = document.cookie.split(';').map(value => value.trim()).find(value => value.startsWith(prefix));
+  return item ? decodeURIComponent(item.slice(prefix.length)) : '';
+}
 
 let method = 'quick';
 let currentProjectId = null;
@@ -181,10 +188,27 @@ function projectPayload() {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`api/${path}`, {headers: {'Content-Type': 'application/json'}, ...options});
-  const data = await response.json();
+  const headers = {'Content-Type': 'application/json', ...(options.headers || {})};
+  const method = String(options.method || 'GET').toUpperCase();
+  if (EXTERNAL_ADMIN && !['GET', 'HEAD'].includes(method)) headers['X-Admin-CSRF'] = cookieValue('hvac_admin_csrf');
+  const response = await fetch(`api/${path}`, {...options, headers});
+  const data = await response.json().catch(() => ({error: 'Errore di comunicazione'}));
+  if (EXTERNAL_ADMIN && response.status === 401) {
+    window.location.replace('/admin/login');
+    throw new Error('Sessione amministratore scaduta');
+  }
   if (!response.ok) throw new Error(window.AppI18n?.translate(data.error || 'Operazione non riuscita') || data.error || 'Operazione non riuscita');
   return data;
+}
+
+async function externalAdminLogout() {
+  if (!EXTERNAL_ADMIN) return;
+  const button = $('#external-admin-logout');
+  button.disabled = true;
+  try {
+    await api('logout', {method: 'POST', body: '{}'});
+  } catch (_) {}
+  window.location.replace('/admin/login');
 }
 
 async function calculate() {
@@ -371,6 +395,10 @@ $('#save-project').addEventListener('click', saveProject);
 $('#open-projects').addEventListener('click', showProjects);
 $('#close-projects').addEventListener('click', () => $('#projects-dialog').close());
 $('#new-project').addEventListener('click', newProject);
+if (EXTERNAL_ADMIN) {
+  $('#external-admin-logout').classList.remove('hidden');
+  $('#external-admin-logout').addEventListener('click', externalAdminLogout);
+}
 $$('[data-page-button]').forEach(button => button.addEventListener('click', () => showAppPage(button.dataset.pageButton)));
 $('#analyze-vacuum').addEventListener('click', analyzeVacuum);
 $('#reset-vacuum').addEventListener('click', resetVacuum);

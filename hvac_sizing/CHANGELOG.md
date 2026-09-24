@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0
+
+- Aggiunta area amministratore esterna protetta da password su `/admin/`.
+- L’accesso Ingress da Home Assistant continua a funzionare senza password aggiuntiva.
+- Sessione amministratore firmata di 8 ore, blocco tentativi, cookie sicuri e protezione CSRF.
+- Il pulsante “Stampa QR” apre una pagina di stampa autonoma fuori dall’iframe di Home Assistant.
+- Aggiunto il pulsante “Disconnetti” nell’area amministratore esterna.
+
 ## 0.9.0
 
 - L'amministratore può modificare i movimenti già presenti nel registro di ogni bombola.

@@ -2,7 +2,7 @@
 
 Add-on/Home Assistant App per stimare la potenza frigorifera e termica richiesta da ogni locale.
 
-## Versione 0.9.0
+## Versione 0.10.0
 
 - calcolo rapido parametrico in W/m³;
 - calcolo professionale a bilancio termico;
@@ -26,15 +26,18 @@ Add-on/Home Assistant App per stimare la potenza frigorifera e termica richiesta
 - QR protetti con token firmato e revocabile, senza indirizzo locale di Home Assistant;
 - PIN operatore, blocco dopo tentativi errati e registrazione del nome dell'operatore;
 - applicazione completa disponibile soltanto agli amministratori Home Assistant.
+- accesso amministratore esterno protetto da password su `/admin/`, con sessione temporanea e protezione CSRF.
+- pagina di stampa QR dedicata, compatibile con browser mobili e fuori dall’iframe Ingress.
 
 ## Portale esterno sicuro
 
 1. Nelle opzioni dell'add-on imposta `external_url` su `https://bombole.hausmaistercarellas.com`.
-2. Imposta un `operator_pin` personale; non inserirlo nel QR e non stamparlo sull'etichetta.
+2. Imposta `admin_password` con una password amministratore di almeno 10 caratteri.
 3. Nel Cloudflare Tunnel inoltra il dominio alla porta `48100` del dispositivo Home Assistant.
-4. Mantieni la porta privata `8099` disponibile esclusivamente tramite Ingress.
+4. L’area amministratore esterna sarà disponibile su `https://bombole.hausmaistercarellas.com/admin/`.
+5. Mantieni la porta privata `8099` disponibile esclusivamente tramite Ingress; da Home Assistant non viene richiesta la password aggiuntiva.
 
-Il portale pubblico espone soltanto lettura e movimenti della bombola autorizzata. Progetti, diagnosi, vuoto, elenco completo, eliminazione e impostazioni non sono disponibili sulla porta pubblica.
+Il portale QR espone soltanto lettura e movimenti della bombola autorizzata. Le funzioni complete sulla porta pubblica sono raggiungibili esclusivamente dopo il login amministratore protetto.
 
 ## Installazione locale
 

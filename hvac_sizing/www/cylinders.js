@@ -432,9 +432,8 @@ $('#print-cylinder-sheet').addEventListener('click', () => {
   if (activeCylinder) openPdfForPrint(cylinderPdfUrl(activeCylinder.id));
 });
 $('#print-cylinder-qr').addEventListener('click', () => {
-  document.body.classList.add('qr-printing');
-  window.print();
-  document.body.classList.remove('qr-printing');
+  if (!activeCylinder) return;
+  openPdfForPrint(`api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr-print`);
 });
 
 loadCylinders(true);

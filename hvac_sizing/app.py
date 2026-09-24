@@ -6,6 +6,8 @@ import io
 import base64
 import hashlib
 import hmac
+import html
+import http.client
 import ipaddress
 import json
 import os
@@ -17,6 +19,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from http import HTTPStatus
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -37,8 +40,10 @@ PUBLIC_PORT = int(os.environ.get("HVAC_PUBLIC_PORT", "8100"))
 OPTIONS_PATH = DATA_DIR / "options.json"
 QR_SECRET_PATH = DATA_DIR / "qr-secret.key"
 FAILED_PIN_ATTEMPTS: dict[str, list[float]] = {}
+FAILED_ADMIN_ATTEMPTS: dict[str, list[float]] = {}
 FAILED_PIN_LOCK = threading.Lock()
 OPERATOR_SESSION_SECONDS = 8 * 60 * 60
+ADMIN_SESSION_SECONDS = 8 * 60 * 60
 
 
 def load_options() -> dict:
@@ -83,6 +88,15 @@ def public_cylinder_url(cylinder: dict | sqlite3.Row) -> str:
         return ""
     token = cylinder_access_token(str(cylinder["id"]), int(cylinder["qr_version"]))
     return f"{base}/c/{cylinder['id']}/{token}"
+
+
+def qr_svg(target_url: str) -> bytes:
+    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=4)
+    qr.add_data(target_url)
+    qr.make(fit=True)
+    output = io.BytesIO()
+    qr.make_image(image_factory=qrcode.image.svg.SvgPathImage).save(output)
+    return output.getvalue()
 
 
 def db_connection() -> sqlite3.Connection:
@@ -211,6 +225,66 @@ def pin_rate_limited(address: str) -> bool:
 def record_failed_pin_attempt(address: str) -> None:
     with FAILED_PIN_LOCK:
         FAILED_PIN_ATTEMPTS.setdefault(address, []).append(time.monotonic())
+
+
+def admin_rate_limited(address: str) -> bool:
+    cutoff = time.monotonic() - 900
+    with FAILED_PIN_LOCK:
+        attempts = [stamp for stamp in FAILED_ADMIN_ATTEMPTS.get(address, []) if stamp >= cutoff]
+        FAILED_ADMIN_ATTEMPTS[address] = attempts
+        return len(attempts) >= 5
+
+
+def configured_admin_password() -> str:
+    return str(load_options().get("admin_password") or "")
+
+
+def verify_admin_password(address: str, supplied: object) -> bool:
+    configured = configured_admin_password()
+    if len(configured) < 10 or admin_rate_limited(address):
+        return False
+    valid = secrets.compare_digest(str(supplied or ""), configured)
+    with FAILED_PIN_LOCK:
+        if valid:
+            FAILED_ADMIN_ATTEMPTS.pop(address, None)
+        else:
+            FAILED_ADMIN_ATTEMPTS.setdefault(address, []).append(time.monotonic())
+    return valid
+
+
+def admin_session_token() -> tuple[str, str]:
+    password = configured_admin_password()
+    if len(password) < 10:
+        raise ValueError("Configura una password amministratore di almeno 10 caratteri")
+    csrf = secrets.token_urlsafe(24)
+    payload = json.dumps({
+        "exp": int(time.time()) + ADMIN_SESSION_SECONDS,
+        "csrf": csrf,
+        "pv": hashlib.sha256(password.encode()).hexdigest()[:20],
+    }, separators=(",", ":"), sort_keys=True).encode()
+    encoded = base64.urlsafe_b64encode(payload).decode().rstrip("=")
+    signature = hmac.new(qr_secret(), f"admin:{encoded}".encode(), hashlib.sha256).digest()
+    return f"{encoded}.{base64.urlsafe_b64encode(signature).decode().rstrip('=')}", csrf
+
+
+def admin_session_payload(token: str) -> dict | None:
+    try:
+        encoded, supplied_signature = token.split(".", 1)
+        expected = hmac.new(qr_secret(), f"admin:{encoded}".encode(), hashlib.sha256).digest()
+        supplied = base64.urlsafe_b64decode(supplied_signature + "=" * (-len(supplied_signature) % 4))
+        if not secrets.compare_digest(supplied, expected):
+            return None
+        raw = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
+        payload = json.loads(raw)
+        password = configured_admin_password()
+        if len(password) < 10 or int(payload.get("exp", 0)) < int(time.time()):
+            return None
+        fingerprint = hashlib.sha256(password.encode()).hexdigest()[:20]
+        if not secrets.compare_digest(str(payload.get("pv") or ""), fingerprint):
+            return None
+        return payload
+    except (ValueError, TypeError, KeyError, json.JSONDecodeError):
+        return None
 
 
 def verify_operator_pin(address: str, supplied: object) -> bool:
@@ -426,7 +500,7 @@ def update_cylinder_transaction(cylinder_id: str, transaction_id: str, payload: 
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.9.0"
+APP_VERSION = "0.10.0"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -489,6 +563,18 @@ class Handler(BaseHTTPRequestHandler):
         self._security_headers()
         self.end_headers()
         self.wfile.write(content)
+
+    def _send_html(self, content: str, status: int = 200, *, csp: str | None = None) -> None:
+        encoded = content.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self._security_headers()
+        if csp:
+            self.send_header("Content-Security-Policy", csp)
+        self.end_headers()
+        self.wfile.write(encoded)
 
     def _error(self, message: str, status: int = 400) -> None:
         self._send_json({"error": message}, status)
@@ -554,12 +640,25 @@ class Handler(BaseHTTPRequestHandler):
             if not target_url:
                 self._error("Configura external_url nelle opzioni dell’add-on prima di creare i QR", 503)
                 return
-            qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=4)
-            qr.add_data(target_url)
-            qr.make(fit=True)
-            output = io.BytesIO()
-            qr.make_image(image_factory=qrcode.image.svg.SvgPathImage).save(output)
-            self._send_svg(output.getvalue(), f"bombola-{safe_filename(row['code'])}.svg")
+            self._send_svg(qr_svg(target_url), f"bombola-{safe_filename(row['code'])}.svg")
+            return
+        if path.startswith("/api/cylinders/") and path.endswith("/qr-print"):
+            cylinder_id = path.split("/")[3]
+            with db_connection() as db:
+                row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+            if not row:
+                self._error("Bombola non trovata", 404)
+                return
+            target_url = public_cylinder_url(row)
+            if not target_url:
+                self._error("Configura external_url nelle opzioni dell’add-on prima di stampare il QR", 503)
+                return
+            svg = qr_svg(target_url).decode("utf-8")
+            title = f"{html.escape(row['code'])} · {html.escape(row['refrigerant'])}"
+            page = f"""<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR {html.escape(row['code'])}</title><style>
+            *{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#102030;background:#eef3f6}}main{{width:min(92vw,520px);padding:24px;text-align:center;background:white;border-radius:18px;box-shadow:0 12px 40px #0002}}svg{{width:min(78vw,340px);height:auto}}h1{{font-size:22px}}p{{overflow-wrap:anywhere;color:#526675}}button{{min-height:48px;width:100%;border:0;border-radius:11px;background:#159dc0;color:white;font-size:17px;font-weight:800}}@media print{{body{{background:white}}main{{width:100%;box-shadow:none}}button,p{{display:none}}svg{{width:70mm}}}}
+            </style></head><body><main><h1>{title}</h1>{svg}<p>{html.escape(target_url)}</p><button type="button" onclick="window.print()">Stampa QR code</button></main><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),300));</script></body></html>"""
+            self._send_html(page, csp="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'")
             return
         if path.startswith("/api/cylinders/") and path.endswith("/pdf"):
             cylinder_id = path.split("/")[3]
@@ -817,6 +916,120 @@ class PublicHandler(Handler):
         except ValueError:
             return self.client_address[0]
 
+    def _cookie_value(self, name: str) -> str:
+        try:
+            cookies = SimpleCookie(self.headers.get("Cookie", ""))
+            return cookies[name].value if name in cookies else ""
+        except (KeyError, ValueError):
+            return ""
+
+    def _admin_session(self) -> dict | None:
+        return admin_session_payload(self._cookie_value("hvac_admin_session"))
+
+    def _admin_csrf_valid(self, session: dict) -> bool:
+        header = self.headers.get("X-Admin-CSRF", "")
+        cookie = self._cookie_value("hvac_admin_csrf")
+        expected = str(session.get("csrf") or "")
+        return bool(expected and header and cookie) and secrets.compare_digest(header, expected) and secrets.compare_digest(cookie, expected)
+
+    def _redirect(self, location: str) -> None:
+        self.send_response(HTTPStatus.SEE_OTHER)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        self._security_headers()
+        self.end_headers()
+
+    def _send_admin_login(self, token: str, csrf: str) -> None:
+        encoded = json.dumps({"authenticated": True, "expires_in": ADMIN_SESSION_SECONDS}, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Set-Cookie", f"hvac_admin_session={token}; Max-Age={ADMIN_SESSION_SECONDS}; Path=/admin; Secure; HttpOnly; SameSite=Strict")
+        self.send_header("Set-Cookie", f"hvac_admin_csrf={csrf}; Max-Age={ADMIN_SESSION_SECONDS}; Path=/admin; Secure; SameSite=Strict")
+        self._security_headers()
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _clear_admin_session(self) -> None:
+        encoded = b'{"authenticated":false}'
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Set-Cookie", "hvac_admin_session=; Max-Age=0; Path=/admin; Secure; HttpOnly; SameSite=Strict")
+        self.send_header("Set-Cookie", "hvac_admin_csrf=; Max-Age=0; Path=/admin; Secure; SameSite=Strict")
+        self._security_headers()
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _serve_admin_asset(self, filename: str, *, login_asset: bool = False) -> None:
+        login_allowed = {"admin-login.html", "admin-login.js", "admin-login.css"}
+        app_allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css"}
+        allowed = login_allowed if login_asset else app_allowed
+        if filename not in allowed:
+            self._error("Risorsa non trovata", 404)
+            return
+        file_path = WWW_DIR / filename
+        content = file_path.read_bytes()
+        content_types = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
+        self.send_response(200)
+        self.send_header("Content-Type", content_types[file_path.suffix])
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Cache-Control", "no-store")
+        self._security_headers()
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; base-uri 'none'; object-src 'none'; style-src 'self'; "
+            "script-src 'self'; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'",
+        )
+        self.end_headers()
+        self.wfile.write(content)
+
+    def _proxy_admin_request(self) -> None:
+        parsed = urlparse(self.path)
+        target = parsed.path[len("/admin"):]
+        if not target.startswith("/api/"):
+            self._error("Endpoint non trovato", 404)
+            return
+        if parsed.query:
+            target = f"{target}?{parsed.query}"
+        length = int(self.headers.get("Content-Length", "0"))
+        if length > 2_000_000:
+            self._error("Richiesta troppo grande", 413)
+            return
+        body = self.rfile.read(length) if length else None
+        headers = {"Content-Type": self.headers.get("Content-Type", "application/json")}
+        connection = http.client.HTTPConnection("127.0.0.1", PORT, timeout=45)
+        try:
+            connection.request(self.command, target, body=body, headers=headers)
+            response = connection.getresponse()
+            content = response.read()
+            self.send_response(response.status)
+            for name in ("Content-Type", "Content-Disposition", "Content-Security-Policy"):
+                value = response.getheader(name)
+                if value:
+                    self.send_header(name, value)
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Cache-Control", "no-store")
+            self._security_headers()
+            self.end_headers()
+            self.wfile.write(content)
+        except (OSError, http.client.HTTPException):
+            self._error("Servizio amministrativo temporaneamente non disponibile", 503)
+        finally:
+            connection.close()
+
+    def _authorize_admin_api(self) -> dict | None:
+        session = self._admin_session()
+        if not session:
+            self._error("Sessione amministratore scaduta", 401)
+            return None
+        if self.command in {"POST", "PUT", "PATCH", "DELETE"} and not self._admin_csrf_valid(session):
+            self._error("Protezione della sessione non valida. Accedi nuovamente", 403)
+            return None
+        return session
+
     def _authorized_cylinder(self, cylinder_id: str, token: str) -> sqlite3.Row | None:
         with db_connection() as db:
             row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
@@ -851,6 +1064,37 @@ class PublicHandler(Handler):
         if parts in (["public.js"], ["public.css"]):
             self._serve_public_asset(parts[0])
             return
+        if parts == ["admin", "login"]:
+            if self._admin_session():
+                self._redirect("/admin/")
+            else:
+                self._serve_admin_asset("admin-login.html", login_asset=True)
+            return
+        if len(parts) == 2 and parts[0] == "admin" and parts[1] in {"admin-login.js", "admin-login.css"}:
+            self._serve_admin_asset(parts[1], login_asset=True)
+            return
+        if parts and parts[0] == "admin":
+            session = self._admin_session()
+            if not session:
+                if len(parts) >= 2 and parts[1] == "api":
+                    self._error("Accedi come amministratore", 401)
+                else:
+                    self._redirect("/admin/login")
+                return
+            if len(parts) >= 2 and parts[1] == "api":
+                self._proxy_admin_request()
+                return
+            if parts == ["admin"]:
+                if not urlparse(self.path).path.endswith("/"):
+                    self._redirect("/admin/")
+                else:
+                    self._serve_admin_asset("index.html")
+                return
+            if len(parts) == 2:
+                self._serve_admin_asset(parts[1])
+                return
+            self._error("Pagina non trovata", 404)
+            return
         if len(parts) == 3 and parts[0] == "c":
             if not self._authorized_cylinder(parts[1], parts[2]):
                 self._error("Collegamento QR non valido o revocato", 404)
@@ -878,6 +1122,32 @@ class PublicHandler(Handler):
 
     def do_POST(self) -> None:
         parts = self._parts()
+        if parts == ["admin", "api", "login"]:
+            if len(configured_admin_password()) < 10:
+                self._error("Configura nelle opzioni dell’add-on una password amministratore di almeno 10 caratteri", 503)
+                return
+            address = self._client_key()
+            if admin_rate_limited(address):
+                self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
+                return
+            try:
+                payload = self._json_body()
+                if not verify_admin_password(address, payload.get("password")):
+                    self._error("Password amministratore non valida", 403)
+                    return
+                token, csrf = admin_session_token()
+                self._send_admin_login(token, csrf)
+            except (ValueError, json.JSONDecodeError) as exc:
+                self._error(str(exc))
+            return
+        if parts == ["admin", "api", "logout"]:
+            if self._authorize_admin_api():
+                self._clear_admin_session()
+            return
+        if len(parts) >= 2 and parts[:2] == ["admin", "api"]:
+            if self._authorize_admin_api():
+                self._proxy_admin_request()
+            return
         if len(parts) != 6 or parts[:3] != ["api", "public", "cylinders"] or parts[5] not in {"login", "transactions"}:
             self._error("Operazione non consentita", 404)
             return
@@ -923,12 +1193,27 @@ class PublicHandler(Handler):
             self._error("Errore interno durante l’elaborazione", 500)
 
     def do_DELETE(self) -> None:
+        parts = self._parts()
+        if len(parts) >= 2 and parts[:2] == ["admin", "api"]:
+            if self._authorize_admin_api():
+                self._proxy_admin_request()
+            return
         self._error("Operazione non consentita", 405)
 
     def do_PUT(self) -> None:
+        parts = self._parts()
+        if len(parts) >= 2 and parts[:2] == ["admin", "api"]:
+            if self._authorize_admin_api():
+                self._proxy_admin_request()
+            return
         self._error("Operazione non consentita", 405)
 
     def do_PATCH(self) -> None:
+        parts = self._parts()
+        if len(parts) >= 2 and parts[:2] == ["admin", "api"]:
+            if self._authorize_admin_api():
+                self._proxy_admin_request()
+            return
         self._error("Operazione non consentita", 405)
 
     def do_OPTIONS(self) -> None:
