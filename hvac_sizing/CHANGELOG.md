@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.1
+
+- Aggiunto il pulsante “Elimina” ai movimenti del registro bombola.
+- Ogni eliminazione richiede nuovamente la password amministratore e applica il blocco dopo tentativi errati.
+- Dopo l’eliminazione vengono ricalcolati automaticamente tutti i residui successivi.
+- La registrazione iniziale è protetta e non può essere eliminata singolarmente.
+
 ## 0.11.0
 
 - Aggiunti marca, modello, matricola e carica di targa della macchina durante aggiunta e prelievo di refrigerante.

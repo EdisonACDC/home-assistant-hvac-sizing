@@ -38,6 +38,7 @@ textarea { resize: vertical; }
 .button.primary, .button.calculate { background: linear-gradient(135deg, var(--cyan), var(--blue)); color: #04111b; }
 .button.secondary { background: var(--panel-2); border: 1px solid #315774; }
 .button.ghost { background: transparent; border: 1px solid var(--line); }
+.button.danger { color: #ffd0d0; background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.5); }
 .logout-button { color: #ffd0d0; background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.5); }
 .page-nav.active { color: #06151e; border-color: transparent; background: linear-gradient(135deg, var(--cyan), var(--blue)); }
 .page-hidden { display: none !important; }
@@ -158,7 +159,8 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .history-value { text-align: right; }
 .history-value strong { display: block; color: var(--green); }
 .history-side { display: flex; align-items: center; justify-content: flex-end; gap: .55rem; }
-.history-edit { min-height: 34px; padding: .38rem .6rem; font-size: .7rem; }
+.history-actions { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
+.history-edit, .history-delete { min-height: 34px; padding: .38rem .6rem; font-size: .7rem; }
 .transaction-meta { padding: .7rem .8rem; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: rgba(7,27,42,.72); font-size: .76rem; overflow-wrap: anywhere; }
 .transaction-edit-actions { display: flex; justify-content: flex-end; gap: .6rem; }
 .transaction-edit-actions .button { min-width: 130px; }

@@ -203,6 +203,64 @@ class CylinderRegisterTests(unittest.TestCase):
         saved_initial = next(item for item in unchanged["history"] if item["operation"] == "initial")
         self.assertEqual(saved_initial["gas_after_kg"], 2.5)
 
+    def test_admin_delete_movement_recalculates_following_register(self):
+        cylinder = self.create_cylinder()
+        cylinder_id = cylinder["id"]
+        self.request(
+            f"/api/cylinders/{cylinder_id}/transactions",
+            {"operation": "add", "amount_kg": 0.5},
+            "POST",
+        )
+        self.request(
+            f"/api/cylinders/{cylinder_id}/transactions",
+            {"operation": "remove", "amount_kg": 0.75},
+            "POST",
+        )
+        _, detail = self.request(f"/api/cylinders/{cylinder_id}")
+        addition = next(item for item in detail["history"] if item["operation"] == "add")
+
+        status, updated = self.request(
+            f"/api/cylinders/{cylinder_id}/transactions/{addition['id']}",
+            {"admin_password": self.admin_password},
+            "DELETE",
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(updated["current_gas_kg"], 1.75)
+        self.assertNotIn(addition["id"], [item["id"] for item in updated["history"]])
+        removal = next(item for item in updated["history"] if item["operation"] == "remove")
+        self.assertEqual(removal["gas_before_kg"], 2.5)
+        self.assertEqual(removal["gas_after_kg"], 1.75)
+
+    def test_admin_delete_requires_password_and_preserves_initial_record(self):
+        cylinder = self.create_cylinder()
+        cylinder_id = cylinder["id"]
+        self.request(
+            f"/api/cylinders/{cylinder_id}/transactions",
+            {"operation": "remove", "amount_kg": 0.25},
+            "POST",
+        )
+        _, detail = self.request(f"/api/cylinders/{cylinder_id}")
+        removal = next(item for item in detail["history"] if item["operation"] == "remove")
+        initial = next(item for item in detail["history"] if item["operation"] == "initial")
+
+        wrong_status, _ = self.request(
+            f"/api/cylinders/{cylinder_id}/transactions/{removal['id']}",
+            {"admin_password": "Password-Errata-0000"},
+            "DELETE",
+        )
+        initial_status, initial_error = self.request(
+            f"/api/cylinders/{cylinder_id}/transactions/{initial['id']}",
+            {"admin_password": self.admin_password},
+            "DELETE",
+        )
+
+        self.assertEqual(wrong_status, 403)
+        self.assertEqual(initial_status, 400)
+        self.assertEqual(initial_error["error"], "La registrazione iniziale non può essere eliminata")
+        _, unchanged = self.request(f"/api/cylinders/{cylinder_id}")
+        self.assertEqual(len(unchanged["history"]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

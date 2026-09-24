@@ -1,6 +1,7 @@
 let cylinderItems = [];
 let activeCylinder = null;
 let activeTransaction = null;
+let activeDeleteTransaction = null;
 let operatorItems = [];
 const ctr = value => window.AppI18n?.translate(value) || value;
 
@@ -148,7 +149,8 @@ function renderCylinderDetail() {
     const edited = item.edited_at ? ` · ${ctr('Corretto dall’amministratore')}` : '';
     const machine = [item.machine_brand, item.machine_model, item.machine_serial].filter(Boolean).join(' · ');
     const climate = item.gwp == null ? '' : `${machine ? `${machine} · ` : ''}GWP ${item.gwp} · ${tco2(item.co2_equivalent_kg)} gas movimentato${item.emission_co2_equivalent_kg == null ? '' : ` · ${tco2(item.emission_co2_equivalent_kg)} emissione stimata`}`;
-    return `<div class="history-row" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small>${climate ? `<small class="climate-detail">${escapeHtml(climate)}</small>` : ''}</div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button></div></div>`;
+    const deleteButton = item.operation === 'initial' ? '' : `<button class="button danger history-delete" type="button" data-delete-transaction="${escapeHtml(item.id)}">Elimina</button>`;
+    return `<div class="history-row" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small>${climate ? `<small class="climate-detail">${escapeHtml(climate)}</small>` : ''}</div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><div class="history-actions"><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button>${deleteButton}</div></div></div>`;
   }).join('') : '<div class="empty-state">Nessun movimento registrato.</div>';
   updateOperationPreview();
 }
@@ -251,6 +253,54 @@ async function saveTransactionEdit(event) {
     toast(error.message, true);
   } finally {
     if (submitButton) submitButton.disabled = false;
+  }
+}
+
+function openTransactionDelete(transactionId) {
+  if (!activeCylinder) return;
+  activeDeleteTransaction = activeCylinder.history.find(item => item.id === transactionId) || null;
+  if (!activeDeleteTransaction || activeDeleteTransaction.operation === 'initial') return;
+  const names = {weighing: 'Pesatura', add: 'Aggiunta', remove: 'Prelievo'};
+  const date = new Date(activeDeleteTransaction.created_at).toLocaleString(window.AppI18n?.locale() || 'it-IT', {dateStyle: 'short', timeStyle: 'short'});
+  const amount = activeDeleteTransaction.operation === 'weighing'
+    ? `${ctr('Peso totale')} ${kg(activeDeleteTransaction.total_weight_kg)}`
+    : kg(Math.abs(activeDeleteTransaction.amount_kg || 0));
+  $('#delete-transaction-meta').textContent = `${ctr(names[activeDeleteTransaction.operation] || activeDeleteTransaction.operation)} · ${date} · ${amount}`;
+  $('#delete-transaction-password').value = '';
+  formError('#delete-transaction-error');
+  $('#delete-transaction-dialog').showModal();
+}
+
+function closeTransactionDelete() {
+  $('#delete-transaction-password').value = '';
+  $('#delete-transaction-dialog').close();
+  activeDeleteTransaction = null;
+}
+
+async function deleteTransaction(event) {
+  event.preventDefault();
+  if (!activeCylinder || !activeDeleteTransaction) return;
+  const submitButton = event.currentTarget.querySelector('[type="submit"]');
+  if (submitButton?.disabled) return;
+  submitButton.disabled = true;
+  formError('#delete-transaction-error');
+  const cylinderId = activeCylinder.id;
+  try {
+    await api(`cylinders/${cylinderId}/transactions/${activeDeleteTransaction.id}`, {
+      method: 'DELETE',
+      body: JSON.stringify({admin_password: $('#delete-transaction-password').value}),
+    });
+    closeTransactionDelete();
+    await loadCylinders();
+    await openCylinder(cylinderId, false);
+    toast('Movimento eliminato e residui ricalcolati');
+  } catch (error) {
+    $('#delete-transaction-password').value = '';
+    $('#delete-transaction-password').focus();
+    formError('#delete-transaction-error', error.message);
+    toast(error.message, true);
+  } finally {
+    submitButton.disabled = false;
   }
 }
 
@@ -460,8 +510,10 @@ $('#cylinder-operation-form').addEventListener('input', event => {
 });
 $('#cylinder-operation-form').addEventListener('submit', saveCylinderOperation);
 $('#cylinder-history').addEventListener('click', event => {
-  const button = event.target.closest('[data-edit-transaction]');
-  if (button) openTransactionEditor(button.dataset.editTransaction);
+  const editButton = event.target.closest('[data-edit-transaction]');
+  const deleteButton = event.target.closest('[data-delete-transaction]');
+  if (editButton) openTransactionEditor(editButton.dataset.editTransaction);
+  if (deleteButton) openTransactionDelete(deleteButton.dataset.deleteTransaction);
 });
 $('#edit-transaction-operation').addEventListener('change', setEditTransactionFields);
 $('#edit-transaction-form').addEventListener('input', event => {
@@ -471,6 +523,10 @@ $('#edit-transaction-form').addEventListener('submit', saveTransactionEdit);
 $('#close-edit-transaction').addEventListener('click', closeTransactionEditor);
 $('#cancel-edit-transaction').addEventListener('click', closeTransactionEditor);
 $('#edit-transaction-dialog').addEventListener('cancel', event => { event.preventDefault(); closeTransactionEditor(); });
+$('#delete-transaction-form').addEventListener('submit', deleteTransaction);
+$('#close-delete-transaction').addEventListener('click', closeTransactionDelete);
+$('#cancel-delete-transaction').addEventListener('click', closeTransactionDelete);
+$('#delete-transaction-dialog').addEventListener('cancel', event => { event.preventDefault(); closeTransactionDelete(); });
 $('#delete-cylinder').addEventListener('click', deleteActiveCylinder);
 $('#rotate-cylinder-qr').addEventListener('click', rotateActiveCylinderQr);
 $('#cylinder-qr').addEventListener('load', () => formError('#cylinder-qr-error'));

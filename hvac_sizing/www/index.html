@@ -266,6 +266,17 @@
       <div class="transaction-edit-actions"><button id="cancel-edit-transaction" class="button ghost" type="button">Annulla</button><button class="button primary" type="submit">Salva modifica</button></div>
     </form>
   </dialog>
+  <dialog id="delete-transaction-dialog" class="cylinder-dialog">
+    <div class="dialog-head"><div><p class="eyebrow">ELIMINA MOVIMENTO</p><h2>Conferma eliminazione</h2></div><button id="close-delete-transaction" class="icon-button" type="button" aria-label="Chiudi">×</button></div>
+    <form id="delete-transaction-form" class="dialog-body">
+      <p class="operator-help">Il movimento verrà eliminato definitivamente e tutti i residui successivi saranno ricalcolati. La registrazione iniziale non può essere eliminata.</p>
+      <div id="delete-transaction-meta" class="transaction-meta"></div>
+      <label>Password amministratore per confermare<input id="delete-transaction-password" name="admin_password" type="password" required minlength="10" autocomplete="current-password"></label>
+      <p class="operator-help">La password non viene salvata.</p>
+      <div id="delete-transaction-error" class="form-error hidden" role="alert"></div>
+      <div class="transaction-edit-actions"><button id="cancel-delete-transaction" class="button ghost" type="button">Annulla</button><button class="button danger" type="submit">Elimina movimento</button></div>
+    </form>
+  </dialog>
   <dialog id="operators-dialog" class="cylinder-dialog">
     <div class="dialog-head"><div><p class="eyebrow">ACCESSI QR</p><h2>Operatori autorizzati</h2></div><button id="close-operators" class="icon-button" aria-label="Chiudi">×</button></div>
     <div class="dialog-body">

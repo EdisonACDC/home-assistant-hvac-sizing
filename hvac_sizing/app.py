@@ -560,7 +560,26 @@ def update_cylinder_transaction(cylinder_id: str, transaction_id: str, payload: 
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.11.0"
+def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
+    with db_connection() as db:
+        transaction = db.execute(
+            "SELECT * FROM cylinder_transactions WHERE id = ? AND cylinder_id = ?",
+            (transaction_id, cylinder_id),
+        ).fetchone()
+        if not transaction:
+            raise LookupError("Movimento non trovato")
+        if transaction["operation"] == "initial":
+            raise ValueError("La registrazione iniziale non può essere eliminata")
+        db.execute("DELETE FROM cylinder_transactions WHERE id = ?", (transaction_id,))
+        updated = recalculate_cylinder_transactions(db, cylinder_id)
+        history = db.execute(
+            "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC, rowid DESC",
+            (cylinder_id,),
+        ).fetchall()
+    return cylinder_payload(updated, history)
+
+
+APP_VERSION = "0.11.1"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -916,6 +935,29 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self) -> None:
         path = self._path()
+        parts = path.strip("/").split("/")
+        if len(parts) == 5 and parts[:2] == ["api", "cylinders"] and parts[3] == "transactions":
+            try:
+                payload = self._json_body()
+                if len(configured_admin_password()) < 10:
+                    self._error("Configura una password amministratore di almeno 10 caratteri", 503)
+                    return
+                address = self.client_address[0]
+                if admin_rate_limited(address):
+                    self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
+                    return
+                if not verify_admin_password(address, payload.get("admin_password")):
+                    self._error("Password amministratore non valida", 403)
+                    return
+                self._send_json(delete_cylinder_transaction(parts[2], parts[4]))
+            except (ValueError, json.JSONDecodeError) as exc:
+                self._error(str(exc))
+            except LookupError as exc:
+                self._error(str(exc), 404)
+            except Exception as exc:
+                print(f"Errore eliminazione movimento: {exc!r}", flush=True)
+                self._error("Errore interno durante l’elaborazione", 500)
+            return
         if path.startswith("/api/operators/"):
             operator_id = path.split("/")[3]
             with db_connection() as db:
