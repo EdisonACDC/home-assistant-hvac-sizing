@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1
+
+- Ogni modifica a un movimento del registro bombola richiede la password amministratore.
+- La password viene verificata dal server, non viene salvata nel browser ed è rimossa dal modulo dopo ogni tentativo.
+- Dopo cinque password errate le modifiche vengono bloccate temporaneamente per 15 minuti.
+
 ## 0.10.0
 
 - Aggiunta area amministratore esterna protetta da password su `/admin/`.

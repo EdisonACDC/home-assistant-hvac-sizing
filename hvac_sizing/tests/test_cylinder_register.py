@@ -32,7 +32,12 @@ class CylinderRegisterTests(unittest.TestCase):
         app.DB_PATH = root / "projects.db"
         app.OPTIONS_PATH = root / "options.json"
         app.QR_SECRET_PATH = root / "qr-secret.key"
-        app.OPTIONS_PATH.write_text(json.dumps({"external_url": "https://bombole.example"}))
+        self.admin_password = "Password-Sicura-2468"
+        app.OPTIONS_PATH.write_text(json.dumps({
+            "external_url": "https://bombole.example",
+            "admin_password": self.admin_password,
+        }))
+        app.FAILED_ADMIN_ATTEMPTS.clear()
         self.server = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.base = f"http://127.0.0.1:{self.server.server_port}"
@@ -104,7 +109,12 @@ class CylinderRegisterTests(unittest.TestCase):
         initial = next(item for item in detail["history"] if item["operation"] == "initial")
         status, updated = self.request(
             f"/api/cylinders/{cylinder_id}/transactions/{initial['id']}",
-            {"operation": "initial", "amount_kg": 3.0, "notes": "Valore corretto"},
+            {
+                "operation": "initial",
+                "amount_kg": 3.0,
+                "notes": "Valore corretto",
+                "admin_password": self.admin_password,
+            },
             "PUT",
         )
         self.assertEqual(status, 200)
@@ -129,12 +139,38 @@ class CylinderRegisterTests(unittest.TestCase):
         initial = next(item for item in detail["history"] if item["operation"] == "initial")
         status, _ = self.request(
             f"/api/cylinders/{cylinder_id}/transactions/{initial['id']}",
-            {"operation": "initial", "amount_kg": 1.0},
+            {
+                "operation": "initial",
+                "amount_kg": 1.0,
+                "admin_password": self.admin_password,
+            },
             "PUT",
         )
         self.assertEqual(status, 400)
         _, unchanged = self.request(f"/api/cylinders/{cylinder_id}")
         self.assertEqual(unchanged["current_gas_kg"], 0.5)
+        saved_initial = next(item for item in unchanged["history"] if item["operation"] == "initial")
+        self.assertEqual(saved_initial["gas_after_kg"], 2.5)
+
+    def test_admin_edit_rejects_wrong_password_without_changing_register(self):
+        cylinder = self.create_cylinder()
+        cylinder_id = cylinder["id"]
+        _, detail = self.request(f"/api/cylinders/{cylinder_id}")
+        initial = next(item for item in detail["history"] if item["operation"] == "initial")
+
+        status, response = self.request(
+            f"/api/cylinders/{cylinder_id}/transactions/{initial['id']}",
+            {
+                "operation": "initial",
+                "amount_kg": 4.0,
+                "admin_password": "Password-Errata-0000",
+            },
+            "PUT",
+        )
+
+        self.assertEqual(status, 403)
+        self.assertEqual(response["error"], "Password amministratore non valida")
+        _, unchanged = self.request(f"/api/cylinders/{cylinder_id}")
         saved_initial = next(item for item in unchanged["history"] if item["operation"] == "initial")
         self.assertEqual(saved_initial["gas_after_kg"], 2.5)
 

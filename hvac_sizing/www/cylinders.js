@@ -178,6 +178,7 @@ function openTransactionEditor(transactionId) {
     ? transactionInputValue(activeTransaction.gas_after_kg)
     : transactionInputValue(activeTransaction.amount_kg);
   $('#edit-transaction-notes').value = activeTransaction.notes || '';
+  $('#edit-transaction-password').value = '';
   const date = new Date(activeTransaction.created_at).toLocaleString(window.AppI18n?.locale() || 'it-IT', {dateStyle: 'short', timeStyle: 'short'});
   $('#edit-transaction-meta').textContent = `${date} · ${activeTransaction.operator_name || ctr('Amministratore')}`;
   formError('#edit-transaction-error');
@@ -186,6 +187,7 @@ function openTransactionEditor(transactionId) {
 }
 
 function closeTransactionEditor() {
+  $('#edit-transaction-password').value = '';
   $('#edit-transaction-dialog').close();
   activeTransaction = null;
 }
@@ -203,6 +205,7 @@ async function saveTransactionEdit(event) {
     total_weight_kg: decimalText($('#edit-transaction-total').value),
     amount_kg: decimalText($('#edit-transaction-amount').value),
     notes: $('#edit-transaction-notes').value,
+    admin_password: $('#edit-transaction-password').value,
   };
   const cylinderId = activeCylinder.id;
   try {
@@ -212,6 +215,8 @@ async function saveTransactionEdit(event) {
     await openCylinder(cylinderId, false);
     toast('Movimento modificato e residui ricalcolati');
   } catch (error) {
+    $('#edit-transaction-password').value = '';
+    $('#edit-transaction-password').focus();
     formError('#edit-transaction-error', error.message);
     toast(error.message, true);
   } finally {

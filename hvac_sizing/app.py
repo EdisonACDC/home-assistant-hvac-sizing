@@ -500,7 +500,7 @@ def update_cylinder_transaction(cylinder_id: str, transaction_id: str, payload: 
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.10.0"
+APP_VERSION = "0.10.1"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -832,6 +832,16 @@ class Handler(BaseHTTPRequestHandler):
             payload = self._json_body()
             parts = path.strip("/").split("/")
             if len(parts) == 5 and parts[:2] == ["api", "cylinders"] and parts[3] == "transactions":
+                if len(configured_admin_password()) < 10:
+                    self._error("Configura una password amministratore di almeno 10 caratteri", 503)
+                    return
+                address = self.client_address[0]
+                if admin_rate_limited(address):
+                    self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
+                    return
+                if not verify_admin_password(address, payload.pop("admin_password", "")):
+                    self._error("Password amministratore non valida", 403)
+                    return
                 result = update_cylinder_transaction(parts[2], parts[4], payload)
                 self._send_json(result)
                 return
