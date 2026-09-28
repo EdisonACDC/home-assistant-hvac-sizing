@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.5
+
+- Storico bombole più leggibile: caratteri maggiori, contrasto aumentato, operazione e dettagli su righe separate.
+- Marca, modello, matricola, GWP e CO₂e su righe distinte senza tagli.
+- Impaginazione a colonna singola sui pannelli stretti e telefoni, pulsanti di almeno 44px.
+
 ## 0.11.4
 
 - Download PNG binario verificato, con nome .png, tramite sessione corrente; anteprima QR ora in PNG.

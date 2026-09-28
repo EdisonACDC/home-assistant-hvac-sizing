@@ -248,3 +248,57 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
   body.qr-printing .qr-card img { width: 70mm; }
   body.qr-printing .qr-actions, body.qr-printing .qr-card p { display: none !important; }
 }
+
+/* Readable cylinder history, sized to its panel rather than the whole screen. */
+.history-list, .history { container-type: inline-size; }
+.history-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: .65rem 1.25rem;
+  padding: 1.1rem;
+  line-height: 1.6;
+}
+.history-row time {
+  grid-column: 1 / -1;
+  display: block;
+  color: #c2d5e3;
+  font-size: .9rem;
+  font-variant-numeric: tabular-nums;
+}
+.history-row > div > strong { display: block; font-size: 1.15rem; color: #f0f7fc; }
+.history-row small {
+  display: block;
+  margin-top: .3rem;
+  color: #d1e0ea;
+  font-size: 1rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.history-row .climate-detail {
+  margin-top: .65rem;
+  padding: .7rem .8rem;
+  background: rgba(59, 201, 219, .08);
+  border-left: 3px solid #59d9eb;
+  border-radius: 6px;
+  color: #8de9f3 !important;
+  font-size: 1rem;
+}
+.history-row .climate-detail span { display: block; overflow-wrap: anywhere; }
+.history-row .history-side { flex-direction: column; align-items: flex-end; gap: .8rem; }
+.history-row .history-value strong, .history-row .value { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.history-row .history-edit, .history-row .history-delete { min-height: 44px; font-size: .95rem; padding: .55rem .85rem; }
+@container (max-width: 700px) {
+  .history-row { grid-template-columns: minmax(0, 1fr); padding: .9rem; }
+  .history-row .history-side { align-items: stretch; }
+  .history-row .history-value, .history-row .value { text-align: left; }
+  .history-row .history-actions { justify-content: flex-start; }
+  .history-row .history-actions button { flex: 1 1 120px; width: auto; }
+}
+@media (max-width: 700px) {
+  .history-row { grid-template-columns: minmax(0, 1fr); padding: .9rem; }
+  .history-row .history-side { align-items: stretch; }
+  .history-row .history-value, .history-row .value { text-align: left; }
+  .history-row .history-actions { justify-content: flex-start; }
+  .history-row .history-actions button { flex: 1 1 120px; width: auto; }
+}
