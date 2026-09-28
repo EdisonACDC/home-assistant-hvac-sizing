@@ -65,6 +65,7 @@ window.showAppPage = showAppPage;
 const defaults = () => ({
   id: crypto.randomUUID(), name: 'Locale 1', length: 5, width: 4, height: 2.7,
   people: 2, lighting_w: 150, equipment_w: 100, margin_percent: 10,
+  insulation_choice: 'unknown', glazing_choice: 'unknown', margin_choice: 'ten',
   quick_w_m3_cooling: 35, quick_w_m3_heating: 40, quick_insulation_factor: 1,
   quick_exposure_factor: 1, quick_orientation: 'unknown', quick_glazing_factor: 1,
   wall_area: 24, wall_u: 0.7, window_area: 4, window_u: 1.4,
@@ -127,7 +128,7 @@ function renderRooms() {
           ${field('length', 'Lunghezza m', room.length, 'step="0.01"')}
           ${field('width', 'Larghezza m', room.width, 'step="0.01"')}
           ${field('height', 'Altezza m', room.height, 'step="0.01"')}
-          ${field('margin_percent', 'Margine %', room.margin_percent, 'min="0" max="50"')}
+          ${simpleChoice(room, 'margin_choice')}
         </div>
         ${method === 'quick' ? quickFields(room) : professionalFields(room)}
       </div>
@@ -170,17 +171,77 @@ function exposureFields(room) {
   </div>`;
 }
 
+// UI presets are transparent heuristics for the existing quick estimate.
+const SIMPLE_CHOICES = {
+  insulation_choice: {
+    key: 'quick_insulation_factor', label: 'Com’è isolato il locale?', numericLabel: 'Fattore isolamento', extra: 'step="0.05" min="0"',
+    help: 'Considera pareti e tetto. Sono categorie indicative, non classi energetiche. Se non sai, scegli “Non so”: non viene applicata una correzione.',
+    options: [
+      ['unknown', 'Non so — nessuna correzione', 1],
+      ['good', 'Ben isolato — cappotto e tetto isolato', 0.8],
+      ['average', 'Isolamento intermedio', 1],
+      ['poor', 'Poco isolato — pareti e tetto non isolati', 1.2]
+    ]
+  },
+  glazing_choice: {
+    key: 'quick_glazing_factor', label: 'Quante superfici vetrate ci sono?', numericLabel: 'Fattore vetrate', extra: 'step="0.05" min="0"',
+    help: 'Considera quanto spazio occupano i vetri sulle pareti esterne. Conta la superficie, non il numero di finestre. Questa scelta riguarda il raffrescamento.',
+    options: [
+      ['unknown', 'Non so — nessuna correzione', 1],
+      ['few', 'Poche o nessuna — piccole finestre', 0.9],
+      ['average', 'Intermedie — parte della parete', 1],
+      ['large', 'Molte — grandi vetrate o pareti di vetro', 1.2]
+    ]
+  },
+  margin_choice: {
+    key: 'margin_percent', label: 'Potenza extra (margine)', numericLabel: 'Margine %', extra: 'min="0" max="50"',
+    help: 'Riserva aggiunta al risultato: con +10%, 3 kW diventano 3,3 kW. Non sostituisce i dati mancanti.',
+    options: [
+      ['zero', 'Nessuna riserva — 0%', 0],
+      ['five', 'Aggiungi il 5%', 5],
+      ['ten', 'Aggiungi il 10%', 10],
+      ['fifteen', 'Aggiungi il 15%', 15],
+      ['twenty', 'Aggiungi il 20%', 20]
+    ]
+  }
+};
+
+function simpleChoice(room, choiceKey) {
+  const config = SIMPLE_CHOICES[choiceKey];
+  const selected = config.options.find(option => option[0] === room[choiceKey] && option[2] === Number(room[config.key]))?.[0] || 'custom';
+  const helpId = `room-field-help-${++fieldHelpIndex}`;
+  return `<div class="simple-choice">
+    <label>${tr(config.label)}<select data-key="${choiceKey}" aria-describedby="${helpId}">
+      ${[...config.options, ['custom', 'Valore manuale / progetto precedente']].map(option => `<option value="${option[0]}" ${selected === option[0] ? 'selected' : ''}>${tr(option[1])}</option>`).join('')}
+    </select><small id="${helpId}" class="field-help">${tr(config.help)}</small></label>
+    <details class="exposure-details" ${selected === 'custom' ? 'open' : ''}>
+      <summary>${tr('Valore applicato / modifica manuale')}</summary>
+      ${field(config.key, config.numericLabel, room[config.key], config.extra)}
+    </details>
+  </div>`;
+}
+
 function quickFields(room) {
-  return `<p class="subheading">Coefficienti rapidi</p><div class="grid four">
-    ${field('quick_w_m3_cooling', 'Base raffrescamento W/m³', room.quick_w_m3_cooling)}
-    ${field('quick_w_m3_heating', 'Base riscaldamento W/m³', room.quick_w_m3_heating)}
-    ${field('quick_insulation_factor', 'Fattore isolamento', room.quick_insulation_factor, 'step="0.05"')}
+  return `<p class="subheading">Caratteristiche del locale</p>
+  <p class="field-help quick-assumptions">${tr('Le scelte applicano correzioni indicative della stima rapida. Puoi vedere e modificare ogni valore nei dettagli. I dati sconosciuti restano da verificare.')}</p>
+  <div class="grid four">
+    ${simpleChoice(room, 'insulation_choice')}
     ${exposureFields(room)}
-    ${field('quick_glazing_factor', 'Fattore vetrate', room.quick_glazing_factor, 'step="0.05"')}
+    ${simpleChoice(room, 'glazing_choice')}
+  </div>
+  <p class="subheading">Persone, luci e apparecchi</p><div class="grid four">
     ${field('people', 'Persone', room.people)}
     ${field('lighting_w', 'Illuminazione W', room.lighting_w)}
     ${field('equipment_w', 'Apparecchiature W', room.equipment_w)}
-  </div>`;
+  </div>
+  <details class="sizing-advanced">
+    <summary>${tr('Impostazioni avanzate — potenza di base')}</summary>
+    <p class="field-help">${tr('Per iniziare sono precompilati 35 W/m³ per raffreddare e 40 W/m³ per scaldare. Sono ipotesi di partenza da verificare, non valori adatti a ogni edificio. I progetti già salvati conservano i loro valori.')}</p>
+    <div class="grid four">
+      ${field('quick_w_m3_cooling', 'Base raffrescamento W/m³', room.quick_w_m3_cooling)}
+      ${field('quick_w_m3_heating', 'Base riscaldamento W/m³', room.quick_w_m3_heating)}
+    </div>
+  </details>`;
 }
 
 function professionalFields(room) {
@@ -224,6 +285,21 @@ function syncRoomInput(event) {
   const card = input.closest('.room-card');
   const room = rooms.find(item => item.id === card.dataset.id);
   room[input.dataset.key] = input.type === 'number' ? n(input.value) : input.value;
+  const choice = SIMPLE_CHOICES[input.dataset.key];
+  if (choice) {
+    const selected = choice.options.find(option => option[0] === input.value);
+    if (selected) room[choice.key] = selected[2];
+    const group = input.closest('.simple-choice');
+    group.querySelector('input').value = room[choice.key];
+    group.querySelector('details').open = input.value === 'custom';
+  } else {
+    const choiceKey = Object.keys(SIMPLE_CHOICES).find(key => SIMPLE_CHOICES[key].key === input.dataset.key);
+    if (choiceKey) {
+      room[choiceKey] = 'custom';
+      input.closest('.simple-choice').querySelector('select').value = 'custom';
+    }
+  }
+
   if (input.dataset.key === 'quick_orientation') {
     const preset = EXPOSURE_OPTIONS.find(item => item.value === input.value);
     if (preset && preset.factor !== undefined) room.quick_exposure_factor = preset.factor;

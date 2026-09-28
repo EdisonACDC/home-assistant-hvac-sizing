@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.9
+
+- Scelte guidate per isolamento, superficie vetrata e riserva di potenza, con correzioni indicative visibili e modificabili.
+- Coefficienti base W/m³ spostati nelle impostazioni avanzate del calcolo rapido.
+- Valori e scelte salvati per locale; conservazione dei valori personalizzati dei progetti precedenti.
+- Traduzioni tedesche e controlli adattabili al telefono.
+
 ## 0.11.8
 
 - Tendina esposizione delle finestre con otto orientamenti e opzione sconosciuta/multipla nel calcolo rapido.
