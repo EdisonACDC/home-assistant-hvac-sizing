@@ -66,6 +66,29 @@ class PublicPortalSecurityTests(unittest.TestCase):
         except urllib.error.HTTPError as error:
             return error.code, json.loads(error.read())
 
+    def test_png_download_is_real_scannable_and_revocable(self):
+        import io
+        from PIL import Image
+        path = f"/c/c1/{self.token}/qr.png"
+        with urllib.request.urlopen(self.base + path, timeout=3) as response:
+            self.assertEqual(response.headers["Content-Type"], "image/png")
+            self.assertEqual(response.headers["Content-Disposition"], 'attachment; filename="bombola-R32-1.png"')
+            self.assertEqual(response.headers["Cache-Control"], "no-store")
+            image = Image.open(io.BytesIO(response.read())).convert("RGB")
+        expected = app.qrcode.QRCode(error_correction=app.qrcode.constants.ERROR_CORRECT_M, border=4)
+        expected.add_data(f"https://bombole.example/c/c1/{self.token}")
+        expected.make(fit=True)
+        matrix = expected.get_matrix()
+        self.assertEqual(image.size, (len(matrix) * 20, len(matrix) * 20))
+        for y, row in enumerate(matrix):
+            for x, dark in enumerate(row):
+                self.assertEqual(image.getpixel((x * 20 + 10, y * 20 + 10)), (0, 0, 0) if dark else (255, 255, 255))
+        self.assertEqual(self.request("/c/c1/falso/qr.png")[0], 404)
+        self.assertEqual(self.request(f"/api/public/cylinders/c1/{self.token}")[0], 401)
+        with app.db_connection() as db:
+            db.execute("UPDATE cylinders SET qr_version = 2 WHERE id = 'c1'")
+        self.assertEqual(self.request(path)[0], 404)
+
     def test_print_label_without_ha_session_is_scoped_and_revocable(self):
         path = f"/c/c1/{self.token}/print"
         with mock.patch.object(app, "qr_svg", return_value=b"<svg></svg>"):

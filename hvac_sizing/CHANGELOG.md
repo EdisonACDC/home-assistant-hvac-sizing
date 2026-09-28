@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.3
+
+- Download QR in PNG ad alta risoluzione, nero su bianco con margini di scansione.
+- Pulsante disponibile nella scheda bombola e nella pagina di stampa esterna, per PC e telefono.
+- Download esterno con token revocabile senza sessione Ingress; registro sempre protetto.
+
 ## 0.11.2
 
 - Stampa QR su pagina etichetta del portale esterno, senza dipendere dalla sessione Ingress di Home Assistant in Safari.

@@ -1,6 +1,6 @@
 FROM ghcr.io/home-assistant/base:latest
 
-ARG BUILD_VERSION=0.11.2
+ARG BUILD_VERSION=0.11.3
 ARG BUILD_ARCH
 
 LABEL \
@@ -11,7 +11,7 @@ LABEL \
   io.hass.arch="${BUILD_ARCH}"
 
 RUN apk add --no-cache python3 py3-pip \
-    && pip3 install --no-cache-dir --break-system-packages qrcode==8.2 reportlab==5.0.1
+    && pip3 install --no-cache-dir --break-system-packages "qrcode[pil]==8.2" reportlab==5.0.1
 
 WORKDIR /app
 COPY app.py /app/app.py

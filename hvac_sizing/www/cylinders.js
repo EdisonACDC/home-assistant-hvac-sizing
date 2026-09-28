@@ -121,8 +121,8 @@ async function openCylinder(id, updateUrl = true) {
     const qrUrl = `api/cylinders/${encodeURIComponent(id)}/qr?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
     formError('#cylinder-qr-error');
     $('#cylinder-qr').src = qrUrl;
-    $('#download-cylinder-qr').href = qrUrl;
-    $('#download-cylinder-qr').download = `bombola-${activeCylinder.code}.svg`;
+    $('#download-cylinder-qr').href = activeCylinder.qr_png_url || `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr.png`;
+    $('#download-cylinder-qr').download = `bombola-${activeCylinder.code}.png`;
     $('#download-cylinder-pdf').href = cylinderPdfUrl(id, true);
     $('#download-cylinder-pdf').download = `scheda-bombola-${activeCylinder.code}.pdf`;
     $('.qr-card h3').textContent = `${activeCylinder.code} · ${activeCylinder.refrigerant}`;
@@ -558,6 +558,6 @@ window.addEventListener('app-language-changed', () => {
     $('#download-cylinder-pdf').href = cylinderPdfUrl(activeCylinder.id, true);
     const qrUrl = `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
     $('#cylinder-qr').src = qrUrl;
-    $('#download-cylinder-qr').href = qrUrl;
+    $('#download-cylinder-qr').href = activeCylinder.qr_png_url || `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr.png`;
   }
 });

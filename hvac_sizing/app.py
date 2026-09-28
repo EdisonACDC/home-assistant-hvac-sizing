@@ -99,6 +99,16 @@ def qr_svg(target_url: str) -> bytes:
     return output.getvalue()
 
 
+def qr_png(target_url: str) -> bytes:
+    # Integer module scaling and four-module quiet zone: no blurred resizing.
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=20, border=4)
+    qr.add_data(target_url)
+    qr.make(fit=True)
+    output = io.BytesIO()
+    qr.make_image(fill_color="black", back_color="white").save(output, format="PNG")
+    return output.getvalue()
+
+
 def db_connection() -> sqlite3.Connection:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DB_PATH)
@@ -255,6 +265,7 @@ def cylinder_payload(row: sqlite3.Row, history: list[sqlite3.Row] | None = None)
     result["gwp"] = refrigerant_gwp(result["refrigerant"])
     target_url = public_cylinder_url(row)
     result["qr_print_url"] = f"{target_url}/print" if target_url else ""
+    result["qr_png_url"] = f"{target_url}/qr.png" if target_url else ""
     if history is not None:
         result["history"] = [transaction_payload(item) for item in history]
     return result
@@ -581,7 +592,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.11.2"
+APP_VERSION = "0.11.3"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -628,6 +639,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
         self.send_header("Content-Disposition", f'inline; filename="{filename}"')
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Cache-Control", "no-store")
+        self._security_headers()
+        self.end_headers()
+        self.wfile.write(content)
+
+    def _send_png(self, row: sqlite3.Row, target_url: str) -> None:
+        content = qr_png(target_url)
+        filename = f"bombola-{safe_filename(row['code'])}.png"
+        self.send_response(200)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
         self.send_header("Content-Length", str(len(content)))
         self.send_header("Cache-Control", "no-store")
         self._security_headers()
@@ -710,7 +733,7 @@ class Handler(BaseHTTPRequestHandler):
             download = query.get("download", [""])[0] == "1"
             self._send_pdf(pdf, "magazzino-bombole.pdf", download)
             return
-        if path.startswith("/api/cylinders/") and path.endswith("/qr"):
+        if path.startswith("/api/cylinders/") and (path.endswith("/qr") or path.endswith("/qr.png")):
             cylinder_id = path.split("/")[3]
             with db_connection() as db:
                 row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
@@ -720,6 +743,9 @@ class Handler(BaseHTTPRequestHandler):
             target_url = public_cylinder_url(row)
             if not target_url:
                 self._error("Configura external_url nelle opzioni dell’add-on prima di creare i QR", 503)
+                return
+            if path.endswith("/qr.png"):
+                self._send_png(row, target_url)
                 return
             self._send_svg(qr_svg(target_url), f"bombola-{safe_filename(row['code'])}.svg")
             return
@@ -989,8 +1015,8 @@ class Handler(BaseHTTPRequestHandler):
         svg = qr_svg(target_url).decode("utf-8")
         title = f"{html.escape(row['code'])} · {html.escape(row['refrigerant'])}"
         page = f"""<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR {html.escape(row['code'])}</title><style>
-        *{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#102030;background:#eef3f6}}main{{width:min(92vw,520px);padding:24px;text-align:center;background:white;border-radius:18px;box-shadow:0 12px 40px #0002}}svg{{width:min(78vw,340px);height:auto}}h1{{font-size:22px}}p{{overflow-wrap:anywhere;color:#526675}}button{{min-height:48px;width:100%;border:0;border-radius:11px;background:#159dc0;color:white;font-size:17px;font-weight:800}}@media print{{body{{background:white}}main{{width:100%;box-shadow:none}}button,p{{display:none}}svg{{width:70mm}}}}
-        </style></head><body><main><h1>{title}</h1>{svg}<p>{html.escape(target_url)}</p><button type="button" onclick="window.print()">Stampa QR code</button></main><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),300));</script></body></html>"""
+        *{{box-sizing:border-box}}body{{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#102030;background:#eef3f6}}main{{width:min(92vw,520px);padding:24px;text-align:center;background:white;border-radius:18px;box-shadow:0 12px 40px #0002}}svg{{width:min(78vw,340px);height:auto}}h1{{font-size:22px}}p{{overflow-wrap:anywhere;color:#526675}}a.download{{display:block;padding:14px;margin-top:12px;border-radius:11px;background:#159dc0;color:white;text-decoration:none;font-weight:800}}button{{min-height:48px;width:100%;border:0;border-radius:11px;background:#159dc0;color:white;font-size:17px;font-weight:800}}@media print{{body{{background:white}}main{{width:100%;box-shadow:none}}button,p,a.download{{display:none}}svg{{width:70mm}}}}
+        </style></head><body><main><h1>{title}</h1>{svg}<p>{html.escape(target_url)}</p><button type="button" onclick="window.print()">Stampa QR code</button><a class="download" href="{html.escape(target_url, quote=True)}/qr.png" download>Scarica QR in PNG / QR als PNG herunterladen</a></main><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),300));</script></body></html>"""
         self._send_html(page, csp="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'")
 
     def _serve_static(self, path: str) -> None:
@@ -1212,12 +1238,15 @@ class PublicHandler(Handler):
                 return
             self._error("Pagina non trovata", 404)
             return
-        if len(parts) == 4 and parts[0] == "c" and parts[3] == "print":
+        if len(parts) == 4 and parts[0] == "c" and parts[3] in {"print", "qr.png"}:
             row = self._authorized_cylinder(parts[1], parts[2])
             if row is None:
                 self._error("Collegamento QR non valido o revocato", 404)
                 return
-            self._send_qr_print(row, public_cylinder_url(row))
+            if parts[3] == "qr.png":
+                self._send_png(row, public_cylinder_url(row))
+            else:
+                self._send_qr_print(row, public_cylinder_url(row))
             return
         if len(parts) == 3 and parts[0] == "c":
             if not self._authorized_cylinder(parts[1], parts[2]):
