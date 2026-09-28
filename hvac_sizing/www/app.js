@@ -74,11 +74,47 @@ const defaults = () => ({
   person_sensible_w: 75, person_latent_w: 55, lighting_factor: 1, equipment_factor: 1
 });
 
+const ROOM_FIELD_HELP = {
+  "length": "Misura interna del locale in metri, es. 5. Non lasciare 0.",
+  "width": "Misura interna in metri, es. 4. Lunghezza × larghezza dà i m². Non lasciare 0.",
+  "height": "Dal pavimento al soffitto in metri, es. 2,7. Non lasciare 0.",
+  "margin_percent": "Riserva aggiunta alla potenza: 10 = +10%; 0 = nessuna riserva.",
+  "quick_w_m3_cooling": "Potenza di base per ogni m³, prima dei fattori e dei carichi interni. 35 è un valore iniziale da verificare; 0 non significa “non so”.",
+  "quick_w_m3_heating": "Potenza di base in riscaldamento per ogni m³. 40 è un valore iniziale da verificare; non azzerare se il dato è sconosciuto.",
+  "quick_insulation_factor": "1 = nessuna correzione; sotto 1 riduce, sopra 1 aumenta la stima estiva e invernale. Non usare 0 per un dato sconosciuto.",
+  "quick_exposure_factor": "Correzione del raffrescamento per esposizione al sole: 1 = neutro, sopra 1 aumenta la stima. Non mettere 0 se non sai.",
+  "quick_glazing_factor": "Correzione del raffrescamento per le vetrate: 1 = neutro. Anche senza finestre non mettere 0: annullerebbe tutta la quota di base.",
+  "people": "Numero di persone previste nel locale. 0 solo se non occupato.",
+  "lighting_w": "Somma dei watt delle luci: es. 5 lampade da 10 W = 50 W. 0 se assenti o spente. Nel metodo professionale applica anche il fattore di uso.",
+  "equipment_w": "Watt assorbiti da PC, TV e altre apparecchiature che scaldano il locale. Escludi il climatizzatore. 0 se assenti o spente.",
+  "wall_area": "Somma delle pareti verso esterno: lunghezza × altezza, togliendo finestre e porte già conteggiate a parte. 0 se assenti.",
+  "window_area": "Superficie totale delle finestre verso esterno in m². 0 se non ci sono finestre.",
+  "roof_area": "Superficie del soffitto/tetto esposta verso esterno. 0 se sopra c’è un locale alla stessa temperatura.",
+  "floor_area": "Superficie del pavimento verso esterno. 0 verso un locale alla stessa temperatura. Il modello non distingue il terreno dall’aria esterna.",
+  "solar_irradiance_w_m2": "Sole incidente sulle finestre nelle condizioni di progetto. 0 solo se escludi questo apporto; il valore iniziale è da verificare.",
+  "window_g_value": "Quota di sole che attraversa il vetro, da scheda tecnica: 0,55 = 55%. Non mettere 0 se sconosciuta; senza finestre azzera i m².",
+  "shading_factor": "1 = nessuna riduzione; 0,7 = resta il 70% del sole; 0 = apporto solare escluso.",
+  "infiltration_ach": "Ricambi d’aria per fessure/aperture ogni ora. 0 esclude le infiltrazioni. Non contare qui aria già inserita in “Aria esterna”.",
+  "ventilation_m3h": "Portata aggiuntiva di aria esterna immessa, non ricircolo. 0 se assente. Si somma alle infiltrazioni; il recupero di calore non è modellato.",
+  "occupancy_factor": "Quota di persone presenti insieme: 1 = tutte; 0,5 = metà; 0 = nessuna.",
+  "person_sensible_w": "Calore per persona che aumenta la temperatura. Valore iniziale 75 W da verificare per l’attività. Se nessuno è presente, azzera “Persone”.",
+  "person_latent_w": "Calore legato all’umidità prodotta da una persona. Valore iniziale 55 W da verificare; 0 esclude questo contributo.",
+  "lighting_factor": "Quota delle luci accese insieme: 1 = tutte; 0,5 = metà; 0 = spente.",
+  "equipment_factor": "Quota di utilizzo delle apparecchiature: 1 = pieno carico; 0,5 = metà; 0 = spente.",
+  "wall_u": "Trasmittanza U da scheda tecnica o stratigrafia: più bassa = più isolamento. Se l’elemento manca, metti 0 nella superficie, non qui.",
+  "window_u": "Trasmittanza U da scheda tecnica o stratigrafia: più bassa = più isolamento. Se l’elemento manca, metti 0 nella superficie, non qui.",
+  "roof_u": "Trasmittanza U da scheda tecnica o stratigrafia: più bassa = più isolamento. Se l’elemento manca, metti 0 nella superficie, non qui.",
+  "floor_u": "Trasmittanza U da scheda tecnica o stratigrafia: più bassa = più isolamento. Se l’elemento manca, metti 0 nella superficie, non qui."
+};
+let fieldHelpIndex = 0;
 function field(key, label, value, extra = '') {
-  return `<label>${label}<input data-key="${key}" type="number" value="${value}" ${extra}></label>`;
+  const helpId = `room-field-help-${++fieldHelpIndex}`;
+  return `<label>${label}<input data-key="${key}" type="number" value="${value}" aria-describedby="${helpId}" ${extra}><small class="field-help" id="${helpId}">${escapeHtml(tr(ROOM_FIELD_HELP[key]))}</small></label>`;
 }
 
 function renderRooms() {
+  fieldHelpIndex = 0;
+  $('#sizing-method-help').textContent = tr(method === 'quick' ? "Calcolo rapido: stima iniziale con coefficienti indicativi da verificare per il locale." : "Calcolo professionale: verifica clima, superfici e dati tecnici. Le superfici usano la temperatura esterna; ambienti confinanti a temperature diverse richiedono una valutazione specifica.");
   const container = $('#rooms');
   container.innerHTML = rooms.map((room, index) => `
     <article class="room-card" data-id="${room.id}">

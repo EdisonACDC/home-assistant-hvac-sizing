@@ -321,3 +321,15 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .history-row.history-add .history-operation { color: #98f4c2; background: #163f30; }
 .history-row.history-remove .history-operation::before { content: "−"; font-size: 1.3em; font-weight: 900; }
 .history-row.history-add .history-operation::before { content: "+"; font-size: 1.3em; font-weight: 900; }
+
+/* Sizing guidance remains visible on touch screens and desktop. */
+.sizing-guide { margin: 0 0 1rem; padding: 1rem; border: 1px solid #38778d; border-left: 5px solid var(--cyan); border-radius: 12px; background: #102d40; }
+.sizing-guide h3 { margin: 0 0 .6rem; font-size: 1.1rem; }
+.sizing-guide p { margin-top: .55rem; line-height: 1.55; color: #d9eaf4; }
+.sizing-guide .sizing-zero-help { color: #ffe0ac; font-weight: 700; }
+#rooms label, #climate-panel label { font-size: .95rem; color: #e3eff7; }
+#rooms input, #climate-panel input { font-size: 1rem; min-height: 44px; }
+#rooms .grid, #climate-panel .grid { align-items: start; row-gap: 1.2rem; }
+.field-help { display: block; font-size: .88rem; font-weight: 400; line-height: 1.5; color: #c5d9e7; overflow-wrap: anywhere; }
+@media (max-width: 1000px) { #rooms .grid.four, #climate-panel .grid.six { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { #rooms .grid.four, #climate-panel .grid.six { grid-template-columns: minmax(0, 1fr); } .field-help { font-size: .94rem; } }

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d2438">
   <title>Dimensionamento Climatizzazione Pro</title>
-  <link rel="stylesheet" href="styles.css?v=0.11.6">
-  <link rel="stylesheet" href="diagnostics.css?v=0.11.6">
+  <link rel="stylesheet" href="styles.css?v=0.11.7">
+  <link rel="stylesheet" href="diagnostics.css?v=0.11.7">
 </head>
 <body>
   <header class="topbar">
@@ -143,16 +143,22 @@
     <section id="climate-panel" class="panel climate hidden" data-app-page="sizing">
       <div class="section-title"><div><p class="eyebrow">CONDIZIONI DI PROGETTO</p><h2>Clima interno ed esterno</h2></div></div>
       <div class="grid six">
-        <label>Estate esterna °C<input id="summer-outdoor" type="number" value="35" step="0.1"></label>
-        <label>U.R. esterna %<input id="summer-rh-out" type="number" value="50" min="0" max="100"></label>
-        <label>Estate interna °C<input id="summer-indoor" type="number" value="26" step="0.1"></label>
-        <label>U.R. interna %<input id="summer-rh-in" type="number" value="50" min="0" max="100"></label>
-        <label>Inverno esterna °C<input id="winter-outdoor" type="number" value="-5" step="0.1"></label>
-        <label>Inverno interna °C<input id="winter-indoor" type="number" value="20" step="0.1"></label>
+        <label>Estate esterna °C<input id="summer-outdoor" type="number" value="35" step="0.1" aria-describedby="help-summer-outdoor"><small class="field-help" id="help-summer-outdoor">Temperatura esterna estiva di progetto della località, non quella letta oggi. 0 significa davvero 0 °C.</small></label>
+        <label>U.R. esterna %<input id="summer-rh-out" type="number" value="50" min="0" max="100" aria-describedby="help-summer-rh-out"><small class="field-help" id="help-summer-rh-out">Umidità relativa esterna associata alle condizioni estive. 50 = 50%; 0 indica aria completamente secca, non dato mancante.</small></label>
+        <label>Estate interna °C<input id="summer-indoor" type="number" value="26" step="0.1" aria-describedby="help-summer-indoor"><small class="field-help" id="help-summer-indoor">Temperatura desiderata nel locale in estate, es. 26 °C. Non azzerare per saltare il campo.</small></label>
+        <label>U.R. interna %<input id="summer-rh-in" type="number" value="50" min="0" max="100" aria-describedby="help-summer-rh-in"><small class="field-help" id="help-summer-rh-in">Umidità relativa desiderata all’interno, es. 50%. Serve al carico di deumidificazione. 0 non significa “non so”.</small></label>
+        <label>Inverno esterna °C<input id="winter-outdoor" type="number" value="-5" step="0.1" aria-describedby="help-winter-outdoor"><small class="field-help" id="help-winter-outdoor">Temperatura esterna invernale di progetto della località. Può essere negativa; 0 è valido solo se il dato è 0 °C.</small></label>
+        <label>Inverno interna °C<input id="winter-indoor" type="number" value="20" step="0.1" aria-describedby="help-winter-indoor"><small class="field-help" id="help-winter-indoor">Temperatura desiderata nel locale in inverno, es. 20 °C. Non azzerare per saltare il campo.</small></label>
       </div>
     </section>
 
     <section class="section-title rooms-heading" data-app-page="sizing"><div><p class="eyebrow">LOCALI</p><h2>Dati per il calcolo</h2></div><button id="add-room" class="button secondary">+ Aggiungi locale</button></section>
+    <aside class="sizing-guide" data-app-page="sizing" aria-labelledby="sizing-guide-title">
+      <h3 id="sizing-guide-title">Come compilare</h3>
+      <p>1. Inserisci le misure reali del locale. 2. Indica persone, luci e apparecchiature. 3. Controlla i coefficienti prima di calcolare.</p>
+      <p class="sizing-zero-help">0 = assente, solo dove indicato. Nei fattori rapidi 1 = nessuna correzione. Un dato sconosciuto non va azzerato.</p>
+      <p id="sizing-method-help"></p>
+    </aside>
     <div id="rooms" data-app-page="sizing"></div>
     <div class="calculate-bar" data-app-page="sizing"><div><strong id="room-count">1 locale</strong><span>I risultati restano separati per ogni ambiente</span></div><button id="calculate" class="button calculate">Calcola potenze</button></div>
     <section id="results" class="results hidden" data-app-page="sizing"></section>
@@ -294,10 +300,10 @@
     </div>
   </dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script src="i18n.js?v=0.11.6"></script>
-  <script src="app.js?v=0.11.6"></script>
-  <script src="diagnostics.js?v=0.11.6"></script>
-  <script src="cylinders.js?v=0.11.6"></script>
-  <script src="machine-brands.js?v=0.11.6"></script>
+  <script src="i18n.js?v=0.11.7"></script>
+  <script src="app.js?v=0.11.7"></script>
+  <script src="diagnostics.js?v=0.11.7"></script>
+  <script src="cylinders.js?v=0.11.7"></script>
+  <script src="machine-brands.js?v=0.11.7"></script>
 </body>
 </html>

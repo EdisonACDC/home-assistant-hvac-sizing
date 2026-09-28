@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.7
+
+- Guida sempre visibile sotto ogni campo del dimensionamento rapido, professionale e del clima, in italiano e tedesco.
+- Spiegazione di valori zero, fattori neutri, unità e dati da verificare.
+- Testi più leggibili e campi su una colonna sui telefoni.
+
 ## 0.11.6
 
 - Prelievi evidenziati in arancione e aggiunte in verde, con bordo, sfondo ed etichetta +/−.
