@@ -592,7 +592,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.11.3"
+APP_VERSION = "0.11.4"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -1023,7 +1023,7 @@ class Handler(BaseHTTPRequestHandler):
         filename = path.rsplit("/", 1)[-1]
         if not filename or "." not in filename:
             filename = "index.html"
-        allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css"}
+        allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js"}
         if filename not in allowed:
             self.send_error(404)
             return
@@ -1108,7 +1108,7 @@ class PublicHandler(Handler):
 
     def _serve_admin_asset(self, filename: str, *, login_asset: bool = False) -> None:
         login_allowed = {"admin-login.html", "admin-login.js", "admin-login.css"}
-        app_allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css"}
+        app_allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js"}
         allowed = login_allowed if login_asset else app_allowed
         if filename not in allowed:
             self._error("Risorsa non trovata", 404)
@@ -1179,7 +1179,7 @@ class PublicHandler(Handler):
         return row if row and public_access_allowed(row, token) else None
 
     def _serve_public_asset(self, filename: str) -> None:
-        allowed = {"public.html", "public.js", "public.css"}
+        allowed = {"public.html", "public.js", "public.css", "machine-brands.js"}
         if filename not in allowed:
             self._error("Risorsa non trovata", 404)
             return
@@ -1204,7 +1204,7 @@ class PublicHandler(Handler):
         if parts == ["health"]:
             self._send_json({"status": "ok", "service": "cylinder-portal", "version": APP_VERSION})
             return
-        if parts in (["public.js"], ["public.css"]):
+        if parts in (["public.js"], ["public.css"], ["machine-brands.js"]):
             self._serve_public_asset(parts[0])
             return
         if parts == ["admin", "login"]:

@@ -118,7 +118,7 @@ async function openCylinder(id, updateUrl = true) {
     $('#cylinder-detail-name').textContent = activeCylinder.name;
     renderCylinderDetail();
     setOperationFields();
-    const qrUrl = `api/cylinders/${encodeURIComponent(id)}/qr?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
+    const qrUrl = `api/cylinders/${encodeURIComponent(id)}/qr.png?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
     formError('#cylinder-qr-error');
     $('#cylinder-qr').src = qrUrl;
     $('#download-cylinder-qr').href = activeCylinder.qr_png_url || `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr.png`;
@@ -199,6 +199,7 @@ function openTransactionEditor(transactionId) {
     : transactionInputValue(activeTransaction.amount_kg);
   $('#edit-transaction-notes').value = activeTransaction.notes || '';
   $('#edit-machine-brand').value = activeTransaction.machine_brand || '';
+  window.syncMachineBrands?.();
   $('#edit-machine-model').value = activeTransaction.machine_model || '';
   $('#edit-machine-serial').value = activeTransaction.machine_serial || '';
   $('#edit-machine-charge').value = transactionInputValue(activeTransaction.machine_charge_kg);
@@ -556,8 +557,37 @@ window.addEventListener('app-language-changed', () => {
   if (activeCylinder) {
     renderCylinderDetail();
     $('#download-cylinder-pdf').href = cylinderPdfUrl(activeCylinder.id, true);
-    const qrUrl = `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
+    const qrUrl = `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr.png?lang=${window.AppI18n?.getLanguage() || 'it'}&v=${Date.now()}`;
     $('#cylinder-qr').src = qrUrl;
     $('#download-cylinder-qr').href = activeCylinder.qr_png_url || `api/cylinders/${encodeURIComponent(activeCylinder.id)}/qr.png`;
   }
+});
+
+// Download actual binary data on the current authenticated origin (also in Ingress).
+$('#download-cylinder-qr').addEventListener('click', async event => {
+  event.preventDefault();
+  if (!activeCylinder) return;
+  const cylinder = activeCylinder;
+  const button = event.currentTarget;
+  if (button.dataset.busy) return;
+  button.dataset.busy = '1';
+  try {
+    const response = await fetch(`api/cylinders/${encodeURIComponent(cylinder.id)}/qr.png?v=${Date.now()}`, {cache: 'no-store'});
+    if (!response.ok) throw new Error(ctr('Download PNG non riuscito. Aggiorna e riavvia l’add-on.'));
+    const buffer = await response.arrayBuffer();
+    const signature = new Uint8Array(buffer, 0, Math.min(8, buffer.byteLength));
+    if ([137,80,78,71,13,10,26,10].some((value,index) => signature[index] !== value)) {
+      throw new Error(ctr('Il server non ha restituito un PNG. Aggiorna e riavvia l’add-on.'));
+    }
+    const blob = new Blob([buffer], {type:'image/png'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bombola-${String(cylinder.code).replace(/[^a-zA-Z0-9_-]/g,'_')}.png`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) { toast(error.message, true); }
+  finally { delete button.dataset.busy; }
 });

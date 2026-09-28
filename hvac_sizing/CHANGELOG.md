@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.4
+
+- Download PNG binario verificato, con nome .png, tramite sessione corrente; anteprima QR ora in PNG.
+- Risorse JavaScript versionate per evitare vecchi pulsanti in cache.
+- Selettore con oltre 70 marchi e inserimento manuale nei movimenti, correzioni e portale QR.
+
 ## 0.11.3
 
 - Download QR in PNG ad alta risoluzione, nero su bianco con margini di scansione.

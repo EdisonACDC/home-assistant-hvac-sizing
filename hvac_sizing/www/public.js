@@ -86,6 +86,7 @@
     $('#loading').classList.add('hidden');
     if (!sessionToken) { $('#login-panel').classList.remove('hidden'); return; }
     try {
+      window.syncMachineBrands?.();
       cylinder=await api(endpoint);
       $('#logged-operator').textContent=cylinder.operator_name;
       $('#login-panel').classList.add('hidden');
@@ -132,6 +133,7 @@
       formElement.querySelector('[name="amount_kg"]').value='';
       formElement.querySelector('[name="notes"]').value='';
       ['machine_brand','machine_model','machine_serial','machine_charge_kg','gwp','emitted_kg'].forEach(name=>formElement.elements[name].value='');
+      window.syncMachineBrands?.();
       cylinder=await api(endpoint);
       render();
       operationFields();
