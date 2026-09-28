@@ -333,3 +333,10 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .field-help { display: block; font-size: .88rem; font-weight: 400; line-height: 1.5; color: #c5d9e7; overflow-wrap: anywhere; }
 @media (max-width: 1000px) { #rooms .grid.four, #climate-panel .grid.six { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { #rooms .grid.four, #climate-panel .grid.six { grid-template-columns: minmax(0, 1fr); } .field-help { font-size: .94rem; } }
+
+.exposure-field { min-width: 0; }
+#rooms .exposure-field select { font-size: 1rem; min-height: 44px; }
+.exposure-note { margin: .6rem 0; }
+.exposure-details { border: 1px solid var(--line); border-radius: 8px; padding: .65rem; }
+.exposure-details summary { cursor: pointer; color: #bceef4; font-size: .9rem; line-height: 1.5; }
+.exposure-details label { margin: .65rem 0; }

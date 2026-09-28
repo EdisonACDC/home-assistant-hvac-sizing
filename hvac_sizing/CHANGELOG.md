@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.8
+
+- Tendina esposizione delle finestre con otto orientamenti e opzione sconosciuta/multipla nel calcolo rapido.
+- Preset indicativi dichiarati nell’interfaccia; fattore visibile e modificabile nei dettagli.
+- I progetti precedenti conservano il loro fattore manuale; scelta salvata per ciascun locale, in italiano e tedesco.
+
 ## 0.11.7
 
 - Guida sempre visibile sotto ogni campo del dimensionamento rapido, professionale e del clima, in italiano e tedesco.

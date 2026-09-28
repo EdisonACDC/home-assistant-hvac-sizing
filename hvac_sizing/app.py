@@ -592,7 +592,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.11.7"
+APP_VERSION = "0.11.8"
 
 
 class Handler(BaseHTTPRequestHandler):

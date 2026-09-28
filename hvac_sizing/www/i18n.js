@@ -1,5 +1,21 @@
 (() => {
   const messages = {
+    "Non so / più esposizioni": "Unbekannt / mehrere Ausrichtungen",
+    "Nord": "Nord",
+    "Nord-est": "Nordost",
+    "Est": "Ost",
+    "Sud-est": "Südost",
+    "Sud": "Süd",
+    "Sud-ovest": "Südwest",
+    "Ovest": "West",
+    "Nord-ovest": "Nordwest",
+    "Valore manuale / progetto precedente": "Manueller Wert / bisheriges Projekt",
+    "Esposizione delle finestre": "Fensterausrichtung",
+    "Verso dove guardano le finestre principali? Puoi usare la bussola del telefono. Se sono su più lati, scegli “Non so / più esposizioni”.": "In welche Richtung zeigen die Hauptfenster? Nutze den Handykompass. Bei mehreren Seiten wähle „Unbekannt / mehrere Ausrichtungen“.",
+    "La scelta applica una correzione indicativa della stima rapida, non un calcolo del sole reale. Ombre, località e superficie dei vetri possono cambiare il risultato.": "Die Auswahl korrigiert die Schnellschätzung näherungsweise, sie berechnet keine tatsächliche Sonneneinstrahlung. Schatten, Standort und Glasfläche können das Ergebnis ändern.",
+    "Correzione applicata / modifica manuale": "Angewandte Korrektur / manuell ändern",
+    "1 = nessuna correzione; 1,10 = +10% sulla quota di base estiva. Con ombreggiamento o condizioni particolari, verifica il valore manualmente.": "1 = keine Korrektur; 1,10 = +10 % auf den sommerlichen Basisanteil. Bei Verschattung oder besonderen Bedingungen den Wert manuell prüfen.",
+
     "Misura interna del locale in metri, es. 5. Non lasciare 0.": "Innenlänge des Raums in Metern, z. B. 5. Nicht 0 lassen.",
     "Misura interna in metri, es. 4. Lunghezza × larghezza dà i m². Non lasciare 0.": "Innenbreite in Metern, z. B. 4. Länge × Breite ergibt m². Nicht 0 lassen.",
     "Dal pavimento al soffitto in metri, es. 2,7. Non lasciare 0.": "Vom Boden bis zur Decke in Metern, z. B. 2,7. Nicht 0 lassen.",

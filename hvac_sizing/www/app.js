@@ -66,7 +66,7 @@ const defaults = () => ({
   id: crypto.randomUUID(), name: 'Locale 1', length: 5, width: 4, height: 2.7,
   people: 2, lighting_w: 150, equipment_w: 100, margin_percent: 10,
   quick_w_m3_cooling: 35, quick_w_m3_heating: 40, quick_insulation_factor: 1,
-  quick_exposure_factor: 1, quick_glazing_factor: 1,
+  quick_exposure_factor: 1, quick_orientation: 'unknown', quick_glazing_factor: 1,
   wall_area: 24, wall_u: 0.7, window_area: 4, window_u: 1.4,
   roof_area: 0, roof_u: 0.25, floor_area: 0, floor_u: 0.35,
   solar_irradiance_w_m2: 450, window_g_value: 0.55, shading_factor: 0.7,
@@ -135,12 +135,47 @@ function renderRooms() {
   $('#room-count').textContent = `${rooms.length} ${rooms.length === 1 ? 'locale' : 'locali'}`;
 }
 
+// Indicative application presets for the quick estimate, not normative solar coefficients.
+// Existing numeric factors are retained as custom values when loading older projects.
+const EXPOSURE_OPTIONS = [
+  {value: 'unknown', label: 'Non so / più esposizioni', factor: 1},
+  {value: 'n', label: 'Nord', factor: 1},
+  {value: 'ne', label: 'Nord-est', factor: 1.05},
+  {value: 'e', label: 'Est', factor: 1.10},
+  {value: 'se', label: 'Sud-est', factor: 1.10},
+  {value: 's', label: 'Sud', factor: 1.10},
+  {value: 'sw', label: 'Sud-ovest', factor: 1.15},
+  {value: 'w', label: 'Ovest', factor: 1.15},
+  {value: 'nw', label: 'Nord-ovest', factor: 1.05},
+  {value: 'custom', label: 'Valore manuale / progetto precedente'}
+];
+
+function exposureFields(room) {
+  const selected = EXPOSURE_OPTIONS.some(item => item.value === room.quick_orientation)
+    ? room.quick_orientation : 'custom';
+  const helpId = `room-field-help-${++fieldHelpIndex}`;
+  return `<div class="exposure-field">
+    <label>${tr('Esposizione delle finestre')}
+      <select data-key="quick_orientation" aria-describedby="${helpId}">
+        ${EXPOSURE_OPTIONS.map(item => `<option value="${item.value}" ${item.value === selected ? 'selected' : ''}>${tr(item.label)}</option>`).join('')}
+      </select>
+      <small id="${helpId}" class="field-help">${tr('Verso dove guardano le finestre principali? Puoi usare la bussola del telefono. Se sono su più lati, scegli “Non so / più esposizioni”.')}</small>
+    </label>
+    <p class="field-help exposure-note">${tr('La scelta applica una correzione indicativa della stima rapida, non un calcolo del sole reale. Ombre, località e superficie dei vetri possono cambiare il risultato.')}</p>
+    <details class="exposure-details" ${selected === 'custom' ? 'open' : ''}>
+      <summary>${tr('Correzione applicata / modifica manuale')}</summary>
+      ${field('quick_exposure_factor', 'Fattore esposizione', room.quick_exposure_factor ?? 1, 'step="0.05" min="0"')}
+      <small class="field-help">${tr('1 = nessuna correzione; 1,10 = +10% sulla quota di base estiva. Con ombreggiamento o condizioni particolari, verifica il valore manualmente.')}</small>
+    </details>
+  </div>`;
+}
+
 function quickFields(room) {
   return `<p class="subheading">Coefficienti rapidi</p><div class="grid four">
     ${field('quick_w_m3_cooling', 'Base raffrescamento W/m³', room.quick_w_m3_cooling)}
     ${field('quick_w_m3_heating', 'Base riscaldamento W/m³', room.quick_w_m3_heating)}
     ${field('quick_insulation_factor', 'Fattore isolamento', room.quick_insulation_factor, 'step="0.05"')}
-    ${field('quick_exposure_factor', 'Fattore esposizione', room.quick_exposure_factor, 'step="0.05"')}
+    ${exposureFields(room)}
     ${field('quick_glazing_factor', 'Fattore vetrate', room.quick_glazing_factor, 'step="0.05"')}
     ${field('people', 'Persone', room.people)}
     ${field('lighting_w', 'Illuminazione W', room.lighting_w)}
@@ -189,6 +224,17 @@ function syncRoomInput(event) {
   const card = input.closest('.room-card');
   const room = rooms.find(item => item.id === card.dataset.id);
   room[input.dataset.key] = input.type === 'number' ? n(input.value) : input.value;
+  if (input.dataset.key === 'quick_orientation') {
+    const preset = EXPOSURE_OPTIONS.find(item => item.value === input.value);
+    if (preset && preset.factor !== undefined) room.quick_exposure_factor = preset.factor;
+    const group = input.closest('.exposure-field');
+    group.querySelector('[data-key="quick_exposure_factor"]').value = room.quick_exposure_factor ?? 1;
+    group.querySelector('details').open = input.value === 'custom';
+  } else if (input.dataset.key === 'quick_exposure_factor') {
+    room.quick_orientation = 'custom';
+    input.closest('.exposure-field').querySelector('select').value = 'custom';
+  }
+
 }
 
 function commissioningPayload() {
