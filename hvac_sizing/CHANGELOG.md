@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.6
+
+- Prelievi evidenziati in arancione e aggiunte in verde, con bordo, sfondo ed etichetta +/−.
+- Stesso stile nello storico amministratore e nel portale QR, su PC e telefono.
+
 ## 0.11.5
 
 - Storico bombole più leggibile: caratteri maggiori, contrasto aumentato, operazione e dettagli su righe separate.

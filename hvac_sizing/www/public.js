@@ -60,7 +60,7 @@
       const edited=item.edited_at?` · ${language==='de'?'Vom Administrator korrigiert':'Corretto dall’amministratore'}`:'';
       const machine=[item.machine_brand,item.machine_model,item.machine_serial].filter(Boolean).join(' · ');
       const climate=item.gwp==null?'':`${machine?`${machine} · `:''}GWP ${item.gwp} · ${tco2(item.co2_equivalent_kg)}${item.emission_co2_equivalent_kg==null?'':` · ${t('emission_co2','Emissione stimata')} ${tco2(item.emission_co2_equivalent_kg)}`}`;
-      return `<div class="history-row"><time>${escapeHtml(date)}</time><div><strong>${escapeHtml(operationName(item.operation))}</strong><small>${escapeHtml(item.operator_name||'—')} · ${escapeHtml(detail)}${item.notes?` · ${escapeHtml(item.notes)}`:''}${escapeHtml(edited)}</small>${climate?`<small class="climate-detail">${climate.split(' · ').map(part => `<span>${escapeHtml(part)}</span>`).join('')}</small>`:''}</div><div class="value">${kg(item.gas_after_kg)}</div></div>`;
+      return `<div class="history-row history-${['add','remove','weighing','initial'].includes(item.operation) ? item.operation : 'other'}"><time>${escapeHtml(date)}</time><div><strong class="history-operation">${escapeHtml(operationName(item.operation))}</strong><small>${escapeHtml(item.operator_name||'—')} · ${escapeHtml(detail)}${item.notes?` · ${escapeHtml(item.notes)}`:''}${escapeHtml(edited)}</small>${climate?`<small class="climate-detail">${climate.split(' · ').map(part => `<span>${escapeHtml(part)}</span>`).join('')}</small>`:''}</div><div class="value">${kg(item.gas_after_kg)}</div></div>`;
     }).join(''):`<div class="empty">${t('empty','Nessun movimento registrato.')}</div>`;
   }
   function operationFields() {

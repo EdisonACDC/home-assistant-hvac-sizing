@@ -110,3 +110,22 @@ textarea { resize:vertical; }.primary-button { min-height:46px; border:0; border
   .history-row .history-actions { justify-content: flex-start; }
   .history-row .history-actions button { flex: 1 1 120px; width: auto; }
 }
+
+/* Gas entering/leaving the cylinder: text and signs remain readable without color. */
+.history-row { border-left: 5px solid transparent; }
+.history-row.history-remove { border-left-color: #ffad5c; background: rgba(255, 154, 60, .09); }
+.history-row.history-add { border-left-color: #62e4a2; background: rgba(55, 211, 137, .09); }
+.history-row .history-operation {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem;
+  max-width: 100%;
+  padding: .25rem .7rem;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.history-row.history-remove .history-operation { color: #ffca91; background: #51311c; }
+.history-row.history-add .history-operation { color: #98f4c2; background: #163f30; }
+.history-row.history-remove .history-operation::before { content: "−"; font-size: 1.3em; font-weight: 900; }
+.history-row.history-add .history-operation::before { content: "+"; font-size: 1.3em; font-weight: 900; }
