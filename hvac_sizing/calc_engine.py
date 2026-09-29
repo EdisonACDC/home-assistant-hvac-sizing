@@ -180,14 +180,38 @@ GUIDED_SUN = {'n': 150, 'ne': 300, 'e': 450, 'se': 450, 's': 450,
 
 
 def calculate_guided(room: dict[str, Any], climate: dict[str, Any]) -> dict[str, Any]:
+    labels = {
+        'length': ('Lunghezza (m)', 'Länge (m)'), 'width': ('Larghezza (m)', 'Breite (m)'),
+        'height': ('Altezza (m)', 'Höhe (m)'),
+        'guided_heat': ('Temperatura desiderata in inverno (°C)', 'Gewünschte Wintertemperatur (°C)'),
+        'guided_cool': ('Temperatura desiderata in estate (°C)', 'Gewünschte Sommertemperatur (°C)'),
+        'guided_roof_area': ('Superficie delle falde (m²)', 'Dachschrägenfläche (m²)'),
+        'winter_outdoor_c': ('Temperatura esterna invernale (°C)', 'Außentemperatur Winter (°C)'),
+        'summer_outdoor_c': ('Temperatura esterna estiva (°C)', 'Außentemperatur Sommer (°C)'),
+        'summer_outdoor_rh': ('Umidità esterna (%)', 'Außenfeuchte (%)'),
+        'summer_indoor_rh': ('Umidità interna (%)', 'Innenfeuchte (%)'),
+        'people': ('Persone', 'Personen'), 'lighting_w': ('Illuminazione (W)', 'Beleuchtung (W)'),
+        'equipment_w': ('Apparecchiature (W)', 'Geräte (W)'), 'margin_percent': ('Margine (%)', 'Reserve (%)'),
+    }
+    german = climate.get('_language') == 'de'
     def read(key, low=0, high=10000, source=None):
         data = room if source is None else source
+        label = labels.get(key, (key, key))[int(german)]
+        prefix = str(room.get('name') or ('Raum' if german else 'Locale'))
+        if source is not None and source is not climate:
+            index = next((i + 1 for i, item in enumerate(room.get('guided_windows', [])) if item is source), 1)
+            prefix += f" · {'Fenster' if german else 'Finestra'} {index}"
+            label = ('Breite (cm)' if key == 'width' else 'Höhe (cm)') if german else ('Larghezza (cm)' if key == 'width' else 'Altezza (cm)')
+        raw = data.get(key)
         try:
-            value = float(data[key])
-        except (KeyError, TypeError, ValueError):
-            raise ValueError('Completa i dati richiesti del locale e del clima.')
+            value = float(raw)
+        except (TypeError, ValueError):
+            message = 'Wert fehlt oder ist ungültig' if german else 'dato mancante o non valido'
+            raise ValueError(f'{prefix} — {label}: {message}.')
         if not math.isfinite(value) or not low <= value <= high:
-            raise ValueError('Controlla misure, temperature e quantità: valore fuori intervallo.')
+            if german:
+                raise ValueError(f'{prefix} — {label}: eingegeben {raw}; zulässig {low:g} bis {high:g}.')
+            raise ValueError(f'{prefix} — {label}: inserito {raw}; valore ammesso da {low:g} a {high:g}.')
         return value
 
     length, width, height = (read(k, 0.1, 100) for k in ('length', 'width', 'height'))
@@ -287,7 +311,7 @@ def calculate_guided(room: dict[str, Any], climate: dict[str, Any]) -> dict[str,
 
 def calculate_project(payload: dict[str, Any]) -> dict[str, Any]:
     method = payload.get("method", "quick")
-    climate = payload.get("climate") or {}
+    climate = dict(payload.get("climate") or {}, _language=payload.get("language", "it"))
     rooms = payload.get("rooms") or []
     calculator = {"guided": calculate_guided, "professional": calculate_professional, "quick": calculate_quick}.get(method, calculate_quick)
     results = [calculator(room, climate) for room in rooms]

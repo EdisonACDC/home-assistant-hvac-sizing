@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.2
+
+- Errori del calcolo guidato con nome del locale, campo, valore inserito e intervallo ammesso, in italiano e tedesco.
+- Indicazione della finestra interessata e distinzione tra campo vuoto e valore zero.
+- Avvisi visibili più a lungo per facilitarne la lettura.
+
 ## 0.13.1
 
 - Link esterno di accesso visibile e selezionabile in Utenti app, con pulsanti Copia link, Condividi e Apri accesso.

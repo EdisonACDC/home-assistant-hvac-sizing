@@ -288,7 +288,7 @@ function syncRoomInput(event) {
   const card = input.closest('.room-card');
   const room = rooms.find(item => item.id === card.dataset.id);
   if (syncGuidedInput(input, room)) return;
-  room[input.dataset.key] = input.type === 'number' ? n(input.value) : input.value;
+  room[input.dataset.key] = input.type === 'number' ? (input.value === '' ? '' : n(input.value)) : input.value;
   const choice = SIMPLE_CHOICES[input.dataset.key];
   if (choice) {
     const selected = choice.options.find(option => option[0] === input.value);
@@ -339,10 +339,11 @@ function projectPayload() {
     id: currentProjectId,
     project_name: $('#project-name').value.trim() || 'Nuovo progetto',
     customer: $('#customer').value.trim(), location: $('#location').value.trim(), method,
+    language: window.AppI18n?.getLanguage() || 'it',
     climate: {
-      summer_outdoor_c: n($('#summer-outdoor').value), summer_outdoor_rh: n($('#summer-rh-out').value),
-      summer_indoor_c: n($('#summer-indoor').value), summer_indoor_rh: n($('#summer-rh-in').value),
-      winter_outdoor_c: n($('#winter-outdoor').value), winter_indoor_c: n($('#winter-indoor').value), heating_factor: 1
+      summer_outdoor_c: ($('#summer-outdoor').value === '' ? null : n($('#summer-outdoor').value)), summer_outdoor_rh: ($('#summer-rh-out').value === '' ? null : n($('#summer-rh-out').value)),
+      summer_indoor_c: ($('#summer-indoor').value === '' ? null : n($('#summer-indoor').value)), summer_indoor_rh: ($('#summer-rh-in').value === '' ? null : n($('#summer-rh-in').value)),
+      winter_outdoor_c: ($('#winter-outdoor').value === '' ? null : n($('#winter-outdoor').value)), winter_indoor_c: ($('#winter-indoor').value === '' ? null : n($('#winter-indoor').value)), heating_factor: 1
     },
     commissioning: commissioningPayload(),
     rooms
@@ -537,7 +538,7 @@ function newProject() {
 
 function toast(message, error = false) {
   const node = $('#toast'); node.textContent = window.AppI18n?.translate(message) || message; node.style.background = error ? 'var(--danger)' : 'var(--green)';
-  node.classList.add('show'); setTimeout(() => node.classList.remove('show'), 2600);
+  node.classList.add('show'); setTimeout(() => node.classList.remove('show'), 6500);
 }
 
 $('#rooms').addEventListener('input', syncRoomInput);
