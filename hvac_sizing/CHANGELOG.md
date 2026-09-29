@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.3
+
+- Pagine contrassegnate per evitare la traduzione automatica del browser: la lingua resta gestita dai pulsanti IT/DE.
+- Il traduttore interno ignora i riquadri aggiunti da Google Traduttore.
+
 ## 0.14.2
 
 - PDF del dimensionamento disponibile in italiano e tedesco per lo stesso calcolo: cambiando lingua, download e stampa usano subito la versione selezionata.

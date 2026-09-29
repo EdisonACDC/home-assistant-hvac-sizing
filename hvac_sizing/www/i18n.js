@@ -293,6 +293,7 @@
   }
 
   function translateNode(node) {
+    if ((node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement)?.closest('.skiptranslate, #goog-gt-tt, .goog-tooltip')) return;
     if (node.nodeType === Node.TEXT_NODE) {
       const match = node.nodeValue.match(/^(\s*)(.*?)(\s*)$/s);
       if (match && match[2]) node.nodeValue = `${match[1]}${translate(match[2])}${match[3]}`;
