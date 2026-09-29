@@ -168,17 +168,134 @@ def _result(room: dict[str, Any], area: float, volume: float, sensible: float, l
     }
 
 
+# Indicative presets for a simplified steady-state estimate, not certified design data.
+GUIDED_INSULATION = {
+    'good': (0.30, 0.25, 0.35), 'medium': (0.70, 0.60, 0.70),
+    'poor': (1.50, 1.50, 1.20), 'unknown': (0.80, 0.80, 0.80),
+}
+GUIDED_GLASS = {'single': (5.0, 0.80), 'double_old': (2.8, 0.70),
+                'double_low': (1.4, 0.55), 'triple': (0.9, 0.45), 'unknown': (2.8, 0.70)}
+GUIDED_SUN = {'n': 150, 'ne': 300, 'e': 450, 'se': 450, 's': 450,
+              'sw': 500, 'w': 500, 'nw': 300, 'unknown': 450}
+
+
+def calculate_guided(room: dict[str, Any], climate: dict[str, Any]) -> dict[str, Any]:
+    def read(key, low=0, high=10000, source=None):
+        data = room if source is None else source
+        try:
+            value = float(data[key])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError('Completa i dati richiesti del locale e del clima.')
+        if not math.isfinite(value) or not low <= value <= high:
+            raise ValueError('Controlla misure, temperature e quantità: valore fuori intervallo.')
+        return value
+
+    length, width, height = (read(k, 0.1, 100) for k in ('length', 'width', 'height'))
+    walls = room.get('guided_walls')
+    if not isinstance(walls, list) or len(walls) != 4 or any(x not in ('outside', 'same', 'unheated') for x in walls):
+        raise ValueError('Indica cosa c’è oltre ciascuna delle quattro pareti.')
+    attic = room.get('guided_attic')
+    above, below = room.get('guided_above'), room.get('guided_below')
+    if attic not in ('yes', 'no') or below not in ('same', 'unheated', 'outside', 'ground') or (attic == 'no' and above not in ('same', 'unheated', 'outside')):
+        raise ValueError('Indica se è una mansarda e cosa c’è sopra e sotto.')
+    insulation = room.get('guided_insulation', 'unknown')
+    if insulation not in GUIDED_INSULATION:
+        raise ValueError('Seleziona lo stato di isolamento.')
+    wall_u, roof_u, floor_u = GUIDED_INSULATION[insulation]
+    heat_in, cool_in = read('guided_heat', 5, 35), read('guided_cool', 16, 35)
+    local_climate = dict(climate, winter_indoor_c=heat_in, summer_indoor_c=cool_in)
+    for key, lo, hi in [('winter_outdoor_c', -50, 30), ('summer_outdoor_c', 10, 55),
+                        ('summer_outdoor_rh', 0, 100), ('summer_indoor_rh', 0, 100)]:
+        read(key, lo, hi, climate)
+    windows = room.get('guided_windows', [])
+    if not isinstance(windows, list) or len(windows) > 30:
+        raise ValueError('Controlla il numero di finestre (massimo 30).')
+    gross = sum(side * height for side, state in zip([length, width, length, width], walls) if state == 'outside')
+    glass_area = window_ua = solar = roof_glass_area = 0.0
+    for window in windows:
+        area = read('width', 1, 1000, window) * read('height', 1, 1000, window) / 10000
+        glazing = window.get('glass', 'unknown')
+        orientation = window.get('orientation', 'unknown')
+        shade = window.get('shade', 'unknown')
+        position = window.get('position', 'wall')
+        if glazing not in GUIDED_GLASS or orientation not in GUIDED_SUN or shade not in ('none', 'external', 'unknown') or position not in ('wall', 'roof'):
+            raise ValueError('Controlla tipo di vetro, esposizione e schermatura delle finestre.')
+        if position == 'roof' and attic != 'yes':
+            raise ValueError('Per i lucernari seleziona mansarda.')
+        u, g = GUIDED_GLASS[glazing]
+        glass_area += area
+        window_ua += area * u
+        roof_glass_area += area if position == 'roof' else 0
+        solar += area * g * (600 if position == 'roof' else GUIDED_SUN[orientation]) * (0.3 if shade == 'external' else 1)
+    roof_area = read('guided_roof_area', 0.1, 10000) if attic == 'yes' else length * width
+    if glass_area - roof_glass_area > gross + 1e-6 or roof_glass_area > roof_area:
+        raise ValueError('La superficie delle finestre supera quella delle pareti esterne o del tetto.')
+    outer_roof = attic == 'yes' or above == 'outside'
+    derived = dict(room, wall_area=gross - glass_area + roof_glass_area, wall_u=wall_u,
+                   window_area=glass_area, window_u=window_ua / glass_area if glass_area else 0,
+                   roof_area=roof_area - roof_glass_area if outer_roof else 0, roof_u=roof_u,
+                   floor_area=length * width if below == 'outside' else 0, floor_u=floor_u,
+                   solar_irradiance_w_m2=solar / glass_area if glass_area else 0,
+                   window_g_value=1, shading_factor=1, infiltration_ach=0.5, ventilation_m3h=0,
+                   occupancy_factor=1, person_sensible_w=75, person_latent_w=55,
+                   lighting_factor=1, equipment_factor=1,
+                   people=read('people', 0, 500), lighting_w=read('lighting_w'), equipment_w=read('equipment_w'),
+                   margin_percent=read('margin_percent', 0, 50))
+    base = calculate_professional(derived, local_climate)
+    # Adjacent unheated spaces are explicit scenario assumptions; no outside delta is applied to heated neighbours.
+    adjacent_ua = sum(side * height * 1.5 for side, state in zip([length, width, length, width], walls) if state == 'unheated')
+    adjacent_ua += length * width * roof_u if attic == 'no' and above == 'unheated' else 0
+    adjacent_ua += length * width * floor_u if below == 'unheated' else 0
+    extra_heat = adjacent_ua * max(0, heat_in - 12)
+    extra_cool = adjacent_ua * max(0, 28 - cool_in)
+    if below == 'ground':
+        extra_heat += length * width * floor_u * max(0, heat_in - 10)
+        extra_cool += length * width * floor_u * max(0, 18 - cool_in)
+    roof_sun = derived['roof_area'] * roof_u * 10  # declared sol-air increment; no dynamic simulation
+    factor = 1 + derived['margin_percent'] / 100
+    sensible = base['sensible_cooling_w'] + (extra_cool + roof_sun) * factor
+    latent = base['latent_cooling_w']
+    result = _result(room, length * width, length * width * height, sensible, latent,
+                     sensible + latent, base['heating_w'] + extra_heat * factor,
+                     dict(base['breakdown'], confinanti_inverno=extra_heat, confinanti_estate=extra_cool,
+                          sole_tetto=roof_sun), 'guidato')
+    result['guided_details'] = {
+        'Pareti esterne nette m²': round(derived['wall_area'], 2), 'Finestre m²': round(glass_area, 2),
+        'Pareti esterne': walls.count('outside'), 'Pareti interne': 4 - walls.count('outside'),
+        'Temperatura interna invernale °C': heat_in, 'Temperatura interna estiva °C': cool_in,
+        'U pareti W/m²K': wall_u, 'U finestre medio W/m²K': round(derived['window_u'], 2),
+        'U tetto W/m²K': roof_u, 'U pavimento W/m²K': floor_u,
+        'Tetto verso esterno m²': round(derived['roof_area'], 2), 'Ricambi aria vol/h': 0.5,
+        'Apporto solare finestre W': round(solar), 'Margine %': derived['margin_percent'],
+    }
+    result['guided_notes'] = [
+        'Stima guidata: isolamento e vetri usano valori indicativi, non misurati. Non è un calcolo normativo.',
+        'La località non imposta automaticamente il clima: verifica le temperature esterne di progetto.',
+        'Ricambio aria assunto 0,5 vol/h; umidità dai dati del clima. Ponti termici e inerzia non modellati.',
+        'Sole sulle finestre stimato per esposizione; non è una simulazione oraria. Non sommare i picchi come se fossero simultanei.',
+    ]
+    if insulation == 'unknown' or any(w.get('glass', 'unknown') == 'unknown' or w.get('orientation', 'unknown') == 'unknown' or w.get('shade', 'unknown') == 'unknown' for w in windows):
+        result['guided_notes'].append('Sono presenti dati sconosciuti: verifica le ipotesi nei dettagli prima di scegliere la macchina.')
+    if adjacent_ua:
+        result['guided_notes'].append('Locali non riscaldati ipotizzati a 12 °C in inverno e 28 °C in estate; U pareti interne 1,5 W/m²K.')
+    if below == 'ground':
+        result['guided_notes'].append('Terreno ipotizzato a 10 °C in inverno e 18 °C in estate: stima semplificata, senza modello del terreno.')
+    if outer_roof:
+        result['guided_notes'].append('Tetto: incremento estivo equivalente di 10 °C per il sole; superficie reale delle falde e isolamento da verificare.')
+    return result
+
+
 def calculate_project(payload: dict[str, Any]) -> dict[str, Any]:
     method = payload.get("method", "quick")
     climate = payload.get("climate") or {}
     rooms = payload.get("rooms") or []
-    calculator = calculate_professional if method == "professional" else calculate_quick
+    calculator = {"guided": calculate_guided, "professional": calculate_professional, "quick": calculate_quick}.get(method, calculate_quick)
     results = [calculator(room, climate) for room in rooms]
     cooling_w = sum(item["total_cooling_w"] for item in results)
     heating_w = sum(item["heating_w"] for item in results)
     return {
         "project_name": payload.get("project_name") or "Nuovo progetto",
-        "method": "professionale" if method == "professional" else "rapido",
+        "method": {"guided": "guidato", "professional": "professionale"}.get(method, "rapido"),
         "rooms": results,
         "totals": {
             "rooms": len(results),

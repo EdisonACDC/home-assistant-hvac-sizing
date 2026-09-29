@@ -10,7 +10,7 @@ function cookieValue(name) {
   return item ? decodeURIComponent(item.slice(prefix.length)) : '';
 }
 
-let method = 'quick';
+let method = 'guided';
 let currentProjectId = null;
 let rooms = [];
 let lastCalculationResult = null;
@@ -63,7 +63,9 @@ window.updateAppRoute = updateAppRoute;
 window.showAppPage = showAppPage;
 
 const defaults = () => ({
-  id: crypto.randomUUID(), name: 'Locale 1', length: 5, width: 4, height: 2.7,
+  id: crypto.randomUUID(), name: 'Locale 1',
+  guided_heat: 21, guided_cool: 26, guided_insulation: 'unknown',
+  guided_walls: ['unknown','unknown','unknown','unknown'], guided_attic: 'unknown', guided_above: 'unknown', guided_below: 'unknown', guided_windows: [], length: 5, width: 4, height: 2.7,
   people: 2, lighting_w: 150, equipment_w: 100, margin_percent: 10,
   insulation_choice: 'unknown', glazing_choice: 'unknown', margin_choice: 'ten',
   quick_w_m3_cooling: 35, quick_w_m3_heating: 40, quick_insulation_factor: 1,
@@ -115,7 +117,7 @@ function field(key, label, value, extra = '') {
 
 function renderRooms() {
   fieldHelpIndex = 0;
-  $('#sizing-method-help').textContent = tr(method === 'quick' ? "Calcolo rapido: stima iniziale con coefficienti indicativi da verificare per il locale." : "Calcolo professionale: verifica clima, superfici e dati tecnici. Le superfici usano la temperatura esterna; ambienti confinanti a temperature diverse richiedono una valutazione specifica.");
+  $('#sizing-method-help').textContent = tr(method === 'guided' ? 'Rispondi alle domande del locale. Il calcolo stima i coefficienti e mostra le ipotesi nel risultato. Non servono W/m³.' : method === 'quick' ? "Calcolo rapido: stima iniziale con coefficienti indicativi da verificare per il locale." : "Calcolo professionale: verifica clima, superfici e dati tecnici. Le superfici usano la temperatura esterna; ambienti confinanti a temperature diverse richiedono una valutazione specifica.");
   const container = $('#rooms');
   container.innerHTML = rooms.map((room, index) => `
     <article class="room-card" data-id="${room.id}">
@@ -127,10 +129,10 @@ function renderRooms() {
         <div class="grid four">
           ${field('length', 'Lunghezza m', room.length, 'step="0.01"')}
           ${field('width', 'Larghezza m', room.width, 'step="0.01"')}
-          ${field('height', 'Altezza m', room.height, 'step="0.01"')}
+          ${field('height', method === 'guided' ? 'Altezza media m' : 'Altezza m', room.height, 'step="0.01"')}
           ${simpleChoice(room, 'margin_choice')}
         </div>
-        ${method === 'quick' ? quickFields(room) : professionalFields(room)}
+        ${method === 'guided' ? guidedFields(room) : method === 'quick' ? quickFields(room) : professionalFields(room)}
       </div>
     </article>`).join('');
   $('#room-count').textContent = `${rooms.length} ${rooms.length === 1 ? 'locale' : 'locali'}`;
@@ -284,6 +286,7 @@ function syncRoomInput(event) {
   if (!input) return;
   const card = input.closest('.room-card');
   const room = rooms.find(item => item.id === card.dataset.id);
+  if (syncGuidedInput(input, room)) return;
   room[input.dataset.key] = input.type === 'number' ? n(input.value) : input.value;
   const choice = SIMPLE_CHOICES[input.dataset.key];
   if (choice) {
@@ -391,7 +394,7 @@ function renderResults(result) {
     </div>
     <div class="result-scroll"><table class="result-table"><thead><tr><th>Locale</th><th>m²</th><th>Sensibile</th><th>Latente</th><th>Freddo totale</th><th>Caldo</th><th>SHR</th></tr></thead><tbody>
       ${result.rooms.map(room => `<tr><td><strong>${escapeHtml(room.name)}</strong></td><td>${room.area_m2}</td><td>${room.sensible_cooling_w} W</td><td>${room.latent_cooling_w} W</td><td><strong>${room.total_cooling_kw} kW</strong></td><td><strong>${room.heating_kw} kW</strong></td><td>${room.shr}</td></tr>`).join('')}
-    </tbody></table></div><p class="disclaimer">${escapeHtml(tr(result.disclaimer))}</p>`;
+    </tbody></table></div>${guidedResultDetails(result)}<p class="disclaimer">${escapeHtml(tr(result.disclaimer))}</p>`;
 }
 
 function analyzeVacuum() {
@@ -521,11 +524,12 @@ async function loadProject(id) {
 
 function applyMethod() {
   $$('.method').forEach(button => button.classList.toggle('active', button.dataset.method === method));
-  $('#climate-panel').classList.toggle('hidden', method !== 'professional');
+  $('#climate-panel').classList.toggle('hidden', method === 'quick');
+  $('#climate-panel').classList.toggle('guided-climate', method === 'guided');
 }
 
 function newProject() {
-  currentProjectId = null; method = 'quick'; rooms = [defaults()];
+  currentProjectId = null; method = 'guided'; rooms = [defaults()];
   $('#project-name').value = 'Nuovo impianto'; $('#customer').value = ''; $('#location').value = '';
   $('#results').classList.add('hidden'); applyMethod(); renderRooms();
 }
@@ -536,6 +540,19 @@ function toast(message, error = false) {
 }
 
 $('#rooms').addEventListener('input', syncRoomInput);
+$('#rooms').addEventListener('change', event => {
+  const input = event.target.closest('[data-key]');
+  if (!input) return;
+  const room = rooms.find(r=>r.id===input.closest('.room-card').dataset.id);
+  if (input.dataset.key === 'guided_window_count') {
+    const count = Number(input.value);
+    if (!Number.isInteger(count) || count < 0 || count > 30) { toast('Inserisci da 0 a 30 finestre.', true); return; }
+    room.guided_windows ||= [];
+    room.guided_windows.length = Math.min(count, room.guided_windows.length);
+    while (room.guided_windows.length < count) room.guided_windows.push({width:'',height:'',glass:'unknown',orientation:'unknown',shade:'unknown',position:'wall'});
+    renderRooms();
+  } else if (input.dataset.key === 'guided_attic' || input.dataset.key.startsWith('guided_wall_') || (method === 'guided' && ['length','width'].includes(input.dataset.key))) renderRooms();
+});
 $('#rooms').addEventListener('click', event => {
   const button = event.target.closest('[data-delete]'); if (!button) return;
   if (rooms.length === 1) return toast('Deve rimanere almeno un locale', true);
@@ -565,6 +582,76 @@ $('#projects-list').addEventListener('click', async event => {
   try { if (open) await loadProject(open.dataset.open); if (remove) { await api(`projects/${remove.dataset.remove}`, {method: 'DELETE'}); await showProjects(); } }
   catch (error) { toast(error.message, true); }
 });
+
+const GUIDED_LABELS = {
+  guided_heat: ['Temperatura desiderata in inverno °C', 'Temperatura nella stanza quando riscaldi, non quella dell’aria in uscita.'],
+  guided_cool: ['Temperatura desiderata in estate °C', 'Temperatura nella stanza quando raffreschi.'],
+  guided_roof_area: ['Superficie delle falde sopra il locale m²', 'Somma delle superfici inclinate del tetto, lucernari compresi. Non coincide necessariamente con il pavimento.']
+};
+const boundaryOptions = [['unknown', 'Da scegliere'], ['outside', 'Esterno'], ['same', 'Stanza alla stessa temperatura'], ['unheated', 'Locale non riscaldato']];
+function guidedSelect(key, label, value, options, help = '', attrs = '') {
+  const id = `room-field-help-${++fieldHelpIndex}`;
+  return `<label>${tr(label)}<select data-key="${key}" ${attrs} aria-describedby="${id}">${options.map(([v,t]) => `<option value="${v}" ${v === value ? 'selected' : ''}>${tr(t)}</option>`).join('')}</select><small class="field-help" id="${id}">${tr(help)}</small></label>`;
+}
+function guidedNumber(key, label, value, help, attrs = '') {
+  const id = `room-field-help-${++fieldHelpIndex}`;
+  return `<label>${tr(label)}<input data-key="${key}" type="number" value="${escapeHtml(value ?? '')}" ${attrs} aria-describedby="${id}"><small class="field-help" id="${id}">${tr(help)}</small></label>`;
+}
+function guidedFields(room) {
+  const walls = room.guided_walls || ['unknown','unknown','unknown','unknown'];
+  const windows = room.guided_windows || [];
+  return `<section class="guided-section"><h3>${tr('1. Comfort e isolamento')}</h3><div class="grid four">
+    ${Object.entries(GUIDED_LABELS).filter(([k])=>k!=='guided_roof_area').map(([k,[l,h]])=>guidedNumber(k,l,room[k],h,'step="0.5"')).join('')}
+    ${guidedSelect('guided_insulation','Isolamento della casa',room.guided_insulation || 'unknown', [['unknown','Non so'],['good','Buono — cappotto e isolamento continuo'],['medium','Medio — isolamento parziale'],['poor','Scarso — senza isolamento']], 'Scegli lo stato effettivo. I valori tecnici vengono stimati e mostrati nel risultato.')}
+  </div></section>
+  <section class="guided-section"><h3>${tr('2. Pareti esterne e interne')}</h3>
+    <p class="field-help">${tr('Per un locale rettangolare: A e C sono i lati della lunghezza; B e D quelli della larghezza. Indica cosa c’è oltre ogni parete. Le finestre saranno sottratte automaticamente.')}</p>
+    <div class="grid four">${walls.map((v,i)=>guidedSelect(`guided_wall_${i}`,`${tr('Parete')} ${'ABCD'[i]} · ${i%2 ? room.width : room.length} m`,v,boundaryOptions)).join('')}</div>
+    <p class="field-help guided-wall-count">${tr('Pareti esterne')}: ${walls.filter(x=>x==='outside').length} · ${tr('Pareti interne')}: ${walls.filter(x=>['same','unheated'].includes(x)).length} · ${tr('Da scegliere')}: ${walls.filter(x=>x==='unknown').length}</p>
+  </section>
+  <section class="guided-section"><h3>${tr('3. Mansarda, sopra e sotto')}</h3><div class="grid four">
+    ${guidedSelect('guided_attic','La stanza è una mansarda?',room.guided_attic || 'unknown',[['unknown','Da scegliere'],['no','No'],['yes','Sì — direttamente sotto le falde del tetto']])}
+    ${room.guided_attic==='yes' ? guidedNumber('guided_roof_area',... [GUIDED_LABELS.guided_roof_area[0],room.guided_roof_area,GUIDED_LABELS.guided_roof_area[1]],'min="0.1" step="0.1"') : guidedSelect('guided_above','Cosa c’è sopra?',room.guided_above || 'unknown',boundaryOptions,'Scegli “Esterno” se sopra c’è un tetto piano o un terrazzo.')}
+    ${guidedSelect('guided_below','Cosa c’è sotto?',room.guided_below || 'unknown',[...boundaryOptions,['ground','Terreno']], 'Per cantina o garage non riscaldati scegli “Locale non riscaldato”.')}
+  </div></section>
+  <section class="guided-section"><h3>${tr('4. Finestre e vetri')}</h3>
+    ${guidedNumber('guided_window_count','Quante finestre o portefinestre?', windows.length,'0 se assenti. Compila le misure di ciascuna finestra, telaio compreso.','min="0" max="30" step="1"')}
+    ${windows.map((win,i)=>`<div class="guided-window"><h4>${tr('Finestra')} ${i+1}</h4><div class="grid four">
+      ${guidedNumber('window_width','Larghezza cm',win.width,'',`data-window="${i}" min="1" step="1"`)}
+      ${guidedNumber('window_height','Altezza cm',win.height,'',`data-window="${i}" min="1" step="1"`)}
+      ${guidedSelect('window_glass','Tipo di vetro',win.glass,[['unknown','Non so'],['single','Singolo'],['double_old','Doppio — vecchio o tipo non noto'],['double_low','Doppio basso emissivo'],['triple','Triplo']], 'Due lastre non significano automaticamente vetro basso emissivo.',`data-window="${i}"`)}
+      ${guidedSelect('window_orientation','Esposizione',win.orientation,EXPOSURE_OPTIONS.filter(o=>o.value!=='custom').map(o=>[o.value,o.label]),'',`data-window="${i}"`)}
+      ${guidedSelect('window_shade','Protezione dal sole in estate',win.shade,[['unknown','Non so'],['none','Nessuna / protezione aperta'],['external','Tapparella o tenda esterna chiusa al sole']], 'Se la protezione resta aperta, scegli “Nessuna / protezione aperta”.',`data-window="${i}"`)}
+      ${guidedSelect('window_position','Posizione finestra',win.position || 'wall',[['wall','Sulla parete esterna'],['roof','Lucernario sul tetto']], '',`data-window="${i}"`)}
+    </div></div>`).join('')}
+  </section>
+  <section class="guided-section"><h3>${tr('5. Persone e apparecchi accesi')}</h3><div class="grid four">
+    ${field('people','Persone',room.people,'min="0"')}${field('lighting_w','Illuminazione W',room.lighting_w,'min="0"')}${field('equipment_w','Apparecchiature W',room.equipment_w,'min="0"')}
+  </div></section>`;
+}
+function syncGuidedInput(input, room) {
+  const key = input.dataset.key;
+  if (key.startsWith('guided_wall_')) {
+    room.guided_walls ||= ['unknown','unknown','unknown','unknown'];
+    room.guided_walls[Number(key.slice(-1))] = input.value;
+    return true;
+  }
+  if (input.dataset.window !== undefined) {
+    const win = room.guided_windows[Number(input.dataset.window)];
+    win[key.replace('window_','')] = input.type === 'number' ? (input.value === '' ? '' : Number(input.value)) : input.value;
+    return true;
+  }
+  if (key === 'guided_window_count') return true; // resize on change, preserving focus while typing
+  return false;
+}
+function guidedResultDetails(result) {
+  return result.rooms.filter(room=>room.guided_details).map(room=>`<section class="guided-result"><h3>${escapeHtml(room.name)}</h3>
+    <p class="field-help">${tr('Risultato indicativo basato sui dati inseriti e sulle seguenti ipotesi:')}</p>
+    <ul>${room.guided_notes.map(note=>`<li>${escapeHtml(tr(note))}</li>`).join('')}</ul>
+    <details class="sizing-advanced"><summary>${tr('Mostra dati e coefficienti usati')}</summary>
+    <dl>${Object.entries(room.guided_details).map(([label,value])=>`<div><dt>${tr(label)}</dt><dd>${value}</dd></div>`).join('')}</dl></details>
+  </section>`).join('');
+}
 
 newProject();
 showAppPage(getAppRoute().page, false);

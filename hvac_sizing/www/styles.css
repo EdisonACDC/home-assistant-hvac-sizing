@@ -348,3 +348,17 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .sizing-advanced { margin-top: 1.2rem; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: #0a2032; }
 .sizing-advanced summary { cursor: pointer; font-size: 1rem; color: #bceef4; line-height: 1.5; }
 .sizing-advanced > p { margin: .8rem 0; }
+
+.guided-section { margin-top: 1.3rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.guided-section h3 { font-size: 1.05rem; margin-bottom: .8rem; color: #bceef4; }
+.guided-section > p { margin-bottom: .8rem; }
+.guided-section select { font-size: 1rem; min-height: 44px; }
+.guided-window { padding: .9rem; margin-top: .9rem; border: 1px solid var(--line); border-radius: 12px; }
+.guided-window h4 { margin: 0 0 .8rem; }
+.guided-climate .shared-indoor { display: none; }
+.climate-guidance { margin: .8rem 0; }
+.guided-result { margin-top: 1rem; padding: 1rem; background: #102d40; border-radius: 12px; }
+.guided-result li { line-height: 1.5; margin: .4rem 0; color: #d9eaf4; }
+.guided-result dl > div { display: flex; justify-content: space-between; gap: 1rem; padding: .4rem 0; border-bottom: 1px solid var(--line); }
+.guided-result dd { margin: 0; }
+.method-switch { flex-wrap: wrap; }

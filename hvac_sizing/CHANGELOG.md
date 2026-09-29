@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.0
+
+- Nuovo calcolo guidato predefinito: temperature desiderate per stanza, isolamento, quattro pareti, mansarda e ambienti sopra/sotto.
+- Finestre multiple con misure, tipo vetro, esposizione, schermatura e lucernari; superfici nette automatiche.
+- Stima fisica semplificata basata sulle superfici e sulle differenze di temperatura, con coefficienti indicativi automatici e ipotesi visibili nel risultato.
+- Modalità rapida e professionale precedenti conservate; nessuna conversione automatica dei progetti salvati.
+- Nuove etichette in italiano e tedesco, campi adattati al telefono, validazione e test del calcolo guidato.
+
 ## 0.11.9
 
 - Scelte guidate per isolamento, superficie vetrata e riserva di potenza, con correzioni indicative visibili e modificabili.
