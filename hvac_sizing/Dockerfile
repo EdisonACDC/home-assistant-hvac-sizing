@@ -1,6 +1,6 @@
 FROM ghcr.io/home-assistant/base:latest
 
-ARG BUILD_VERSION=0.13.2
+ARG BUILD_VERSION=0.14.0
 ARG BUILD_ARCH
 
 LABEL \
@@ -16,6 +16,7 @@ RUN apk add --no-cache python3 py3-pip \
 WORKDIR /app
 COPY app.py /app/app.py
 COPY calc_engine.py /app/calc_engine.py
+COPY sizing_pdf.py /app/sizing_pdf.py
 COPY cylinder_pdf.py /app/cylinder_pdf.py
 COPY www /app/www
 COPY run.sh /run.sh

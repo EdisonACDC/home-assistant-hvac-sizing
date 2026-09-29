@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0
+
+- Testata e barra Calcola nascoste durante l’inserimento sui telefoni.
+- PDF generato automaticamente per ogni calcolo riuscito, scaricabile e stampabile dai risultati.
+- Proposta indicativa mono/dual/trial/quadri/penta o più unità, con potenze termiche totali e verifiche necessarie del costruttore.
+
 ## 0.13.2
 
 - Errori del calcolo guidato con nome del locale, campo, valore inserito e intervallo ammesso, in italiano e tedesco.

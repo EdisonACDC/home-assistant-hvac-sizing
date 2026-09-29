@@ -309,6 +309,24 @@ def calculate_guided(room: dict[str, Any], climate: dict[str, Any]) -> dict[str,
     return result
 
 
+def outdoor_proposal(results, language='it'):
+    de = language == 'de'
+    count = len(results)
+    types = {1: 'Mono-split', 2: 'Dual-split', 3: 'Trial-split', 4: 'Quadri-split', 5: 'Penta-split'}
+    configuration = types.get(count, 'Mehrere Außeneinheiten / projektspezifisches System' if de else 'Più unità esterne / sistema da progettare')
+    return {
+        'indoor_units': count, 'configuration': configuration,
+        'cooling_kw': round(sum(r['total_cooling_w'] for r in results)/1000, 2),
+        'heating_kw': round(sum(r['heating_w'] for r in results)/1000, 2),
+        'assumption': ('Annahme: ein Innengerät je Raum; alle Räume gleichzeitig in derselben Betriebsart.' if de else 'Ipotesi: una unità interna per locale; tutti i locali utilizzati insieme nella stessa modalità.'),
+        'notes': [
+            ('Die Summe enthält bereits die gewählten Reserven. Es wird kein Gleichzeitigkeitsabschlag angewandt.' if de else 'La somma include già i margini scelti. Non viene applicata una riduzione per contemporaneità.'),
+            ('Thermische Leistung, nicht elektrische Aufnahme. Bei den Auslegungs-Außentemperaturen die verfügbare Kühl- und Heizleistung prüfen.' if de else 'Sono potenze termiche, non consumi elettrici. Verificare la capacità disponibile in freddo e caldo alle temperature esterne di progetto.'),
+            ('Anschlusszahl, zulässige Kombinationen, Leistung je Innengerät, Mindestmodulation, Rohrlängen und Abtauung in den Herstellerunterlagen prüfen.' if de else 'Verificare attacchi, combinazioni ammesse, potenza disponibile a ogni unità interna, modulazione minima, tubazioni e sbrinamento nelle tabelle del costruttore.'),
+            ('Alternativ sind separate Mono-Split-Systeme möglich. Die Raumzahl allein bestimmt nicht das passende Außengerät.' if de else 'In alternativa sono possibili mono-split separati. Il numero dei locali da solo non determina l’unità esterna adatta.'),
+        ]}
+
+
 def calculate_project(payload: dict[str, Any]) -> dict[str, Any]:
     method = payload.get("method", "quick")
     climate = dict(payload.get("climate") or {}, _language=payload.get("language", "it"))
@@ -318,6 +336,7 @@ def calculate_project(payload: dict[str, Any]) -> dict[str, Any]:
     cooling_w = sum(item["total_cooling_w"] for item in results)
     heating_w = sum(item["heating_w"] for item in results)
     return {
+        "outdoor": outdoor_proposal(results, payload.get("language", "it")),
         "project_name": payload.get("project_name") or "Nuovo progetto",
         "method": {"guided": "guidato", "professional": "professionale"}.get(method, "rapido"),
         "rooms": results,

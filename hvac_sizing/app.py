@@ -28,6 +28,7 @@ import qrcode
 import qrcode.image.svg
 
 from calc_engine import calculate_project
+from sizing_pdf import generate_sizing_pdf
 from cylinder_pdf import generate_cylinder_pdf
 
 
@@ -719,7 +720,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.13.2"
+APP_VERSION = "0.14.0"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -943,7 +944,9 @@ class Handler(BaseHTTPRequestHandler):
                 if not payload.get("rooms"):
                     self._error("Aggiungi almeno un locale")
                     return
-                self._send_json(calculate_project(payload))
+                result = calculate_project(payload)
+                result["pdf_base64"] = base64.b64encode(generate_sizing_pdf(payload, result)).decode("ascii")
+                self._send_json(result)
                 return
             if path == "/api/projects":
                 now = datetime.now(timezone.utc).isoformat()

@@ -14,6 +14,7 @@ let method = 'guided';
 let currentProjectId = null;
 let rooms = [];
 let lastCalculationResult = null;
+let lastCalculationPdfUrl = null;
 const APP_PAGES = new Set(['sizing', 'cylinders', 'performance', 'commissioning', 'accounts', 'no-access']);
 
 function routeUrls() {
@@ -377,6 +378,13 @@ async function externalAdminLogout() {
 async function calculate() {
   try {
     const result = await api('calculate', {method: 'POST', body: JSON.stringify(projectPayload())});
+    if (lastCalculationPdfUrl) URL.revokeObjectURL(lastCalculationPdfUrl);
+    lastCalculationPdfUrl = null;
+    if (result.pdf_base64) {
+      const bytes = Uint8Array.from(atob(result.pdf_base64), char => char.charCodeAt(0));
+      lastCalculationPdfUrl = URL.createObjectURL(new Blob([bytes], {type: 'application/pdf'}));
+      delete result.pdf_base64;
+    }
     lastCalculationResult = result;
     renderResults(result);
     $('#results').scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -388,6 +396,8 @@ function renderResults(result) {
   target.classList.remove('hidden');
   target.innerHTML = `
     <div class="section-title"><div><p class="eyebrow">${tr('RISULTATO')} ${tr(result.method.toUpperCase())}</p><h2>${escapeHtml(result.project_name)}</h2></div></div>
+    <div class="report-actions">${lastCalculationPdfUrl ? `<a class="button primary" href="${lastCalculationPdfUrl}" download="dimensionamento.pdf">${tr('Scarica PDF del calcolo')}</a><a class="button secondary" href="${lastCalculationPdfUrl}" target="_blank" rel="noopener">${tr('Apri PDF / stampa')}</a>` : ''}<p class="field-help">${tr('Il PDF contiene i dati dell’ultimo calcolo riuscito. Dopo una modifica, ricalcola per aggiornarlo.')}</p></div>
+    ${result.outdoor ? `<section class="guided-result"><h3>${tr('Proposta unità esterna')}</h3><p><strong>${escapeHtml(result.outdoor.configuration)}</strong> · ${result.outdoor.indoor_units} ${tr('unità interne')}</p><p>${escapeHtml(result.outdoor.assumption)}</p><p>${tr('Freddo')}: <strong>${result.outdoor.cooling_kw} kW</strong> · ${tr('Caldo')}: <strong>${result.outdoor.heating_kw} kW</strong></p><ul>${result.outdoor.notes.map(note=>`<li>${escapeHtml(note)}</li>`).join('')}</ul></section>` : ''}
     <div class="totals">
       <div class="metric"><span>Superficie totale</span><strong>${result.totals.area_m2} m²</strong></div>
       <div class="metric"><span>Volume totale</span><strong>${result.totals.volume_m3} m³</strong></div>
@@ -657,3 +667,25 @@ function guidedResultDetails(result) {
 
 newProject();
 showAppPage(getAppRoute().page, false);
+
+// Free the mobile viewport while editing; restore controls after focus or keyboard closes.
+(() => {
+  const mobile = () => matchMedia('(max-width: 900px)').matches && matchMedia('(pointer: coarse)').matches;
+  const editable = node => node?.matches('input:not([readonly]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea');
+  let keyboardOpen = false;
+  document.addEventListener('focusin', event => {
+    if (mobile() && editable(event.target)) {
+      document.body.classList.add('editing-mobile');
+      setTimeout(() => { if (document.activeElement === event.target) event.target.scrollIntoView({block:'center', behavior:'smooth'}); }, 250);
+    }
+  });
+  document.addEventListener('focusout', () => setTimeout(() => {
+    if (!editable(document.activeElement)) document.body.classList.remove('editing-mobile');
+  }, 50));
+  window.visualViewport?.addEventListener('resize', () => {
+    const open = window.innerHeight - window.visualViewport.height > 120;
+    if (keyboardOpen && !open) document.body.classList.remove('editing-mobile');
+    else if (open && mobile() && editable(document.activeElement)) document.body.classList.add('editing-mobile');
+    keyboardOpen = open;
+  });
+})();

@@ -1,5 +1,12 @@
 (() => {
   const messages = {
+    "Scarica PDF del calcolo": "Berechnungs-PDF herunterladen",
+    "Apri PDF / stampa": "PDF öffnen / drucken",
+    "Il PDF contiene i dati dell’ultimo calcolo riuscito. Dopo una modifica, ricalcola per aggiornarlo.": "Das PDF enthält die letzte erfolgreiche Berechnung. Nach Änderungen neu berechnen, um es zu aktualisieren.",
+    "Proposta unità esterna": "Vorschlag Außeneinheit",
+    "unità interne": "Innengeräte",
+    "Freddo": "Kühlen",
+
     "Link di accesso da condividere": "Zugangslink zum Teilen",
     "Copia link": "Link kopieren",
     "Condividi": "Teilen",

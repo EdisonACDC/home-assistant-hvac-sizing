@@ -393,3 +393,12 @@ body[data-access-commissioning="none"] [data-page-button="commissioning"], body[
 .account-share-actions .button { min-height: 44px; text-decoration: none; }
 .account-share .field-help { margin-top: .65rem; }
 @media (max-width: 600px) { .account-share-actions .button { flex: 1 1 100%; text-align: center; } }
+
+.report-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin: 1rem 0; }
+.report-actions .field-help { flex-basis: 100%; }
+.report-actions a { text-decoration: none; }
+@media (max-width: 900px) and (pointer: coarse) {
+  body.editing-mobile .topbar, body.editing-mobile .calculate-bar { display: none !important; }
+  body.editing-mobile main { padding-bottom: 1rem; }
+  body.editing-mobile input, body.editing-mobile textarea { scroll-margin: 1rem; }
+}
