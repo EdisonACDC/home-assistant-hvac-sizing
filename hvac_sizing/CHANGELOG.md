@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.1
+
+- La testata scorre con la pagina: non resta più fissa sopra i campi e torna visibile risalendo all’inizio, su telefono e PC.
+
 ## 0.14.0
 
 - Testata e barra Calcola nascoste durante l’inserimento sui telefoni.

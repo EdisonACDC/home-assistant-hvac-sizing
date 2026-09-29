@@ -17,7 +17,7 @@
 html { width: 100%; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { width: 100%; margin: 0; overflow-x: hidden; background: radial-gradient(circle at 85% 0%, #123856 0, var(--bg) 38rem); color: var(--text); min-height: 100vh; min-height: 100dvh; }
 .topbar > *, main > *, .grid > *, .project-panel > *, .section-title > *, .dialog-head > *, .operator-row > *, .history-row > * { min-width: 0; }
-.topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem); background: rgba(7, 19, 30, .9); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }
+.topbar { position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem); background: rgba(7, 19, 30, .9); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }
 h1, h2, h3, p { margin: 0; }
 h1 { font-size: clamp(1.15rem, 3vw, 1.7rem); }
 h2 { font-size: 1.25rem; }
