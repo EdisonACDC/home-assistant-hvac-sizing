@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.2
+
+- PDF del dimensionamento disponibile in italiano e tedesco per lo stesso calcolo: cambiando lingua, download e stampa usano subito la versione selezionata.
+
 ## 0.14.1
 
 - La testata scorre con la pagina: non resta più fissa sopra i campi e torna visibile risalendo all’inizio, su telefono e PC.

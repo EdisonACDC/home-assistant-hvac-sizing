@@ -3,6 +3,7 @@ import html
 import io
 from pathlib import Path
 import reportlab
+from calc_engine import outdoor_proposal
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime, timezone
@@ -75,3 +76,11 @@ def generate_sizing_pdf(payload, result):
         canvas.drawRightString(192*mm,12*mm,str(doc.page))
     SimpleDocTemplate(stream,pagesize=A4,rightMargin=17*mm,leftMargin=18*mm,topMargin=17*mm,bottomMargin=22*mm).build(story,onFirstPage=footer,onLaterPages=footer)
     return stream.getvalue()
+
+
+def generate_sizing_pdf_languages(payload, result):
+    """Render the same calculation snapshot in both supported languages."""
+    return {language: generate_sizing_pdf(
+        dict(payload, language=language),
+        dict(result, outdoor=outdoor_proposal(result['rooms'], language)))
+        for language in ('it', 'de')}
