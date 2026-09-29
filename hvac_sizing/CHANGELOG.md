@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.1
+
+- Link esterno di accesso visibile e selezionabile in Utenti app, con pulsanti Copia link, Condividi e Apri accesso.
+- Condivisione nativa quando supportata e alternativa di copia manuale nei browser o in Ingress.
+- Il link usa external_url e non include credenziali o sessioni.
+
 ## 0.13.0
 
 - Account personali per accesso esterno con nome utente/password, ruolo amministratore o utente.

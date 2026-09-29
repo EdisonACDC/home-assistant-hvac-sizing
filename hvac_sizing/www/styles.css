@@ -386,3 +386,10 @@ body[data-access-sizing="none"] [data-page-button="sizing"], body[data-access-si
 body[data-access-cylinders="none"] [data-page-button="cylinders"], body[data-access-cylinders="none"] [data-app-page="cylinders"] { display: none !important; }
 body[data-access-performance="none"] [data-page-button="performance"], body[data-access-performance="none"] [data-app-page="performance"] { display: none !important; }
 body[data-access-commissioning="none"] [data-page-button="commissioning"], body[data-access-commissioning="none"] [data-app-page="commissioning"] { display: none !important; }
+
+.account-share { margin: 1rem 0; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; background: #0a2032; }
+.account-share .account-link { font-size: 1rem; min-height: 44px; }
+.account-share-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin: .6rem 0; }
+.account-share-actions .button { min-height: 44px; text-decoration: none; }
+.account-share .field-help { margin-top: .65rem; }
+@media (max-width: 600px) { .account-share-actions .button { flex: 1 1 100%; text-align: center; } }

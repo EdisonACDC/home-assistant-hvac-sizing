@@ -1,5 +1,14 @@
 (() => {
   const messages = {
+    "Link di accesso da condividere": "Zugangslink zum Teilen",
+    "Copia link": "Link kopieren",
+    "Condividi": "Teilen",
+    "Apri accesso": "Anmeldung öffnen",
+    "Il link apre il login della app. Ogni utente entra con il proprio nome utente e password.": "Der Link öffnet die App-Anmeldung. Jeder Benutzer meldet sich mit eigenem Benutzernamen und Passwort an.",
+    "Link copiato. Puoi incollarlo nel messaggio per l’utente.": "Link kopiert. Du kannst ihn in die Nachricht an den Benutzer einfügen.",
+    "Seleziona e copia il link dal campo qui sopra.": "Link im obigen Feld markieren und kopieren.",
+    "Accedi alla app con il tuo nome utente e la tua password.": "Melde dich mit deinem Benutzernamen und Passwort bei der App an.",
+
     "Utenti app": "App-Benutzer",
     "Amministratore": "Administrator",
     "Utente": "Benutzer",

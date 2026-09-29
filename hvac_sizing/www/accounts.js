@@ -15,7 +15,19 @@
     const allowed = Object.keys(sections).filter(key=>window.canAccess(key));
     const page = getAppRoute().page;
     showAppPage(page === 'accounts' && me.role === 'admin' ? page : allowed.includes(page) ? page : allowed[0] || 'no-access');
-    document.querySelector('#account-login-link').textContent = me.login_url || t('Configura external_url nelle opzioni dell’add-on.');
+    const link = document.querySelector('#account-login-link');
+    let url = '';
+    try {
+      const parsed = new URL(me.login_url);
+      if (parsed.protocol === 'https:' && !parsed.username && !parsed.password) url = parsed.href;
+    } catch (_) {}
+    link.value = url;
+    document.querySelector('#copy-account-link').disabled = !url;
+    document.querySelector('#share-account-link').disabled = !url;
+    const open = document.querySelector('#open-account-link');
+    open.classList.toggle('hidden', !url);
+    if (url) open.href = url; else open.removeAttribute('href');
+    document.querySelector('#account-link-status').textContent = url ? '' : t('Configura external_url nelle opzioni dell’add-on.');
     document.querySelector('#current-app-user').textContent = `${me.name} · ${t(me.role === 'admin' ? 'Amministratore' : 'Utente')}`;
     document.body.classList.remove('access-pending');
   }
@@ -23,6 +35,33 @@
     document.querySelector('#access-error').textContent = t('Accesso non disponibile. Ricarica la pagina o accedi nuovamente.');
     document.querySelector('#access-error').classList.remove('hidden');
     return null;
+  });
+  async function copyLoginLink() {
+    const input = document.querySelector('#account-login-link');
+    const status = document.querySelector('#account-link-status');
+    if (!input.value) return;
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+      await navigator.clipboard.writeText(input.value);
+      status.textContent = t('Link copiato. Puoi incollarlo nel messaggio per l’utente.');
+    } catch (_) {
+      input.focus(); input.select(); input.setSelectionRange(0, input.value.length);
+      let copied = false;
+      try { copied = document.execCommand('copy'); } catch (_) {}
+      status.textContent = t(copied ? 'Link copiato. Puoi incollarlo nel messaggio per l’utente.' : 'Seleziona e copia il link dal campo qui sopra.');
+    }
+  }
+  document.querySelector('#copy-account-link').addEventListener('click', copyLoginLink);
+  document.querySelector('#share-account-link').addEventListener('click', async () => {
+    const url = document.querySelector('#account-login-link').value;
+    if (!url) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({title: 'Dimensionamento Climatizzazione Pro', text: t('Accedi alla app con il tuo nome utente e la tua password.'), url});
+        return;
+      } catch (error) { if (error.name === 'AbortError') return; }
+    }
+    await copyLoginLink();
   });
   function roleChanged() {
     document.querySelector('#account-permissions').classList.toggle('hidden', form.elements.role.value === 'admin');
