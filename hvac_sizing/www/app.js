@@ -14,7 +14,7 @@ let method = 'guided';
 let currentProjectId = null;
 let rooms = [];
 let lastCalculationResult = null;
-const APP_PAGES = new Set(['sizing', 'cylinders', 'performance', 'commissioning']);
+const APP_PAGES = new Set(['sizing', 'cylinders', 'performance', 'commissioning', 'accounts', 'no-access']);
 
 function routeUrls() {
   const urls = [new URL(window.location.href)];
@@ -51,7 +51,8 @@ function updateAppRoute(page, cylinderId = '') {
 }
 
 function showAppPage(page, updateUrl = true) {
-  const selected = APP_PAGES.has(page) ? page : 'sizing';
+  let selected = APP_PAGES.has(page) ? page : 'sizing';
+  if (window.appAccess && selected !== 'no-access' && !(selected === 'accounts' ? window.appAccess.role === 'admin' : window.canAccess(selected))) selected = 'no-access';
   $$('[data-app-page]').forEach(node => node.classList.toggle('page-hidden', node.dataset.appPage !== selected));
   $$('[data-page-button]').forEach(button => button.classList.toggle('active', button.dataset.pageButton === selected));
   if (updateUrl) updateAppRoute(selected);

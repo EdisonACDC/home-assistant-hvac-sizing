@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.0
+
+- Account personali per accesso esterno con nome utente/password, ruolo amministratore o utente.
+- Permessi per sezione: nascosto, consultazione/calcolo, modifica/registrazione; controllo server delle API e navigazione coerente.
+- Creazione, modifica, disattivazione e cambio password; hash delle password e revoca immediata delle sessioni dopo modifiche.
+- Protezione CSRF, limite tentativi di accesso e tutela dell’ultimo account amministratore attivo.
+- Movimenti bombole attribuiti all’account connesso. Operatori QR separati; accesso Ingress mantiene i privilegi amministrativi.
+
 ## 0.12.0
 
 - Nuovo calcolo guidato predefinito: temperature desiderate per stanza, isolamento, quattro pareti, mansarda e ambienti sopra/sotto.

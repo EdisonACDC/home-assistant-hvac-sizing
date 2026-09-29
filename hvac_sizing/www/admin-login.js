@@ -7,7 +7,7 @@
     error.classList.add('hidden');
     submit.disabled=true;
     try {
-      const response=await fetch('/admin/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.querySelector('#admin-password').value})});
+      const response=await fetch('/admin/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.querySelector('#app-username').value.trim(),password:document.querySelector('#admin-password').value})});
       const data=await response.json().catch(()=>({error:'Errore di comunicazione'}));
       if(!response.ok) throw new Error(data.error||'Accesso non riuscito');
       location.replace('/admin/');

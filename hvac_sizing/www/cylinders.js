@@ -551,7 +551,7 @@ $('#print-cylinder-qr').addEventListener('click', () => {
   window.open(activeCylinder.qr_print_url, '_blank', 'noopener,noreferrer');
 });
 
-loadCylinders(true);
+window.accessReady.then(me => { if (me && window.canAccess('cylinders')) loadCylinders(true); });
 window.addEventListener('app-language-changed', () => {
   renderCylinders();
   if (activeCylinder) {

@@ -362,3 +362,27 @@ dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
 .guided-result dl > div { display: flex; justify-content: space-between; gap: 1rem; padding: .4rem 0; border-bottom: 1px solid var(--line); }
 .guided-result dd { margin: 0; }
 .method-switch { flex-wrap: wrap; }
+
+body.access-pending main, body.access-pending [data-page-button] { visibility: hidden; }
+body[data-app-role="user"] #go-accounts,
+body[data-app-role="user"] [data-app-page="accounts"],
+body[data-app-role="user"] #manage-operators,
+body[data-app-role="user"] #delete-cylinder,
+body[data-app-role="user"] #rotate-cylinder-qr,
+body[data-app-role="user"] [data-edit-transaction],
+body[data-app-role="user"] [data-delete-transaction] { display: none !important; }
+body[data-access-sizing="view"] #save-project,
+body[data-access-sizing="view"] [data-remove],
+body[data-access-cylinders="view"] #new-cylinder,
+body[data-access-cylinders="view"] #cylinder-operation-form { display: none !important; }
+.account-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+.account-row p, .account-row small { overflow-wrap: anywhere; line-height: 1.5; }
+.account-link { overflow-wrap: anywhere; margin: .5rem 0; color: var(--cyan); }
+.account-active { flex-direction: row; align-items: center; margin: 1rem 0; }
+.account-active input { width: 24px; }
+#account-form .grid { margin-top: 1rem; }
+#account-form input, #account-form select { font-size: 1rem; }
+body[data-access-sizing="none"] [data-page-button="sizing"], body[data-access-sizing="none"] [data-app-page="sizing"] { display: none !important; }
+body[data-access-cylinders="none"] [data-page-button="cylinders"], body[data-access-cylinders="none"] [data-app-page="cylinders"] { display: none !important; }
+body[data-access-performance="none"] [data-page-button="performance"], body[data-access-performance="none"] [data-app-page="performance"] { display: none !important; }
+body[data-access-commissioning="none"] [data-page-button="commissioning"], body[data-access-commissioning="none"] [data-app-page="commissioning"] { display: none !important; }

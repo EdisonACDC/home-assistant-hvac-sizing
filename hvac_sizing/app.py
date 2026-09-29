@@ -162,6 +162,12 @@ def db_connection() -> sqlite3.Connection:
             updated_at TEXT NOT NULL
         )"""
     )
+    connection.execute("""CREATE TABLE IF NOT EXISTS app_users (
+        id TEXT PRIMARY KEY, username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+        name TEXT NOT NULL, role TEXT NOT NULL, permissions TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1, password_salt TEXT NOT NULL,
+        password_hash TEXT NOT NULL, auth_version INTEGER NOT NULL DEFAULT 1
+    )""")
     cylinder_columns = {row[1] for row in connection.execute("PRAGMA table_info(cylinders)")}
     if "qr_version" not in cylinder_columns:
         connection.execute("ALTER TABLE cylinders ADD COLUMN qr_version INTEGER NOT NULL DEFAULT 1")
@@ -323,15 +329,17 @@ def verify_admin_password(address: str, supplied: object) -> bool:
     return valid
 
 
-def admin_session_token() -> tuple[str, str]:
+def admin_session_token(user=None) -> tuple[str, str]:
     password = configured_admin_password()
-    if len(password) < 10:
+    if user is None and len(password) < 10:
         raise ValueError("Configura una password amministratore di almeno 10 caratteri")
     csrf = secrets.token_urlsafe(24)
     payload = json.dumps({
+        "uid": user["id"] if user else None,
+        "av": user["auth_version"] if user else None,
         "exp": int(time.time()) + ADMIN_SESSION_SECONDS,
         "csrf": csrf,
-        "pv": hashlib.sha256(password.encode()).hexdigest()[:20],
+        "pv": None if user else hashlib.sha256(password.encode()).hexdigest()[:20],
     }, separators=(",", ":"), sort_keys=True).encode()
     encoded = base64.urlsafe_b64encode(payload).decode().rstrip("=")
     signature = hmac.new(qr_secret(), f"admin:{encoded}".encode(), hashlib.sha256).digest()
@@ -347,6 +355,15 @@ def admin_session_payload(token: str) -> dict | None:
             return None
         raw = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
         payload = json.loads(raw)
+        if int(payload.get("exp", 0)) < int(time.time()):
+            return None
+        if payload.get('uid'):
+            with db_connection() as db:
+                user = db.execute('SELECT * FROM app_users WHERE id=?', (payload['uid'],)).fetchone()
+            if not user or not user['active'] or payload.get('av') != user['auth_version']:
+                return None
+            payload['identity'] = app_user_public(user)
+            return payload
         password = configured_admin_password()
         if len(password) < 10 or int(payload.get("exp", 0)) < int(time.time()):
             return None
@@ -356,6 +373,116 @@ def admin_session_payload(token: str) -> dict | None:
         return payload
     except (ValueError, TypeError, KeyError, json.JSONDecodeError):
         return None
+
+
+APP_SECTIONS = ('sizing', 'cylinders', 'performance', 'commissioning')
+
+
+def app_user_public(row):
+    return {k: row[k] for k in ('id', 'username', 'name', 'role')} | {
+        'active': bool(row['active']), 'permissions': json.loads(row['permissions'])}
+
+
+def app_identity(session=None):
+    if session and session.get('uid'):
+        return session['identity']
+    return {'id': None, 'username': '', 'name': 'Amministratore principale', 'role': 'admin',
+            'active': True, 'permissions': {key: 'edit' for key in APP_SECTIONS}}
+
+
+def app_password_hash(value, salt=None):
+    if not isinstance(value, str) or not 10 <= len(value) <= 128:
+        raise ValueError('La password deve contenere da 10 a 128 caratteri')
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac('sha256', value.encode(), bytes.fromhex(salt), 310_000).hex()
+    return salt, digest
+
+
+def save_app_user(payload, user_id=None):
+    with db_connection() as db:
+        db.execute('BEGIN IMMEDIATE')
+        old = db.execute('SELECT * FROM app_users WHERE id=?', (user_id,)).fetchone() if user_id else None
+        if user_id and not old:
+            raise ValueError('Account non trovato')
+        username = str(payload.get('username', old['username'] if old else '')).strip().lower()
+        if not 3 <= len(username) <= 60 or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789._-' for c in username):
+            raise ValueError('Nome utente: da 3 a 60 caratteri, lettere, numeri, punto, trattino o underscore')
+        name = str(payload.get('name', old['name'] if old else '')).strip()[:120]
+        role = payload.get('role', old['role'] if old else 'user')
+        active = payload.get('active', bool(old['active']) if old else True)
+        permissions = payload.get('permissions', json.loads(old['permissions']) if old else {})
+        if role not in ('admin', 'user') or not isinstance(active, bool) or not isinstance(permissions, dict):
+            raise ValueError('Ruolo o permessi non validi')
+        if any(key not in APP_SECTIONS or value not in ('none', 'view', 'edit') for key, value in permissions.items()):
+            raise ValueError('Permessi non validi')
+        permissions = {key: permissions.get(key, 'none') for key in APP_SECTIONS}
+        if old and old['role'] == 'admin' and old['active'] and (role != 'admin' or not active):
+            if db.execute("SELECT COUNT(*) FROM app_users WHERE role='admin' AND active=1").fetchone()[0] <= 1:
+                raise ValueError('Deve rimanere almeno un account amministratore attivo')
+        password = payload.get('password', '')
+        salt, digest = app_password_hash(password) if password or not old else (old['password_salt'], old['password_hash'])
+        uid = user_id or str(uuid.uuid4())
+        try:
+            db.execute('''INSERT INTO app_users (id, username, name, role, permissions, active, password_salt, password_hash, auth_version)
+                VALUES (?,?,?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET
+                username=excluded.username, name=excluded.name, role=excluded.role, permissions=excluded.permissions,
+                active=excluded.active, password_salt=excluded.password_salt, password_hash=excluded.password_hash,
+                auth_version=app_users.auth_version+1''',
+                (uid, username, name or username, role, json.dumps(permissions), int(active), salt, digest))
+        except sqlite3.IntegrityError as exc:
+            raise ValueError('Nome utente già utilizzato') from exc
+        return app_user_public(db.execute('SELECT * FROM app_users WHERE id=?', (uid,)).fetchone())
+
+
+def verify_app_user(address, username, password):
+    if admin_rate_limited(address):
+        return None
+    with db_connection() as db:
+        row = db.execute('SELECT * FROM app_users WHERE username=? COLLATE NOCASE', (str(username).strip(),)).fetchone()
+    try:
+        _, candidate = app_password_hash(password, row['password_salt'] if row else '00' * 16)
+        valid = bool(row and row['active'] and secrets.compare_digest(candidate, row['password_hash']))
+    except ValueError:
+        valid = False
+    with FAILED_PIN_LOCK:
+        if valid:
+            FAILED_ADMIN_ATTEMPTS.pop(address, None)
+        else:
+            FAILED_ADMIN_ATTEMPTS.setdefault(address, []).append(time.monotonic())
+    return row if valid else None
+
+
+def verify_management_password(address, password, token=''):
+    if token:
+        session = admin_session_payload(token)
+        if not session or app_identity(session)['role'] != 'admin':
+            return False
+        if session.get('uid'):
+            user = verify_app_user(address, session['identity']['username'], password)
+            return bool(user and user['id'] == session['uid'])
+    return verify_admin_password(address, password)
+
+
+def app_api_allowed(identity, method, target):
+    # Fail closed. Do not authorize an encoded path that the downstream handler could normalize differently.
+    if '%' in target or '..' in target or '//' in target or '\\' in target:
+        return False
+    if identity['role'] == 'admin':
+        return True
+    parts = target.strip('/').split('/')
+    if parts in (['api', 'me'], ['api', 'health']):
+        return method == 'GET'
+    permission = identity['permissions']
+    if len(parts) >= 2 and parts[:2] == ['api', 'projects']:
+        return permission.get('sizing') in ('view', 'edit') if method == 'GET' else permission.get('sizing') == 'edit'
+    if parts == ['api', 'calculate']:
+        return method == 'POST' and permission.get('sizing') in ('view', 'edit')
+    if len(parts) >= 2 and parts[:2] == ['api', 'cylinders']:
+        if method == 'GET':
+            return permission.get('cylinders') in ('view', 'edit')
+        if method == 'POST' and permission.get('cylinders') == 'edit':
+            return len(parts) == 2 or (len(parts) == 4 and parts[3] == 'transactions')
+    return False
 
 
 def verify_operator_pin(address: str, supplied: object) -> bool:
@@ -592,7 +719,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.12.0"
+APP_VERSION = "0.13.0"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -685,6 +812,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = self._path()
+        if path == '/api/me':
+            self._send_json(app_identity() | {'login_url': external_url().rstrip('/') + '/admin/' if external_url() else ''})
+            return
+        if path == '/api/users':
+            with db_connection() as db:
+                users = db.execute('SELECT * FROM app_users ORDER BY username').fetchall()
+            self._send_json([app_user_public(row) for row in users])
+            return
         if path == "/api/health":
             self._send_json({"status": "ok", "version": APP_VERSION})
             return
@@ -801,6 +936,9 @@ class Handler(BaseHTTPRequestHandler):
         path = self._path()
         try:
             payload = self._json_body()
+            if path == '/api/users':
+                self._send_json(save_app_user(payload), 201)
+                return
             if path == "/api/calculate":
                 if not payload.get("rooms"):
                     self._error("Aggiungi almeno un locale")
@@ -907,7 +1045,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/api/cylinders/") and path.endswith("/transactions"):
                 cylinder_id = path.split("/")[3]
-                self._send_json(record_cylinder_transaction(cylinder_id, payload, "Amministratore"), HTTPStatus.CREATED)
+                session = admin_session_payload(self.headers.get("X-Hvac-App-Session", ""))
+                actor = app_identity(session)["name"]
+                self._send_json(record_cylinder_transaction(cylinder_id, payload, actor), HTTPStatus.CREATED)
                 return
             if path.startswith("/api/cylinders/") and path.endswith("/rotate-qr"):
                 cylinder_id = path.split("/")[3]
@@ -930,18 +1070,25 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PUT(self) -> None:
         path = self._path()
+        if path.startswith('/api/users/'):
+            try:
+                self._send_json(save_app_user(self._json_body(), path.split('/')[-1]))
+            except (ValueError, json.JSONDecodeError) as exc:
+                self._error(str(exc))
+            return
+
         try:
             payload = self._json_body()
             parts = path.strip("/").split("/")
             if len(parts) == 5 and parts[:2] == ["api", "cylinders"] and parts[3] == "transactions":
-                if len(configured_admin_password()) < 10:
+                if not self.headers.get("X-Hvac-App-Session") and len(configured_admin_password()) < 10:
                     self._error("Configura una password amministratore di almeno 10 caratteri", 503)
                     return
                 address = self.client_address[0]
                 if admin_rate_limited(address):
                     self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
                     return
-                if not verify_admin_password(address, payload.pop("admin_password", "")):
+                if not verify_management_password(address, payload.pop("admin_password", ""), self.headers.get("X-Hvac-App-Session", "")):
                     self._error("Password amministratore non valida", 403)
                     return
                 result = update_cylinder_transaction(parts[2], parts[4], payload)
@@ -962,14 +1109,14 @@ class Handler(BaseHTTPRequestHandler):
         if len(parts) == 5 and parts[:2] == ["api", "cylinders"] and parts[3] == "transactions":
             try:
                 payload = self._json_body()
-                if len(configured_admin_password()) < 10:
+                if not self.headers.get("X-Hvac-App-Session") and len(configured_admin_password()) < 10:
                     self._error("Configura una password amministratore di almeno 10 caratteri", 503)
                     return
                 address = self.client_address[0]
                 if admin_rate_limited(address):
                     self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
                     return
-                if not verify_admin_password(address, payload.get("admin_password")):
+                if not verify_management_password(address, payload.get("admin_password"), self.headers.get("X-Hvac-App-Session", "")):
                     self._error("Password amministratore non valida", 403)
                     return
                 self._send_json(delete_cylinder_transaction(parts[2], parts[4]))
@@ -1023,7 +1170,7 @@ class Handler(BaseHTTPRequestHandler):
         filename = path.rsplit("/", 1)[-1]
         if not filename or "." not in filename:
             filename = "index.html"
-        allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js"}
+        allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js", "accounts.js"}
         if filename not in allowed:
             self.send_error(404)
             return
@@ -1108,7 +1255,7 @@ class PublicHandler(Handler):
 
     def _serve_admin_asset(self, filename: str, *, login_asset: bool = False) -> None:
         login_allowed = {"admin-login.html", "admin-login.js", "admin-login.css"}
-        app_allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js"}
+        app_allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js", "accounts.js"}
         allowed = login_allowed if login_asset else app_allowed
         if filename not in allowed:
             self._error("Risorsa non trovata", 404)
@@ -1132,6 +1279,16 @@ class PublicHandler(Handler):
     def _proxy_admin_request(self) -> None:
         parsed = urlparse(self.path)
         target = parsed.path[len("/admin"):]
+        session = self._authorize_admin_api()
+        if not session:
+            return
+        identity = app_identity(session)
+        if not app_api_allowed(identity, self.command, target):
+            self._error('Non hai il permesso per questa operazione', 403)
+            return
+        if target == '/api/me' and self.command == 'GET':
+            self._send_json(identity | {'login_url': external_url().rstrip('/') + '/admin/' if external_url() else ''})
+            return
         if not target.startswith("/api/"):
             self._error("Endpoint non trovato", 404)
             return
@@ -1142,7 +1299,8 @@ class PublicHandler(Handler):
             self._error("Richiesta troppo grande", 413)
             return
         body = self.rfile.read(length) if length else None
-        headers = {"Content-Type": self.headers.get("Content-Type", "application/json")}
+        headers = {"Content-Type": self.headers.get("Content-Type", "application/json"),
+                   "X-Hvac-App-Session": self._cookie_value("hvac_admin_session")}
         connection = http.client.HTTPConnection("127.0.0.1", PORT, timeout=45)
         try:
             connection.request(self.command, target, body=body, headers=headers)
@@ -1276,19 +1434,18 @@ class PublicHandler(Handler):
     def do_POST(self) -> None:
         parts = self._parts()
         if parts == ["admin", "api", "login"]:
-            if len(configured_admin_password()) < 10:
-                self._error("Configura nelle opzioni dell’add-on una password amministratore di almeno 10 caratteri", 503)
-                return
             address = self._client_key()
             if admin_rate_limited(address):
                 self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
                 return
             try:
                 payload = self._json_body()
-                if not verify_admin_password(address, payload.get("password")):
-                    self._error("Password amministratore non valida", 403)
+                username = str(payload.get('username') or '').strip()
+                user = verify_app_user(address, username, payload.get('password')) if username else None
+                if (username and not user) or (not username and not verify_admin_password(address, payload.get('password'))):
+                    self._error('Credenziali non valide o account disattivato', 403)
                     return
-                token, csrf = admin_session_token()
+                token, csrf = admin_session_token(user)
                 self._send_admin_login(token, csrf)
             except (ValueError, json.JSONDecodeError) as exc:
                 self._error(str(exc))

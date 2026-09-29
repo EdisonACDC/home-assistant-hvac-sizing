@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d2438">
   <title>Dimensionamento Climatizzazione Pro</title>
-  <link rel="stylesheet" href="styles.css?v=0.12.0">
-  <link rel="stylesheet" href="diagnostics.css?v=0.12.0">
+  <link rel="stylesheet" href="styles.css?v=0.13.0">
+  <link rel="stylesheet" href="diagnostics.css?v=0.13.0">
 </head>
-<body>
+<body class="access-pending">
   <header class="topbar">
     <div>
       <p class="eyebrow">HVAC · CARICHI TERMICI · COLLAUDO</p>
@@ -23,11 +23,38 @@
       <button id="go-cylinders" class="button ghost page-nav" data-page-button="cylinders">Bombole</button>
       <button id="go-performance" class="button ghost page-nav" data-page-button="performance">Diagnosi</button>
       <button id="go-commissioning" class="button ghost page-nav" data-page-button="commissioning">Vuoto</button>
+      <button id="go-accounts" class="button ghost page-nav" data-page-button="accounts">Utenti app</button>
+      <span id="current-app-user" class="field-help"></span>
       <button id="external-admin-logout" class="button logout-button hidden" type="button">Disconnetti</button>
     </div>
   </header>
 
+  <p id="access-error" class="panel hidden" role="alert"></p>
   <main>
+    <section class="panel" data-app-page="no-access"><h2>Nessuna sezione abilitata</h2><p>Chiedi all’amministratore di abilitare le sezioni del tuo account.</p></section>
+    <section class="panel" data-app-page="accounts">
+      <h2>Utenti app</h2>
+      <p class="field-help">Account personali per l’accesso esterno. Gli amministratori hanno accesso completo; per gli utenti scegli le sezioni consentite. Gli operatori QR restano separati.</p>
+      <p class="field-help">Accesso dall’esterno:</p><p id="account-login-link" class="account-link"></p>
+      <p class="field-help">L’accesso tramite Home Assistant mantiene i privilegi amministrativi: condividi con gli utenti il collegamento esterno, non l’accesso Ingress.</p>
+      <form id="account-form" class="guided-section">
+        <div class="section-title"><h3 id="account-editor-title">Crea account</h3><button id="account-new" type="button" class="button secondary">Nuovo account</button></div>
+        <input name="id" type="hidden">
+        <div class="grid four">
+          <label>Nome visualizzato<input name="name" maxlength="120" required autocomplete="off"></label>
+          <label>Nome utente<input name="username" minlength="3" maxlength="60" pattern="[a-zA-Z0-9._-]+" required autocomplete="off" autocapitalize="none"></label>
+          <label>Password<input name="password" type="password" minlength="10" maxlength="128" required autocomplete="new-password"><small class="field-help">Almeno 10 caratteri. In modifica lascia vuoto per mantenerla.</small></label>
+          <label>Ruolo<select name="role"><option value="user">Utente</option><option value="admin">Amministratore</option></select></label>
+        </div>
+        <div id="account-permissions" class="guided-section"><h3>Cosa può vedere e usare</h3><div class="grid four"><label>Dimensionamento<select name="permission_sizing"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Bombole<select name="permission_cylinders"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Diagnosi<select name="permission_performance"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Vuoto<select name="permission_commissioning"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label></div>
+          <p class="field-help">Consultazione: legge i dati e può eseguire calcoli senza salvare. Modifica: salva i progetti o registra bombole e movimenti. Cancellazione bombole, modifica dello storico e operatori QR restano agli amministratori. Diagnosi e vuoto sono strumenti locali, senza dati condivisi da salvare.</p>
+          <p class="field-help">Il permesso su una sezione comprende tutti i progetti o tutte le bombole di quella sezione.</p>
+        </div>
+        <label class="account-active"><input name="active" type="checkbox" checked>Account attivo</label>
+        <button type="submit" class="button primary">Salva account</button>
+      </form>
+      <div class="guided-section"><h3>Account esistenti</h3><div id="accounts-list"></div></div>
+    </section>
     <section class="panel project-panel" data-app-page="sizing">
       <label>Nome progetto<input id="project-name" value="Nuovo impianto"></label>
       <label>Cliente<input id="customer" placeholder="Nome o ragione sociale"></label>
@@ -302,10 +329,11 @@
     </div>
   </dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script src="i18n.js?v=0.12.0"></script>
-  <script src="app.js?v=0.12.0"></script>
-  <script src="diagnostics.js?v=0.12.0"></script>
-  <script src="cylinders.js?v=0.12.0"></script>
-  <script src="machine-brands.js?v=0.12.0"></script>
+  <script src="i18n.js?v=0.13.0"></script>
+  <script src="app.js?v=0.13.0"></script>
+  <script src="accounts.js?v=0.13.0"></script>
+  <script src="diagnostics.js?v=0.13.0"></script>
+  <script src="cylinders.js?v=0.13.0"></script>
+  <script src="machine-brands.js?v=0.13.0"></script>
 </body>
 </html>
