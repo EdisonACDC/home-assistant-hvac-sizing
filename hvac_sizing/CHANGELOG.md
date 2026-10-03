@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.5
+
+- Stato del progetto sempre visibile e versione della pagina accanto ai campi.
+- Nuovo riporta al nome progetto vuoto dopo l’azzeramento.
+
 ## 0.14.4
 
 - Nuovo svuota progetto, clima, misure, collaudo e risultati/PDF, ripartendo da una stanza da compilare.

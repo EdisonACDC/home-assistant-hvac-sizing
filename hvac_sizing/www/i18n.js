@@ -1,5 +1,6 @@
 (() => {
   const messages = {
+    "Nuovo progetto — da salvare": "Neues Projekt — noch nicht gespeichert",
     "Nuovo progetto: inserisci i dati.": "Neues Projekt: Daten eingeben.",
     "Scarica PDF del calcolo": "Berechnungs-PDF herunterladen",
     "Apri PDF / stampa": "PDF öffnen / drucken",

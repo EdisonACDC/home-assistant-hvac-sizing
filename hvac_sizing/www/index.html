@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d2438">
   <title>Dimensionamento Climatizzazione Pro</title>
-  <link rel="stylesheet" href="styles.css?v=0.14.4">
-  <link rel="stylesheet" href="diagnostics.css?v=0.14.4">
+  <link rel="stylesheet" href="styles.css?v=0.14.5">
+  <link rel="stylesheet" href="diagnostics.css?v=0.14.5">
 </head>
 <body class="access-pending">
   <header class="topbar">
@@ -67,6 +67,7 @@
       <div class="guided-section"><h3>Account esistenti</h3><div id="accounts-list"></div></div>
     </section>
     <section class="panel project-panel" data-app-page="sizing">
+      <div class="project-state-row"><strong id="project-state" role="status">Nuovo progetto — da salvare</strong><small>v0.14.5</small></div>
       <label>Nome progetto<input id="project-name" value="Nuovo impianto"></label>
       <label>Cliente<input id="customer" placeholder="Nome o ragione sociale"></label>
       <label>Località<input id="location" placeholder="Città"></label>
@@ -76,7 +77,7 @@
         <button class="method" data-method="professional">Calcolo professionale</button>
       </div>
       <div class="project-actions">
-        <button id="new-project" class="button ghost">Nuovo</button>
+        <button id="new-project" type="button" class="button ghost">Nuovo</button>
         <button id="open-projects" class="button ghost">Progetti</button>
         <button id="save-project" class="button primary">Salva</button>
       </div>
@@ -340,11 +341,11 @@
     </div>
   </dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script src="i18n.js?v=0.14.4"></script>
-  <script src="app.js?v=0.14.4"></script>
-  <script src="accounts.js?v=0.14.4"></script>
-  <script src="diagnostics.js?v=0.14.4"></script>
-  <script src="cylinders.js?v=0.14.4"></script>
-  <script src="machine-brands.js?v=0.14.4"></script>
+  <script src="i18n.js?v=0.14.5"></script>
+  <script src="app.js?v=0.14.5"></script>
+  <script src="accounts.js?v=0.14.5"></script>
+  <script src="diagnostics.js?v=0.14.5"></script>
+  <script src="cylinders.js?v=0.14.5"></script>
+  <script src="machine-brands.js?v=0.14.5"></script>
 </body>
 </html>

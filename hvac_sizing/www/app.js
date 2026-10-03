@@ -528,7 +528,7 @@ function resetVacuum() {
 async function saveProject() {
   try {
     const result = await api('projects', {method: 'POST', body: JSON.stringify(projectPayload())});
-    currentProjectId = result.id; toast('Progetto salvato');
+    currentProjectId = result.id; updateProjectState(); toast('Progetto salvato');
   } catch (error) { toast(error.message, true); }
 }
 
@@ -554,7 +554,7 @@ async function loadProject(id) {
   $('#vac-minutes').value = c.minutes ?? 60; $('#vac-start').value = c.start_micron || ''; $('#vac-current').value = c.current_micron || '';
   $('#vac-rise-start').value = c.rise_start || ''; $('#vac-rise-end').value = c.rise_end || ''; $('#vac-rise-minutes').value = c.rise_minutes ?? 10;
   $('#vac-core-removed').checked = Boolean(c.core_removed); $('#vac-nitrogen-tested').checked = Boolean(c.nitrogen_tested); $('#vac-oil-fresh').checked = c.oil_fresh !== false;
-  applyMethod(); renderRooms(); $('#projects-dialog').close(); toast('Progetto caricato');
+  applyMethod(); renderRooms(); updateProjectState(); $('#projects-dialog').close(); toast('Progetto caricato');
 }
 
 function applyMethod() {
@@ -563,10 +563,15 @@ function applyMethod() {
   $('#climate-panel').classList.toggle('guided-climate', method === 'guided');
 }
 
+function updateProjectState() {
+  $('#project-state').textContent = tr(currentProjectId ? 'Progetto salvato' : 'Nuovo progetto — da salvare');
+}
+
 function newProject() {
   clearCalculation();
   currentProjectId = null; method = 'guided'; rooms = [blankRoom()];
   $('#project-name').value = ''; $('#customer').value = ''; $('#location').value = '';
+  updateProjectState();
   $$('#climate-panel input').forEach(input => { input.value = ''; });
   $$('#commissioning input, #commissioning select').forEach(input => {
     if (input.type === 'checkbox') input.checked = false;
@@ -606,6 +611,7 @@ $$('.method').forEach(button => button.addEventListener('click', () => { method 
 $('#add-room').addEventListener('click', () => { const room = blankRoom(); room.name = `Locale ${rooms.length + 1}`; rooms.push(room); clearCalculation(); renderRooms(); });
 $('#calculate').addEventListener('click', calculate);
 window.addEventListener('app-language-changed', () => {
+  updateProjectState();
   renderRooms();
   if (lastCalculationResult && !$('#results').classList.contains('hidden')) renderResults(lastCalculationResult);
   if (!$('#vacuum-result').classList.contains('hidden')) analyzeVacuum();
@@ -616,6 +622,7 @@ $('#close-projects').addEventListener('click', () => $('#projects-dialog').close
 $('#new-project').addEventListener('click', () => {
   newProject();
   showAppPage('sizing');
+  $('#project-name').scrollIntoView({block:'center', behavior:'smooth'});
   toast('Nuovo progetto: inserisci i dati.');
 });
 if (EXTERNAL_ADMIN) {
