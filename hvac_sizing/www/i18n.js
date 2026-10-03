@@ -1,5 +1,6 @@
 (() => {
   const messages = {
+    "Nuovo progetto: inserisci i dati.": "Neues Projekt: Daten eingeben.",
     "Scarica PDF del calcolo": "Berechnungs-PDF herunterladen",
     "Apri PDF / stampa": "PDF öffnen / drucken",
     "Il PDF contiene i dati dell’ultimo calcolo riuscito. Dopo una modifica, ricalcola per aggiornarlo.": "Das PDF enthält die letzte erfolgreiche Berechnung. Nach Änderungen neu berechnen, um es zu aktualisieren.",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.4
+
+- Nuovo svuota progetto, clima, misure, collaudo e risultati/PDF, ripartendo da una stanza da compilare.
+- Aggiungi locale mantiene le stanze esistenti e aggiunge una stanza senza misure di esempio.
+- I risultati di un calcolo precedente ancora in corso non ricompaiono dopo Nuovo.
+
 ## 0.14.3
 
 - Pagine contrassegnate per evitare la traduzione automatica del browser: la lingua resta gestita dai pulsanti IT/DE.

@@ -13,6 +13,7 @@ function cookieValue(name) {
 let method = 'guided';
 let currentProjectId = null;
 let rooms = [];
+let projectGeneration = 0;
 let lastCalculationResult = null;
 let lastCalculationPdfUrls = {};
 const APP_PAGES = new Set(['sizing', 'cylinders', 'performance', 'commissioning', 'accounts', 'no-access']);
@@ -78,6 +79,20 @@ const defaults = () => ({
   infiltration_ach: 0.5, ventilation_m3h: 0, occupancy_factor: 1,
   person_sensible_w: 75, person_latent_w: 55, lighting_factor: 1, equipment_factor: 1
 });
+
+// A new room has no example measurements; technical coefficients retain their presets.
+const blankRoom = () => ({...defaults(), length: '', width: '', height: '',
+  guided_heat: '', guided_cool: '', people: 0, lighting_w: 0, equipment_w: 0,
+  wall_area: 0, window_area: 0});
+
+function clearCalculation() {
+  projectGeneration++;
+  lastCalculationResult = null;
+  Object.values(lastCalculationPdfUrls).forEach(url => URL.revokeObjectURL(url));
+  lastCalculationPdfUrls = {};
+  $('#results').innerHTML = '';
+  $('#results').classList.add('hidden');
+}
 
 const ROOM_FIELD_HELP = {
   "length": "Misura interna del locale in metri, es. 5. Non lasciare 0.",
@@ -376,8 +391,10 @@ async function externalAdminLogout() {
 }
 
 async function calculate() {
+  const generation = projectGeneration;
   try {
     const result = await api('calculate', {method: 'POST', body: JSON.stringify(projectPayload())});
+    if (generation !== projectGeneration) return;
     Object.values(lastCalculationPdfUrls).forEach(url => URL.revokeObjectURL(url));
     lastCalculationPdfUrls = {};
     const pdfs = result.pdf_languages || {[window.AppI18n?.getLanguage() || 'it']: result.pdf_base64};
@@ -525,6 +542,7 @@ async function showProjects() {
 
 async function loadProject(id) {
   const project = await api(`projects/${id}`); const p = project.payload;
+  clearCalculation();
   currentProjectId = project.id; method = p.method || 'quick'; rooms = p.rooms || [defaults()];
   $('#project-name').value = p.project_name || project.name; $('#customer').value = p.customer || ''; $('#location').value = p.location || '';
   const climate = p.climate || {};
@@ -546,9 +564,18 @@ function applyMethod() {
 }
 
 function newProject() {
-  currentProjectId = null; method = 'guided'; rooms = [defaults()];
-  $('#project-name').value = 'Nuovo impianto'; $('#customer').value = ''; $('#location').value = '';
-  $('#results').classList.add('hidden'); applyMethod(); renderRooms();
+  clearCalculation();
+  currentProjectId = null; method = 'guided'; rooms = [blankRoom()];
+  $('#project-name').value = ''; $('#customer').value = ''; $('#location').value = '';
+  $$('#climate-panel input').forEach(input => { input.value = ''; });
+  $$('#commissioning input, #commissioning select').forEach(input => {
+    if (input.type === 'checkbox') input.checked = false;
+    else if (input.tagName === 'SELECT') input.selectedIndex = 0;
+    else input.value = '';
+  });
+  $('#vacuum-result').innerHTML = '';
+  $('#vacuum-result').classList.add('hidden');
+  applyMethod(); renderRooms();
 }
 
 function toast(message, error = false) {
@@ -576,7 +603,7 @@ $('#rooms').addEventListener('click', event => {
   rooms = rooms.filter(room => room.id !== button.dataset.delete); renderRooms();
 });
 $$('.method').forEach(button => button.addEventListener('click', () => { method = button.dataset.method; applyMethod(); renderRooms(); }));
-$('#add-room').addEventListener('click', () => { const room = defaults(); room.name = `Locale ${rooms.length + 1}`; rooms.push(room); renderRooms(); });
+$('#add-room').addEventListener('click', () => { const room = blankRoom(); room.name = `Locale ${rooms.length + 1}`; rooms.push(room); clearCalculation(); renderRooms(); });
 $('#calculate').addEventListener('click', calculate);
 window.addEventListener('app-language-changed', () => {
   renderRooms();
@@ -586,7 +613,11 @@ window.addEventListener('app-language-changed', () => {
 $('#save-project').addEventListener('click', saveProject);
 $('#open-projects').addEventListener('click', showProjects);
 $('#close-projects').addEventListener('click', () => $('#projects-dialog').close());
-$('#new-project').addEventListener('click', newProject);
+$('#new-project').addEventListener('click', () => {
+  newProject();
+  showAppPage('sizing');
+  toast('Nuovo progetto: inserisci i dati.');
+});
 if (EXTERNAL_ADMIN) {
   $('#external-admin-logout').classList.remove('hidden');
   $('#external-admin-logout').addEventListener('click', externalAdminLogout);
