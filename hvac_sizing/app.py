@@ -30,6 +30,7 @@ import qrcode.image.svg
 from calc_engine import calculate_project
 from sizing_pdf import generate_sizing_pdf_languages
 from cylinder_pdf import generate_cylinder_pdf
+from errors_i18n import translate_error
 
 
 APP_DIR = Path(__file__).parent
@@ -212,17 +213,23 @@ def number(value: object, field: str, *, required: bool = True) -> float | None:
             value = normalized
         result = round(float(value), 3)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"{field.capitalize()} non valido") from exc
+        raise ValueError(f"Controlla {field}: valore non valido") from exc
     if result < 0:
-        raise ValueError(f"{field.capitalize()} non può essere negativo")
+        raise ValueError(f"Controlla {field}: non può essere un valore negativo")
     return result
 
 
+# GWP secondo il Regolamento (UE) 2024/573 (tabella del distributore General Gas, uguale alla tabella UBA).
+# R717 non è un gas fluorurato: resta con GWP 0 per comodità del registro.
 REFRIGERANT_GWP = {
-    "R32": 675, "R134A": 1430, "R404A": 3922, "R407C": 1774,
-    "R407F": 1825, "R410A": 2088, "R422D": 2729, "R449A": 1282,
-    "R290": 3, "R600A": 3, "R744": 1, "R717": 0,
-    "R1234YF": 4, "R1234ZE": 7, "R454B": 466, "R513A": 631,
+    "R32": 675, "R410A": 2088, "R454B": 465, "R452B": 697, "R407C": 1774, "R290": 0.02, "R744": 1,
+    "R404A": 3922, "R507": 3985, "R507A": 3985, "R448A": 1386, "R449A": 1396, "R452A": 2139,
+    "R454A": 237, "R454C": 146, "R455A": 146, "R407A": 2107, "R407F": 1825, "R407H": 1495,
+    "R134A": 1430, "R513A": 629, "R450A": 601, "R456A": 685, "R515B": 288, "R1234YF": 0.5,
+    "R1234ZE": 1.37, "R600A": 0, "R417A": 2346, "R422A": 3143, "R422B": 2526, "R422D": 2729,
+    "R427A": 2138, "R434A": 3234, "R437A": 1805, "R438A": 2264, "R413A": 2095, "R408A": 3152,
+    "R409A": 1909, "R23": 14800, "R508B": 13396, "R125": 3500, "R245FA": 1030, "R236FA": 9810,
+    "R1233ZD": 3.88, "R717": 0,
 }
 
 
@@ -254,7 +261,8 @@ def environmental_values(payload: dict, refrigerant: object, operation: str) -> 
     serial = str(payload.get("machine_serial") or "").strip()[:120]
     machine_charge = number(payload.get("machine_charge_kg"), "la carica della macchina", required=False)
     default_gwp = refrigerant_gwp(refrigerant)
-    gwp = number(payload.get("gwp", default_gwp), "il GWP")
+    raw_gwp = payload.get("gwp")
+    gwp = number(default_gwp if raw_gwp in (None, "") else raw_gwp, "il GWP")
     emitted = number(payload.get("emitted_kg"), "il gas disperso", required=False)
     amount = number(payload.get("amount_kg"), "la quantità")
     co2_equivalent = round(amount * gwp, 3)
@@ -311,6 +319,38 @@ def admin_rate_limited(address: str) -> bool:
         attempts = [stamp for stamp in FAILED_ADMIN_ATTEMPTS.get(address, []) if stamp >= cutoff]
         FAILED_ADMIN_ATTEMPTS[address] = attempts
         return len(attempts) >= 5
+
+
+FAILED_TARGET_ATTEMPTS: dict[str, list[float]] = {}
+TARGET_ATTEMPT_LIMIT = 10
+
+
+def trusted_proxy(address: str) -> bool:
+    """Il tunnel Cloudflare arriva dalla rete interna di Home Assistant o dallo stesso host."""
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    return ip.is_loopback or ip in ipaddress.ip_network("172.30.32.0/23")
+
+
+def target_rate_limited(target: str) -> bool:
+    """Limite indipendente dall'IP: blocca chi prova molti PIN o password sullo stesso obiettivo."""
+    cutoff = time.monotonic() - 900
+    with FAILED_PIN_LOCK:
+        attempts = [stamp for stamp in FAILED_TARGET_ATTEMPTS.get(target, []) if stamp >= cutoff]
+        FAILED_TARGET_ATTEMPTS[target] = attempts
+        return len(attempts) >= TARGET_ATTEMPT_LIMIT
+
+
+def record_target_failure(target: str) -> None:
+    with FAILED_PIN_LOCK:
+        FAILED_TARGET_ATTEMPTS.setdefault(target, []).append(time.monotonic())
+
+
+def clear_target_failures(target: str) -> None:
+    with FAILED_PIN_LOCK:
+        FAILED_TARGET_ATTEMPTS.pop(target, None)
 
 
 def configured_admin_password() -> str:
@@ -720,7 +760,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.14.5"
+APP_VERSION = "0.14.6"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -809,7 +849,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(encoded)
 
     def _error(self, message: str, status: int = 400) -> None:
-        self._send_json({"error": message}, status)
+        self._send_json({"error": message, "error_de": translate_error(message)}, status)
 
     def do_GET(self) -> None:
         path = self._path()
@@ -859,7 +899,7 @@ class Handler(BaseHTTPRequestHandler):
                 cylinders = []
                 for row in rows:
                     history = db.execute(
-                        "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (row["id"],)
+                        "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC, rowid DESC", (row["id"],)
                     ).fetchall()
                     item = cylinder_payload(row, history)
                     item["public_url"] = public_cylinder_url(row)
@@ -907,7 +947,7 @@ class Handler(BaseHTTPRequestHandler):
             with db_connection() as db:
                 row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
                 history = db.execute(
-                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (cylinder_id,)
+                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC, rowid DESC", (cylinder_id,)
                 ).fetchall()
             if not row:
                 self._error("Bombola non trovata", 404)
@@ -924,7 +964,7 @@ class Handler(BaseHTTPRequestHandler):
             with db_connection() as db:
                 row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
                 history = db.execute(
-                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (cylinder_id,)
+                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC, rowid DESC", (cylinder_id,)
                 ).fetchall()
             if not row:
                 self._error("Bombola non trovata", 404)
@@ -1205,11 +1245,14 @@ class PublicHandler(Handler):
         return [part for part in unquote(urlparse(self.path).path).split("/") if part]
 
     def _client_key(self) -> str:
+        peer = self.client_address[0]
         candidate = self.headers.get("CF-Connecting-IP", "").strip()
+        if not candidate or not trusted_proxy(peer):
+            return peer
         try:
-            return str(ipaddress.ip_address(candidate)) if candidate else self.client_address[0]
+            return str(ipaddress.ip_address(candidate))
         except ValueError:
-            return self.client_address[0]
+            return peer
 
     def _cookie_value(self, name: str) -> str:
         try:
@@ -1428,7 +1471,7 @@ class PublicHandler(Handler):
                 return
             with db_connection() as db:
                 history = db.execute(
-                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC", (parts[3],)
+                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC, rowid DESC", (parts[3],)
                 ).fetchall()
             result = public_cylinder_payload(cylinder, history)
             result["operator_name"] = operator["name"]
@@ -1446,10 +1489,16 @@ class PublicHandler(Handler):
             try:
                 payload = self._json_body()
                 username = str(payload.get('username') or '').strip()
+                login_target = f"login:{username.lower() or '__principale__'}"
+                if target_rate_limited(login_target):
+                    self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
+                    return
                 user = verify_app_user(address, username, payload.get('password')) if username else None
                 if (username and not user) or (not username and not verify_admin_password(address, payload.get('password'))):
+                    record_target_failure(login_target)
                     self._error('Credenziali non valide o account disattivato', 403)
                     return
+                clear_target_failures(login_target)
                 token, csrf = admin_session_token(user)
                 self._send_admin_login(token, csrf)
             except (ValueError, json.JSONDecodeError) as exc:
@@ -1471,7 +1520,8 @@ class PublicHandler(Handler):
             self._error("Collegamento QR non valido o revocato", 404)
             return
         address = self._client_key()
-        if pin_rate_limited(address):
+        pin_target = f"pin:{parts[3]}"
+        if pin_rate_limited(address) or (parts[5] == "login" and target_rate_limited(pin_target)):
             self._error("Troppi tentativi. Riprova tra 15 minuti", 429)
             return
         try:
@@ -1484,10 +1534,12 @@ class PublicHandler(Handler):
                     ).fetchone()
                 if not operator or not operator_pin_matches(operator, payload.get("pin")):
                     record_failed_pin_attempt(address)
+                    record_target_failure(pin_target)
                     self._error("Nome operatore o PIN non valido", 403)
                     return
                 with FAILED_PIN_LOCK:
                     FAILED_PIN_ATTEMPTS.pop(address, None)
+                clear_target_failures(pin_target)
                 self._send_json({
                     "session_token": operator_session_token(operator, cylinder),
                     "operator": operator_payload(operator), "expires_in": OPERATOR_SESSION_SECONDS,
@@ -1497,7 +1549,14 @@ class PublicHandler(Handler):
             if not operator:
                 self._error("Sessione operatore scaduta o revocata", 401)
                 return
-            result = record_cylinder_transaction(parts[3], payload, operator["name"])
+            record_cylinder_transaction(parts[3], payload, operator["name"])
+            with db_connection() as db:
+                updated = db.execute("SELECT * FROM cylinders WHERE id = ?", (parts[3],)).fetchone()
+                history = db.execute(
+                    "SELECT * FROM cylinder_transactions WHERE cylinder_id = ? ORDER BY created_at DESC, rowid DESC", (parts[3],)
+                ).fetchall()
+            result = public_cylinder_payload(updated, history)
+            result["operator_name"] = operator["name"]
             self._send_json(result, HTTPStatus.CREATED)
         except (ValueError, json.JSONDecodeError) as exc:
             self._error(str(exc))

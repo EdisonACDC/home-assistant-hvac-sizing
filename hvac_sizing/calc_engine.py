@@ -34,7 +34,69 @@ def humidity_ratio(temp_c: float, relative_humidity: float, pressure_pa: float =
     return 0.62198 * vapor_pressure / max(1.0, pressure_pa - vapor_pressure)
 
 
+PERSON_SENSIBLE_W = 75
+PERSON_LATENT_W = 55
+
+FIELD_LABELS = {
+    'length': ('Lunghezza (m)', 'Länge (m)'), 'width': ('Larghezza (m)', 'Breite (m)'), 'height': ('Altezza (m)', 'Höhe (m)'),
+    'people': ('Persone', 'Personen'), 'lighting_w': ('Illuminazione (W)', 'Beleuchtung (W)'),
+    'equipment_w': ('Apparecchiature (W)', 'Geräte (W)'), 'margin_percent': ('Margine (%)', 'Reserve (%)'),
+    'quick_w_m3_cooling': ('Coefficiente freddo (W/m³)', 'Kühlkoeffizient (W/m³)'),
+    'quick_w_m3_heating': ('Coefficiente caldo (W/m³)', 'Heizkoeffizient (W/m³)'),
+    'quick_insulation_factor': ('Fattore isolamento', 'Dämmfaktor'), 'quick_exposure_factor': ('Fattore esposizione', 'Ausrichtungsfaktor'),
+    'quick_glazing_factor': ('Fattore vetrate', 'Verglasungsfaktor'),
+    'wall_area': ('Superficie pareti (m²)', 'Wandfläche (m²)'), 'wall_u': ('U pareti (W/m²K)', 'U-Wert Wand (W/m²K)'),
+    'window_area': ('Superficie finestre (m²)', 'Fensterfläche (m²)'), 'window_u': ('U finestre (W/m²K)', 'U-Wert Fenster (W/m²K)'),
+    'roof_area': ('Superficie tetto (m²)', 'Dachfläche (m²)'), 'roof_u': ('U tetto (W/m²K)', 'U-Wert Dach (W/m²K)'),
+    'floor_area': ('Superficie pavimento (m²)', 'Bodenfläche (m²)'), 'floor_u': ('U pavimento (W/m²K)', 'U-Wert Boden (W/m²K)'),
+    'solar_irradiance_w_m2': ('Irraggiamento (W/m²)', 'Einstrahlung (W/m²)'), 'window_g_value': ('Fattore g vetri', 'g-Wert Verglasung'),
+    'shading_factor': ('Fattore schermatura', 'Verschattungsfaktor'), 'infiltration_ach': ('Ricambi aria (vol/h)', 'Luftwechsel (1/h)'),
+    'ventilation_m3h': ('Ventilazione (m³/h)', 'Lüftung (m³/h)'), 'occupancy_factor': ('Contemporaneità persone', 'Gleichzeitigkeit Personen'),
+    'person_sensible_w': ('Sensibile per persona (W)', 'Sensibel je Person (W)'), 'person_latent_w': ('Latente per persona (W)', 'Latent je Person (W)'),
+    'lighting_factor': ('Fattore illuminazione', 'Beleuchtungsfaktor'), 'equipment_factor': ('Fattore apparecchiature', 'Gerätefaktor'),
+}
+
+COMMON_RULES = (('length', 0.1, 100, True), ('width', 0.1, 100, True), ('height', 0.1, 100, False),
+                ('people', 0, 500, False), ('lighting_w', 0, 100000, False), ('equipment_w', 0, 100000, False),
+                ('margin_percent', 0, 50, False))
+QUICK_RULES = COMMON_RULES + (('quick_w_m3_cooling', 0, 500, False), ('quick_w_m3_heating', 0, 500, False),
+                              ('quick_insulation_factor', 0, 5, False), ('quick_exposure_factor', 0, 5, False),
+                              ('quick_glazing_factor', 0, 5, False))
+PROFESSIONAL_RULES = COMMON_RULES + tuple((key, 0, 10000, False) for key in ('wall_area', 'window_area', 'roof_area', 'floor_area')) + tuple(
+    (key, 0, 10, False) for key in ('wall_u', 'window_u', 'roof_u', 'floor_u')) + (
+    ('solar_irradiance_w_m2', 0, 1500, False), ('window_g_value', 0, 1, False), ('shading_factor', 0, 1.5, False),
+    ('infiltration_ach', 0, 50, False), ('ventilation_m3h', 0, 100000, False), ('occupancy_factor', 0, 1, False),
+    ('person_sensible_w', 0, 1000, False), ('person_latent_w', 0, 1000, False),
+    ('lighting_factor', 0, 1, False), ('equipment_factor', 0, 1, False))
+
+
+def _decimal_text(value: float) -> str:
+    return f"{value:g}".replace('.', ',')
+
+
+def validate_room(room: dict[str, Any], climate: dict[str, Any], rules) -> None:
+    """Rifiuta misure mancanti, negative o fuori intervallo con un messaggio che indica locale e campo."""
+    german = climate.get('_language') == 'de'
+    prefix = str(room.get('name') or ('Raum' if german else 'Locale'))
+    for key, low, high, required in rules:
+        raw = room.get(key)
+        label = FIELD_LABELS.get(key, (key, key))[int(german)]
+        if raw is None or raw == '':
+            if required:
+                raise ValueError(f"{prefix} — {label}: {'Wert fehlt oder ist ungültig' if german else 'dato mancante o non valido'}.")
+            continue
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            raise ValueError(f"{prefix} — {label}: {'Wert fehlt oder ist ungültig' if german else 'dato mancante o non valido'}.") from None
+        if not math.isfinite(value) or not low <= value <= high:
+            if german:
+                raise ValueError(f"{prefix} — {label}: eingegeben {raw}; zulässig {_decimal_text(low)} bis {_decimal_text(high)}.")
+            raise ValueError(f"{prefix} — {label}: inserito {raw}; valore ammesso da {_decimal_text(low)} a {_decimal_text(high)}.")
+
+
 def calculate_quick(room: dict[str, Any], climate: dict[str, Any]) -> dict[str, Any]:
+    validate_room(room, climate, QUICK_RULES)
     length = _number(room.get("length"))
     width = _number(room.get("width"))
     height = _number(room.get("height"), 2.7)
@@ -52,9 +114,9 @@ def calculate_quick(room: dict[str, Any], climate: dict[str, Any]) -> dict[str, 
     margin = _number(room.get("margin_percent"), 10) / 100
 
     envelope_cooling = volume * base_cooling * insulation * exposure * glazing
-    internal = people * 120 + lighting + equipment
+    internal = people * PERSON_SENSIBLE_W + lighting + equipment
     sensible = envelope_cooling + internal
-    latent = people * 55
+    latent = people * PERSON_LATENT_W
     cooling = (sensible + latent) * (1 + margin)
     heating = volume * base_heating * insulation * _number(climate.get("heating_factor"), 1.0) * (1 + margin)
 
@@ -66,6 +128,7 @@ def calculate_quick(room: dict[str, Any], climate: dict[str, Any]) -> dict[str, 
 
 
 def calculate_professional(room: dict[str, Any], climate: dict[str, Any]) -> dict[str, Any]:
+    validate_room(room, climate, PROFESSIONAL_RULES)
     length = _number(room.get("length"))
     width = _number(room.get("width"))
     height = _number(room.get("height"), 2.7)
@@ -119,8 +182,8 @@ def calculate_professional(room: dict[str, Any], climate: dict[str, Any]) -> dic
 
     people = _number(room.get("people"), 0)
     simultaneity = min(1.0, _number(room.get("occupancy_factor"), 1.0))
-    people_sensible = people * _number(room.get("person_sensible_w"), 75) * simultaneity
-    people_latent = people * _number(room.get("person_latent_w"), 55) * simultaneity
+    people_sensible = people * _number(room.get("person_sensible_w"), PERSON_SENSIBLE_W) * simultaneity
+    people_latent = people * _number(room.get("person_latent_w"), PERSON_LATENT_W) * simultaneity
     lighting = _number(room.get("lighting_w"), 0) * min(1.0, _number(room.get("lighting_factor"), 1.0))
     equipment = _number(room.get("equipment_w"), 0) * min(1.0, _number(room.get("equipment_factor"), 1.0))
 
@@ -210,8 +273,8 @@ def calculate_guided(room: dict[str, Any], climate: dict[str, Any]) -> dict[str,
             raise ValueError(f'{prefix} — {label}: {message}.')
         if not math.isfinite(value) or not low <= value <= high:
             if german:
-                raise ValueError(f'{prefix} — {label}: eingegeben {raw}; zulässig {low:g} bis {high:g}.')
-            raise ValueError(f'{prefix} — {label}: inserito {raw}; valore ammesso da {low:g} a {high:g}.')
+                raise ValueError(f'{prefix} — {label}: eingegeben {raw}; zulässig {_decimal_text(low)} bis {_decimal_text(high)}.')
+            raise ValueError(f'{prefix} — {label}: inserito {raw}; valore ammesso da {_decimal_text(low)} a {_decimal_text(high)}.')
         return value
 
     length, width, height = (read(k, 0.1, 100) for k in ('length', 'width', 'height'))
@@ -255,13 +318,13 @@ def calculate_guided(room: dict[str, Any], climate: dict[str, Any]) -> dict[str,
     if glass_area - roof_glass_area > gross + 1e-6 or roof_glass_area > roof_area:
         raise ValueError('La superficie delle finestre supera quella delle pareti esterne o del tetto.')
     outer_roof = attic == 'yes' or above == 'outside'
-    derived = dict(room, wall_area=gross - glass_area + roof_glass_area, wall_u=wall_u,
+    derived = dict(room, wall_area=max(0.0, gross - glass_area + roof_glass_area), wall_u=wall_u,
                    window_area=glass_area, window_u=window_ua / glass_area if glass_area else 0,
-                   roof_area=roof_area - roof_glass_area if outer_roof else 0, roof_u=roof_u,
+                   roof_area=max(0.0, roof_area - roof_glass_area) if outer_roof else 0, roof_u=roof_u,
                    floor_area=length * width if below == 'outside' else 0, floor_u=floor_u,
                    solar_irradiance_w_m2=solar / glass_area if glass_area else 0,
                    window_g_value=1, shading_factor=1, infiltration_ach=0.5, ventilation_m3h=0,
-                   occupancy_factor=1, person_sensible_w=75, person_latent_w=55,
+                   occupancy_factor=1, person_sensible_w=PERSON_SENSIBLE_W, person_latent_w=PERSON_LATENT_W,
                    lighting_factor=1, equipment_factor=1,
                    people=read('people', 0, 500), lighting_w=read('lighting_w'), equipment_w=read('equipment_w'),
                    margin_percent=read('margin_percent', 0, 50))

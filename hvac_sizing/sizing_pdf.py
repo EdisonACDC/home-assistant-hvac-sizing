@@ -3,10 +3,10 @@ import html
 import io
 from pathlib import Path
 import reportlab
-from calc_engine import outdoor_proposal
+from calc_engine import FIELD_LABELS, outdoor_proposal
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from datetime import datetime, timezone
+from pdf_format import date_time, number
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
@@ -35,8 +35,8 @@ def generate_sizing_pdf(payload, result):
              p(result['project_name'], 'Heading2'),
              p(t('Cliente: ', 'Kunde: ') + str(payload.get('customer') or '-')),
              p(t('Località: ', 'Ort: ') + str(payload.get('location') or '-')),
-             p(t('Generato: ', 'Erstellt: ') + datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')),
-             p(t('Metodo: ', 'Methode: ') + ({'guidato':'Geführt','rapido':'Schnell','professionale':'Professionell'}.get(result['method'],result['method']) if de else result['method'])), Spacer(1, 5*mm)]
+             p(t('Generato: ', 'Erstellt: ') + date_time(None, 'de' if de else 'it')),
+             p(t('Metodo: ', 'Methode: ') + ({'guidato':'Geführt','rapido':'Schnell','professionale':'Professionell'} if de else {'guidato':'Guidato','rapido':'Rapido','professionale':'Professionale'}).get(result['method'],result['method'])), Spacer(1, 5*mm)]
     def table(rows, widths):
         obj = Table([[p(cell) for cell in row] for row in rows], colWidths=widths, repeatRows=1, hAlign='LEFT')
         obj.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#deedf4')),
@@ -45,30 +45,31 @@ def generate_sizing_pdf(payload, result):
         return obj
     rows=[[t('Locale','Raum'),'m²',t('Freddo kW','Kühlen kW'),t('Caldo kW','Heizen kW')]]
     for room in result['rooms']:
-        rows.append([room['name'],room['area_m2'],room['total_cooling_kw'],room['heating_kw']])
-    rows.append([t('Totale','Gesamt'),result['totals']['area_m2'],result['totals']['cooling_kw'],result['totals']['heating_kw']])
+        rows.append([room['name'],number(room['area_m2'],1),number(room['total_cooling_kw'],2),number(room['heating_kw'],2)])
+    rows.append([t('Totale','Gesamt'),number(result['totals']['area_m2'],1),number(result['totals']['cooling_kw'],2),number(result['totals']['heating_kw'],2)])
     story += [table(rows,[80*mm,25*mm,35*mm,35*mm]), Spacer(1,4*mm),
               p(t('Proposta unità esterna','Vorschlag Außeneinheit'),'Heading2')]
     outdoor=result['outdoor']
     story += [p(outdoor['configuration']),p(outdoor['assumption']),
-      p(t('Potenza termica da verificare: ','Zu prüfende thermische Leistung: ')+f"{outdoor['cooling_kw']} kW / {outdoor['heating_kw']} kW "+t('(freddo / caldo).','(Kühlen / Heizen).'))]
+      p(t('Potenza termica da verificare: ','Zu prüfende thermische Leistung: ')+f"{number(outdoor['cooling_kw'],2)} kW / {number(outdoor['heating_kw'],2)} kW "+t('(freddo / caldo).','(Kühlen / Heizen).'))]
     story += [p(note) for note in outdoor['notes']]
     story += [p(t('Condizioni esterne inserite','Eingegebene Außenbedingungen'),'Heading2')]
     climate=payload.get('climate') or {}
     for key,it,ge in [('summer_outdoor_c','Estate esterna °C','Sommer außen °C'),('winter_outdoor_c','Inverno esterna °C','Winter außen °C'),('summer_outdoor_rh','Umidità esterna %','Außenfeuchte %'),('summer_indoor_rh','Umidità interna %','Innenfeuchte %')]:
-        story.append(p(f"{t(it,ge)}: {climate.get(key,'-')}"))
+        value = climate.get(key)
+        story.append(p(f"{t(it,ge)}: {'-' if value in (None, '') else number(value)}"))
     if result['method']=='rapido':
         story.append(p(t('Nel metodo rapido le temperature non modificano i coefficienti volumetrici.','Im Schnellverfahren ändern die Temperaturen die volumetrischen Koeffizienten nicht.')))
     for room in result['rooms']:
         story.append(p(room['name'],'Heading2'))
         if room.get('guided_details'):
-            story.append(table([[t('Dato / ipotesi','Daten / Annahme'),t('Valore','Wert')]]+[[k,v] for k,v in room['guided_details'].items()],[130*mm,45*mm]))
+            story.append(table([[t('Dato / ipotesi','Daten / Annahme'),t('Valore','Wert')]]+[[k,number(v)] for k,v in room['guided_details'].items()],[130*mm,45*mm]))
             story += [p(note) for note in room.get('guided_notes',[])]
         else:
             source=payload.get('rooms',[])[result['rooms'].index(room)]
             keys=['length','width','height','people','lighting_w','equipment_w','margin_percent']
             keys += ['quick_w_m3_cooling','quick_w_m3_heating','quick_insulation_factor','quick_exposure_factor','quick_glazing_factor'] if result['method']=='rapido' else ['wall_area','wall_u','window_area','window_u','roof_area','roof_u','floor_area','floor_u','infiltration_ach','ventilation_m3h','solar_irradiance_w_m2','window_g_value','shading_factor']
-            story.append(table([[t('Dato inserito','Eingabe'),t('Valore','Wert')]]+[[key,source.get(key,'-')] for key in keys],[130*mm,45*mm]))
+            story.append(table([[t('Dato inserito','Eingabe'),t('Valore','Wert')]]+[[FIELD_LABELS.get(key,(key,key))[int(de)],'-' if source.get(key) in (None,'') else number(source.get(key))] for key in keys],[130*mm,45*mm]))
     story += [Spacer(1,4*mm),p(t('Stima indicativa, non selezione definitiva della macchina. Verificare dati e ipotesi prima dell’acquisto.','Unverbindliche Schätzung, keine endgültige Geräteauswahl. Daten und Annahmen vor dem Kauf prüfen.'))]
     def footer(canvas, doc):
         canvas.setFont('SizingVera',8);canvas.setFillColor(colors.HexColor('#526878'))

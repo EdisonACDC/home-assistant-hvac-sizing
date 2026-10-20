@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d2438">
   <title>Dimensionamento Climatizzazione Pro</title>
-  <link rel="stylesheet" href="styles.css?v=0.14.5">
-  <link rel="stylesheet" href="diagnostics.css?v=0.14.5">
+  <link rel="stylesheet" href="styles.css?v=0.14.6">
+  <link rel="stylesheet" href="diagnostics.css?v=0.14.6">
 </head>
 <body class="access-pending">
   <header class="topbar">
@@ -67,7 +67,7 @@
       <div class="guided-section"><h3>Account esistenti</h3><div id="accounts-list"></div></div>
     </section>
     <section class="panel project-panel" data-app-page="sizing">
-      <div class="project-state-row"><strong id="project-state" role="status">Nuovo progetto — da salvare</strong><small>v0.14.5</small></div>
+      <div class="project-state-row"><strong id="project-state" role="status">Nuovo progetto — da salvare</strong><small>v0.14.6</small></div>
       <label>Nome progetto<input id="project-name" value="Nuovo impianto"></label>
       <label>Cliente<input id="customer" placeholder="Nome o ragione sociale"></label>
       <label>Località<input id="location" placeholder="Città"></label>
@@ -115,7 +115,7 @@
             <option value="low_high">Bassa + alta pressione accessibili</option>
           </select>
         </label>
-        <label>Refrigerante<select id="perf-refrigerant"><option>R32</option><option>R410A</option><option>R134a</option><option>R290</option></select></label>
+        <label>Refrigerante<select id="perf-refrigerant"><option>R32</option><option>R410A</option><option>R454B</option><option>R452B</option><option>R407C</option><option>R134a</option><option>R290</option><option>R404A</option><option>R448A</option><option>R449A</option><option>R513A</option><option>R1234yf</option></select></label>
         <label>Modalità<select id="perf-mode"><option value="cooling">Raffrescamento</option><option value="heating">Riscaldamento</option></select></label>
         <label>Tipo compressore<select id="perf-compressor"><option value="inverter">Inverter</option><option value="fixed">On/Off</option></select></label>
         <label>Tempo stabilizzazione min<input id="perf-runtime" type="number" value="15" min="0" step="1"></label>
@@ -157,7 +157,7 @@
         <span class="status-pill">Assistente tecnico</span>
       </div>
       <div class="grid four commissioning-grid">
-        <label>Refrigerante<select id="vac-refrigerant"><option>R32</option><option>R410A</option><option>R134a</option><option>R290</option></select></label>
+        <label>Refrigerante<select id="vac-refrigerant"><option>R32</option><option>R410A</option><option>R454B</option><option>R452B</option><option>R407C</option><option>R134a</option><option>R290</option><option>R404A</option><option>R448A</option><option>R449A</option><option>R513A</option><option>R1234yf</option></select></label>
         <label>Condizione impianto<select id="vac-system-state"><option value="new">Nuovo / asciutto</option><option value="used">Già funzionato / presenza olio</option><option value="open">Rimasto aperto all'atmosfera</option></select></label>
         <label>Frusta principale<select id="vac-hose-size"><option value="0.25">1/4&quot; standard</option><option value="0.375">3/8&quot; vuoto</option><option value="0.5">1/2&quot; alto flusso</option></select></label>
         <label>Tempo evacuazione min<input id="vac-minutes" type="number" value="60" min="0" step="1"></label>
@@ -213,7 +213,7 @@
         <label>Nome bombola<input name="name" required maxlength="120" placeholder="es. R32 nuova 01"></label>
         <label>Codice identificativo<input name="code" required maxlength="50" placeholder="es. R32-001"></label>
         <label>Refrigerante<input name="refrigerant" list="refrigerant-list" required maxlength="30" value="R32" autocomplete="off"></label>
-        <datalist id="refrigerant-list"><option value="R32"><option value="R410A"><option value="R134a"><option value="R290"><option value="R404A"><option value="R407C"><option value="R1234yf"><option value="R454B"><option value="R513A"></datalist>
+        <datalist id="refrigerant-list"><option value="R32"><option value="R410A"><option value="R454B"><option value="R452B"><option value="R407C"><option value="R290"><option value="R744"><option value="R404A"><option value="R507A"><option value="R448A"><option value="R449A"><option value="R452A"><option value="R454A"><option value="R454C"><option value="R455A"><option value="R407A"><option value="R407F"><option value="R407H"><option value="R134a"><option value="R513A"><option value="R450A"><option value="R456A"><option value="R515B"><option value="R1234yf"><option value="R1234ze"><option value="R600a"><option value="R417A"><option value="R422A"><option value="R422B"><option value="R422D"><option value="R427A"><option value="R434A"><option value="R437A"><option value="R438A"><option value="R413A"><option value="R408A"><option value="R409A"><option value="R23"><option value="R508B"><option value="R125"><option value="R245fa"><option value="R236fa"><option value="R1233zd"></datalist>
         <label>Tara bombola kg<input id="new-cylinder-tare" name="tare_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 4,250"></label>
         <label>Gas refrigerante presente kg<input id="new-cylinder-gas" name="current_gas_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 2,500"></label>
         <label>Peso totale calcolato kg<input id="new-cylinder-total" name="total_weight_kg" type="text" readonly tabindex="-1" placeholder="tara + gas"></label>
@@ -341,11 +341,11 @@
     </div>
   </dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script src="i18n.js?v=0.14.5"></script>
-  <script src="app.js?v=0.14.5"></script>
-  <script src="accounts.js?v=0.14.5"></script>
-  <script src="diagnostics.js?v=0.14.5"></script>
-  <script src="cylinders.js?v=0.14.5"></script>
-  <script src="machine-brands.js?v=0.14.5"></script>
+  <script src="i18n.js?v=0.14.6"></script>
+  <script src="app.js?v=0.14.6"></script>
+  <script src="accounts.js?v=0.14.6"></script>
+  <script src="diagnostics.js?v=0.14.6"></script>
+  <script src="cylinders.js?v=0.14.6"></script>
+  <script src="machine-brands.js?v=0.14.6"></script>
 </body>
 </html>

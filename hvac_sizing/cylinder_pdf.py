@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import html
 import io
-from datetime import datetime
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+from pdf_format import co2_markup, date_time
 from reportlab.graphics.barcode.qr import QrCodeWidget
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib import colors
@@ -57,19 +57,11 @@ def kg(value: object) -> str:
 
 
 def tco2(value: object) -> str:
-    return f"{float(value or 0) / 1000:,.6f}".replace(",", "X").replace(".", ",").replace("X", ".") + " t CO₂e"
+    return co2_markup(value)
 
 
 def safe(value: object) -> str:
     return html.escape(str(value or ""))
-
-
-def date_time(value: object, language: str = "it") -> str:
-    try:
-        parsed = datetime.fromisoformat(str(value))
-        return parsed.strftime("%d.%m.%Y %H:%M" if language == "de" else "%d/%m/%Y %H:%M")
-    except (TypeError, ValueError):
-        return str(value or "—")
 
 
 def cylinder_url(base_url: str, cylinder_id: str) -> str:
@@ -170,10 +162,11 @@ def cylinder_story(cylinder: dict, target_url: str, style: dict, language: str) 
         if item.get("machine_charge_kg") is not None:
             audit.append(f"{tr('Carica targa', language)}: {kg(item['machine_charge_kg'])}")
         if item.get("gwp") is not None:
-            audit.append(f"GWP {float(item['gwp']):g} · {tr('Gas movimentato', language)}: {tco2(item.get('co2_equivalent_kg'))}")
+            audit.append(f"GWP {float(item['gwp']):g}".replace(".", ",") + f" · {tr('Gas movimentato', language)}: {tco2(item.get('co2_equivalent_kg'))}")
         if item.get("emission_co2_equivalent_kg") is not None:
             audit.append(f"{tr('Emissione stimata', language)}: {tco2(item['emission_co2_equivalent_kg'])}")
-        note_text = safe(item.get("notes")) or "—"
+        system_note = item["operation"] == "initial" and item.get("notes") == "Registrazione iniziale"
+        note_text = ("" if system_note else safe(item.get("notes"))) or "—"
         if audit:
             note_text += "<br/>" + "<br/>".join(audit)
         history_rows.append([

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.14.6
+
+Correzioni dal collaudo completo della 0.14.5.
+
+- Sicurezza: il blocco dopo i tentativi errati non si aggira più cambiando l’intestazione `CF-Connecting-IP`. L’intestazione vale solo se la richiesta arriva dal tunnel (rete interna di Home Assistant o stesso host); in più, dopo 10 errori sullo stesso QR o sullo stesso account il login si blocca per 15 minuti, da qualsiasi indirizzo.
+- GWP secondo il Regolamento (UE) 2024/573 per 43 gas; corretti R449A (1396), R454B (465), R513A (629), R1234yf (0,50), R1234ze (1,37), R290 (0,02) e R600a (0). Se il campo GWP resta vuoto si usa il valore del gas.
+- Portale QR: dopo un movimento la risposta contiene solo i dati della bombola, senza note interne né indirizzi QR.
+- Calcolo rapido e professionale: misure mancanti, negative o fuori intervallo vengono rifiutate con locale e campo, come nel guidato. Il rapido conta le persone come gli altri metodi (75 W sensibili + 55 W latenti).
+- Diagnosi: l’avviso R290 resta visibile ma non trasforma più l’esito in "STOP".
+- Vuoto: se dopo il test di risalita il valore supera 1000 micron l’esito è rosso ("Risalita oltre la soglia").
+- Tedesco: tradotti tutti i messaggi di errore del server (bombole, portale QR, login, calcolo), le 36 spiegazioni della Diagnosi, le note del Vuoto, le etichette dell’elenco bombole e la pagina di accesso esterna, ora con pulsanti IT/DE.
+- PDF: "CO₂e" stampato correttamente, orari nell’ora locale invece di UTC, numeri con la virgola, etichette dei dati inseriti in italiano/tedesco invece dei nomi interni.
+- Interfaccia: numeri dei risultati e della Diagnosi con la virgola, codice e nome della bombola su righe separate, pulsante "PDF magazzino" con lo stesso carattere degli altri, "Utenti app" non va più a capo, CO₂e in kg per quantità piccole, nota automatica "Registrazione iniziale" nascosta nello storico.
+- Elenchi gas di Bombole, Diagnosi e Vuoto ampliati.
+- Messaggi di validazione con la virgola decimale e senza errori di genere ("Controlla la tara: non può essere un valore negativo").
+- Opzione `external_url` vuota per le nuove installazioni: va impostata con il proprio dominio. Le installazioni esistenti mantengono il valore già configurato.
+
 ## 0.14.5
 
 - Stato del progetto sempre visibile e versione della pagina accanto ai campi.

@@ -7,7 +7,9 @@ const ctr = value => window.AppI18n?.translate(value) || value;
 
 const kg = value => `${Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg`;
 const co2 = value => `${Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg CO₂e`;
-const tco2 = value => `${(Number(value || 0) / 1000).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 6})} t CO₂e`;
+const tco2 = value => Number(value || 0) >= 1
+  ? `${(Number(value || 0) / 1000).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} t CO₂e`
+  : `${Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} kg CO₂e`;
 
 function decimalText(value) {
   let normalized = String(value ?? '').trim().replace(/[\s\u00a0]/g, '');
@@ -64,13 +66,13 @@ function renderCylinders() {
     return result;
   }, {});
   $('#cylinder-summary').innerHTML = cylinderItems.length
-    ? `<div class="summary-chip"><span>Bombole registrate</span><strong>${cylinderItems.length}</strong></div>${Object.entries(totals).sort().map(([gas, total]) => `<div class="summary-chip"><span>Totale ${escapeHtml(gas)}</span><strong>${kg(total)}</strong></div>`).join('')}`
+    ? `<div class="summary-chip"><span>Bombole registrate</span><strong>${cylinderItems.length}</strong></div>${Object.entries(totals).sort().map(([gas, total]) => `<div class="summary-chip"><span>${escapeHtml(ctr('Totale'))} ${escapeHtml(gas)}</span><strong>${kg(total)}</strong></div>`).join('')}`
     : '';
   $('#cylinders-list').innerHTML = visible.length ? visible.map(item => `
     <button class="cylinder-card" type="button" data-cylinder="${item.id}">
       <span class="cylinder-card-head"><span><span class="cylinder-code">${escapeHtml(item.code)}</span><strong>${escapeHtml(item.name)}</strong></span><span class="refrigerant-pill">${escapeHtml(item.refrigerant)}</span></span>
       <span class="cylinder-balance">${kg(item.current_gas_kg)}</span>
-      <small>Peso totale stimato ${kg(item.total_weight_kg)} · Tara ${kg(item.tare_kg)}</small>
+      <small>${escapeHtml(ctr('Peso totale stimato'))} ${kg(item.total_weight_kg)} · Tara ${kg(item.tare_kg)}</small>
     </button>`).join('') : `<div class="empty-state">${cylinderItems.length ? 'Nessuna bombola corrisponde alla ricerca.' : 'Nessuna bombola registrata. Premi “Nuova bombola” per iniziare.'}</div>`;
   $('#download-all-cylinders-pdf').href = cylinderPdfUrl(null, true);
   $('#download-all-cylinders-pdf').download = 'magazzino-bombole.pdf';
@@ -148,9 +150,10 @@ function renderCylinderDetail() {
       : `${item.operation === 'remove' ? '−' : '+'}${kg(Math.abs(item.amount_kg || 0))}`;
     const edited = item.edited_at ? ` · ${ctr('Corretto dall’amministratore')}` : '';
     const machine = [item.machine_brand, item.machine_model, item.machine_serial].filter(Boolean).join(' · ');
-    const climate = item.gwp == null ? '' : `${machine ? `${machine} · ` : ''}GWP ${item.gwp} · ${tco2(item.co2_equivalent_kg)} gas movimentato${item.emission_co2_equivalent_kg == null ? '' : ` · ${tco2(item.emission_co2_equivalent_kg)} emissione stimata`}`;
+    const climate = item.gwp == null ? '' : `${machine ? `${machine} · ` : ''}GWP ${Number(item.gwp).toLocaleString(window.AppI18n?.locale() || 'it-IT')} · ${ctr('Gas movimentato')}: ${tco2(item.co2_equivalent_kg)}${item.emission_co2_equivalent_kg == null ? '' : ` · ${ctr('Emissione stimata')}: ${tco2(item.emission_co2_equivalent_kg)}`}`;
+    const note = item.operation === 'initial' && item.notes === 'Registrazione iniziale' ? '' : item.notes;
     const deleteButton = item.operation === 'initial' ? '' : `<button class="button danger history-delete" type="button" data-delete-transaction="${escapeHtml(item.id)}">Elimina</button>`;
-    return `<div class="history-row history-${['add','remove','weighing','initial'].includes(item.operation) ? item.operation : 'other'}" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong class="history-operation">${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small>${climate ? `<small class="climate-detail">${climate.split(' · ').map(part => `<span>${escapeHtml(part)}</span>`).join('')}</small>` : ''}</div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><div class="history-actions"><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button>${deleteButton}</div></div></div>`;
+    return `<div class="history-row history-${['add','remove','weighing','initial'].includes(item.operation) ? item.operation : 'other'}" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong class="history-operation">${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${note ? ` · ${escapeHtml(note)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small>${climate ? `<small class="climate-detail">${climate.split(' · ').map(part => `<span>${escapeHtml(part)}</span>`).join('')}</small>` : ''}</div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><div class="history-actions"><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button>${deleteButton}</div></div></div>`;
   }).join('') : '<div class="empty-state">Nessun movimento registrato.</div>';
   updateOperationPreview();
 }
@@ -417,7 +420,7 @@ async function loadOperators() {
 }
 
 function renderOperators() {
-  $('#operator-count').textContent = `${operatorItems.length} ${operatorItems.length === 1 ? 'operatore' : 'operatori'}`;
+  $('#operator-count').textContent = `${operatorItems.length} ${ctr(operatorItems.length === 1 ? 'operatore' : 'operatori')}`;
   $('#operators-list').innerHTML = operatorItems.length ? operatorItems.map(operator => `
     <div class="operator-row" data-operator="${operator.id}">
       <div><strong class="history-operation">${escapeHtml(operator.name)}</strong><span class="operator-status${operator.active ? '' : ' inactive'}">${operator.active ? 'ATTIVO' : 'DISATTIVATO'}</span><small>${operator.active ? 'Può accedere dai QR' : 'Accesso revocato'}</small></div>
