@@ -16,3 +16,9 @@ button:disabled { opacity:.55; }
 .error { padding:.75rem; border:1px solid rgba(255,107,107,.55); border-radius:10px; color:var(--danger); background:rgba(255,107,107,.1); font-size:.82rem; }
 .hidden { display:none; }
 .security { margin:1rem 0 0; text-align:center; font-size:.74rem; }
+
+.login-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.login-top .eyebrow { margin: 0; }
+.language { display: inline-flex; gap: 4px; padding: 3px; border-radius: 10px; border: 1px solid #21425d; background: #071b2a; }
+.language button { width: auto; min-height: 30px; margin: 0; padding: 4px 10px; border-radius: 8px; background: transparent; color: #91aabe; font-weight: 800; }
+.language button.active { background: #3bc9db; color: #04111b; }

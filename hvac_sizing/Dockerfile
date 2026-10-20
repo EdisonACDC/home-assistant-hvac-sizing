@@ -1,6 +1,6 @@
 FROM ghcr.io/home-assistant/base:latest
 
-ARG BUILD_VERSION=0.14.5
+ARG BUILD_VERSION=0.14.6
 ARG BUILD_ARCH
 
 LABEL \
@@ -10,7 +10,7 @@ LABEL \
   io.hass.type="app" \
   io.hass.arch="${BUILD_ARCH}"
 
-RUN apk add --no-cache python3 py3-pip \
+RUN apk add --no-cache python3 py3-pip tzdata \
     && pip3 install --no-cache-dir --break-system-packages "qrcode[pil]==8.2" reportlab==5.0.1
 
 WORKDIR /app
@@ -18,6 +18,8 @@ COPY app.py /app/app.py
 COPY calc_engine.py /app/calc_engine.py
 COPY sizing_pdf.py /app/sizing_pdf.py
 COPY cylinder_pdf.py /app/cylinder_pdf.py
+COPY errors_i18n.py /app/errors_i18n.py
+COPY pdf_format.py /app/pdf_format.py
 COPY www /app/www
 COPY run.sh /run.sh
 RUN chmod a+x /run.sh

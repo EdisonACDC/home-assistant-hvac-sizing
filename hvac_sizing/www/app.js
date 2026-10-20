@@ -1,7 +1,12 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const n = value => Number(value || 0);
+const dec = (value, digits) => Number(value || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: digits, maximumFractionDigits: digits});
+const plain = value => typeof value === 'number' ? value.toLocaleString(window.AppI18n?.locale() || 'it-IT', {maximumFractionDigits: 2}) : value;
 const tr = value => window.AppI18n?.translate(value) || value;
+// Frase traducibile con valori: il modello resta nel dizionario, i numeri vengono inseriti dopo.
+const trf = (template, values = {}) => tr(template).replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
+const serverError = data => (window.AppI18n?.getLanguage() === 'de' && data.error_de) || tr(data.error || 'Operazione non riuscita');
 const EXTERNAL_ADMIN = window.location.pathname.startsWith('/admin/');
 
 function cookieValue(name) {
@@ -371,12 +376,12 @@ async function api(path, options = {}) {
   const method = String(options.method || 'GET').toUpperCase();
   if (EXTERNAL_ADMIN && !['GET', 'HEAD'].includes(method)) headers['X-Admin-CSRF'] = cookieValue('hvac_admin_csrf');
   const response = await fetch(`api/${path}`, {...options, headers});
-  const data = await response.json().catch(() => ({error: 'Errore di comunicazione'}));
+  const data = await response.json().catch(() => ({error: 'Errore di comunicazione', error_de: 'Verbindungsfehler'}));
   if (EXTERNAL_ADMIN && response.status === 401) {
     window.location.replace('/admin/login');
     throw new Error('Sessione amministratore scaduta');
   }
-  if (!response.ok) throw new Error(window.AppI18n?.translate(data.error || 'Operazione non riuscita') || data.error || 'Operazione non riuscita');
+  if (!response.ok) throw new Error(serverError(data));
   return data;
 }
 
@@ -419,15 +424,15 @@ function renderResults(result) {
   target.innerHTML = `
     <div class="section-title"><div><p class="eyebrow">${tr('RISULTATO')} ${tr(result.method.toUpperCase())}</p><h2>${escapeHtml(result.project_name)}</h2></div></div>
     <div class="report-actions">${lastCalculationPdfUrl ? `<a class="button primary" href="${lastCalculationPdfUrl}" download="dimensionamento-${pdfLanguage}.pdf">${tr('Scarica PDF del calcolo')}</a><a class="button secondary" href="${lastCalculationPdfUrl}" target="_blank" rel="noopener">${tr('Apri PDF / stampa')}</a>` : ''}<p class="field-help">${tr('Il PDF contiene i dati dell’ultimo calcolo riuscito. Dopo una modifica, ricalcola per aggiornarlo.')}</p></div>
-    ${result.outdoor ? `<section class="guided-result"><h3>${tr('Proposta unità esterna')}</h3><p><strong>${escapeHtml(result.outdoor.configuration)}</strong> · ${result.outdoor.indoor_units} ${tr('unità interne')}</p><p>${escapeHtml(result.outdoor.assumption)}</p><p>${tr('Freddo')}: <strong>${result.outdoor.cooling_kw} kW</strong> · ${tr('Caldo')}: <strong>${result.outdoor.heating_kw} kW</strong></p><ul>${result.outdoor.notes.map(note=>`<li>${escapeHtml(note)}</li>`).join('')}</ul></section>` : ''}
+    ${result.outdoor ? `<section class="guided-result"><h3>${tr('Proposta unità esterna')}</h3><p><strong>${escapeHtml(result.outdoor.configuration)}</strong> · ${result.outdoor.indoor_units} ${tr('unità interne')}</p><p>${escapeHtml(result.outdoor.assumption)}</p><p>${tr('Freddo')}: <strong>${dec(result.outdoor.cooling_kw, 2)} kW</strong> · ${tr('Caldo')}: <strong>${dec(result.outdoor.heating_kw, 2)} kW</strong></p><ul>${result.outdoor.notes.map(note=>`<li>${escapeHtml(note)}</li>`).join('')}</ul></section>` : ''}
     <div class="totals">
-      <div class="metric"><span>Superficie totale</span><strong>${result.totals.area_m2} m²</strong></div>
-      <div class="metric"><span>Volume totale</span><strong>${result.totals.volume_m3} m³</strong></div>
-      <div class="metric cool"><span>Potenza frigorifera</span><strong>${result.totals.cooling_kw} kW</strong></div>
-      <div class="metric heat"><span>Potenza riscaldamento</span><strong>${result.totals.heating_kw} kW</strong></div>
+      <div class="metric"><span>Superficie totale</span><strong>${dec(result.totals.area_m2, 1)} m²</strong></div>
+      <div class="metric"><span>Volume totale</span><strong>${dec(result.totals.volume_m3, 1)} m³</strong></div>
+      <div class="metric cool"><span>Potenza frigorifera</span><strong>${dec(result.totals.cooling_kw, 2)} kW</strong></div>
+      <div class="metric heat"><span>Potenza riscaldamento</span><strong>${dec(result.totals.heating_kw, 2)} kW</strong></div>
     </div>
     <div class="result-scroll"><table class="result-table"><thead><tr><th>Locale</th><th>m²</th><th>Sensibile</th><th>Latente</th><th>Freddo totale</th><th>Caldo</th><th>SHR</th></tr></thead><tbody>
-      ${result.rooms.map(room => `<tr><td><strong>${escapeHtml(room.name)}</strong></td><td>${room.area_m2}</td><td>${room.sensible_cooling_w} W</td><td>${room.latent_cooling_w} W</td><td><strong>${room.total_cooling_kw} kW</strong></td><td><strong>${room.heating_kw} kW</strong></td><td>${room.shr}</td></tr>`).join('')}
+      ${result.rooms.map(room => `<tr><td><strong>${escapeHtml(room.name)}</strong></td><td>${dec(room.area_m2, 1)}</td><td>${dec(room.sensible_cooling_w, 0)} W</td><td>${dec(room.latent_cooling_w, 0)} W</td><td><strong>${dec(room.total_cooling_kw, 2)} kW</strong></td><td><strong>${dec(room.heating_kw, 2)} kW</strong></td><td>${dec(room.shr, 2)}</td></tr>`).join('')}
     </tbody></table></div>${guidedResultDetails(result)}<p class="disclaimer">${escapeHtml(tr(result.disclaimer))}</p>`;
 }
 
@@ -481,17 +486,22 @@ function analyzeVacuum() {
   if (data.rise_start > 0 && data.rise_end > 0 && data.rise_minutes > 0) {
     const rise = data.rise_end - data.rise_start;
     const rate = rise / data.rise_minutes;
+    const values = {rise: Math.round(rise), minutes: data.rise_minutes, rate: Math.round(rate), end: Math.round(data.rise_end)};
     if (rise <= 0) {
-      notes.push('Il test di risalita non mostra aumento: dato ottimo, verifica comunque che la pompa sia realmente isolata.');
-    } else if (data.rise_end <= 1000 && rate <= 50) {
-      notes.push(`Test risalita favorevole: +${Math.round(rise)} micron in ${data.rise_minutes} min (${Math.round(rate)} micron/min).`);
-    } else if (rate <= 150) {
-      if (level === 'ok') level = 'warn';
-      notes.push(`Risalita moderata: +${Math.round(rise)} micron in ${data.rise_minutes} min. Possibile degassamento/umidità residua; ripeti l’evacuazione.`);
-    } else {
+      notes.push(tr('Il test di risalita non mostra aumento: dato ottimo, verifica comunque che la pompa sia realmente isolata.'));
+    } else if (rate > 150) {
       level = 'danger';
       title = 'Risalita troppo rapida';
-      notes.push(`Risalita di circa ${Math.round(rate)} micron/min: controlla perdite, raccordi, valvole e presenza di forte umidità.`);
+      notes.push(trf('Risalita di circa {rate} micron/min: controlla perdite, raccordi, valvole e presenza di forte umidità.', values));
+    } else if (data.rise_end > 1000) {
+      level = 'danger';
+      title = 'Risalita oltre la soglia';
+      notes.push(trf('Dopo il test il vuoto è salito a {end} micron, oltre 1000: cerca perdite o umidità, poi ripeti evacuazione e test.', values));
+    } else if (rate <= 50) {
+      notes.push(trf('Test risalita favorevole: +{rise} micron in {minutes} min ({rate} micron/min).', values));
+    } else {
+      if (level === 'ok') level = 'warn';
+      notes.push(trf('Risalita moderata: +{rise} micron in {minutes} min. Possibile degassamento/umidità residua; ripeti l’evacuazione.', values));
     }
   } else {
     notes.push('Quando arrivi al valore obiettivo, isola la pompa e registra inizio/fine del test di risalita per distinguere meglio umidità e perdita.');
@@ -704,7 +714,7 @@ function guidedResultDetails(result) {
     <p class="field-help">${tr('Risultato indicativo basato sui dati inseriti e sulle seguenti ipotesi:')}</p>
     <ul>${room.guided_notes.map(note=>`<li>${escapeHtml(tr(note))}</li>`).join('')}</ul>
     <details class="sizing-advanced"><summary>${tr('Mostra dati e coefficienti usati')}</summary>
-    <dl>${Object.entries(room.guided_details).map(([label,value])=>`<div><dt>${tr(label)}</dt><dd>${value}</dd></div>`).join('')}</dl></details>
+    <dl>${Object.entries(room.guided_details).map(([label,value])=>`<div><dt>${tr(label)}</dt><dd>${escapeHtml(plain(value))}</dd></div>`).join('')}</dl></details>
   </section>`).join('');
 }
 

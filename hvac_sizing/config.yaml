@@ -1,5 +1,5 @@
 name: "Dimensionamento Climatizzazione Pro"
-version: "0.14.5"
+version: "0.14.6"
 slug: "hvac_sizing_pro"
 description: "Calcolo HVAC, diagnosi tecnica e magazzino bombole refrigerante con QR code"
 url: "https://github.com/EdisonACDC/home-assistant-hvac-sizing"
@@ -21,7 +21,7 @@ ports_description:
   8100/tcp: "Portale bombole e accesso amministratore protetto (porta host predefinita 48100)"
 options:
   log_level: info
-  external_url: "https://bombole.hausmaistercarellas.com"
+  external_url: ""
   operator_pin: ""
   admin_password: ""
 schema:

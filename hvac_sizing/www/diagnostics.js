@@ -10,6 +10,8 @@
   const checked = id => Boolean($d(id)?.checked);
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   const td = value => window.AppI18n?.translate(value) || value;
+  const bar = value => value === null ? '—' : Number(value).toLocaleString(window.AppI18n?.locale() || 'it-IT', {maximumFractionDigits: 2});
+  const dec = (value, digits = 1) => Number(value).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: digits, maximumFractionDigits: digits});
 
   function performancePayload() {
     return {
@@ -69,10 +71,10 @@
     const superheat = d.suction_line_c !== null && d.evap_sat_c !== null ? d.suction_line_c - d.evap_sat_c : null;
     const subcool = fullAccess && d.cond_sat_c !== null && d.liquid_line_c !== null ? d.cond_sat_c - d.liquid_line_c : null;
 
-    metrics.push(badge(cooling ? 'ΔT aria raffrescamento' : 'ΔT aria riscaldamento', `${deltaAir.toFixed(1)} K`, deltaAir > 0 ? 'ok' : 'danger'));
-    metrics.push(badge('Surriscaldamento', superheat === null ? '—' : `${superheat.toFixed(1)} K`));
-    if (fullAccess) metrics.push(badge('Sottoraffreddamento', subcool === null ? '—' : `${subcool.toFixed(1)} K`));
-    metrics.push(badge(fullAccess ? 'Pressioni LP / HP' : 'Pressione LP', fullAccess ? `${d.low_bar_g ?? '—'} / ${d.high_bar_g ?? '—'} bar(g)` : `${d.low_bar_g ?? '—'} bar(g)`));
+    metrics.push(badge(cooling ? 'ΔT aria raffrescamento' : 'ΔT aria riscaldamento', `${dec(deltaAir, 1)} K`, deltaAir > 0 ? 'ok' : 'danger'));
+    metrics.push(badge('Surriscaldamento', superheat === null ? '—' : `${dec(superheat, 1)} K`));
+    if (fullAccess) metrics.push(badge('Sottoraffreddamento', subcool === null ? '—' : `${dec(subcool, 1)} K`));
+    metrics.push(badge(fullAccess ? 'Pressioni LP / HP' : 'Pressione LP', fullAccess ? `${bar(d.low_bar_g)} / ${bar(d.high_bar_g)} bar(g)` : `${bar(d.low_bar_g)} bar(g)`));
 
     if (d.runtime_min !== null && d.runtime_min < 10) {
       addFinding(findings, 'warn', 'Macchina non ancora stabilizzata', 'Per una diagnosi affidabile lascia lavorare la macchina almeno 10–15 minuti in condizioni stabili, salvo diversa procedura del costruttore.');
@@ -101,7 +103,7 @@
 
     if (d.evap_sat_c !== null && cooling) {
       const evapApproach = d.return_air_c - d.evap_sat_c;
-      metrics.push(badge('Approach ritorno→evaporazione', `${evapApproach.toFixed(1)} K`));
+      metrics.push(badge('Approach ritorno→evaporazione', `${dec(evapApproach, 1)} K`));
       if (d.evap_sat_c <= 0 && d.rh_percent !== null && d.rh_percent >= 50) {
         addFinding(findings, 'warn', 'Evaporazione molto bassa', 'Con umidità significativa aumenta il rischio di brina. Verifica portata aria, sensori, carico e controllo EEV.');
       }
@@ -132,7 +134,7 @@
       }
       if (d.cond_sat_c !== null && d.outdoor_c !== null && cooling) {
         const condApproach = d.cond_sat_c - d.outdoor_c;
-        metrics.push(badge('Approach condensazione→esterna', `${condApproach.toFixed(1)} K`));
+        metrics.push(badge('Approach condensazione→esterna', `${dec(condApproach, 1)} K`));
         if (condApproach > 25) addFinding(findings, 'warn', 'Condensazione alta rispetto all’esterno', 'Verifica batteria esterna, ventilatore e ricircolo aria. Alta condensazione da sola non dimostra sovraccarica.');
       }
     } else {
@@ -140,14 +142,14 @@
     }
 
     if (d.discharge_line_c !== null) {
-      metrics.push(badge('T mandata compressore', `${d.discharge_line_c.toFixed(1)} °C`, d.discharge_line_c > 110 ? 'danger' : d.discharge_line_c > 95 ? 'warn' : ''));
+      metrics.push(badge('T mandata compressore', `${dec(d.discharge_line_c, 1)} °C`, d.discharge_line_c > 110 ? 'danger' : d.discharge_line_c > 95 ? 'warn' : ''));
       if (d.discharge_line_c > 110) addFinding(findings, 'danger', 'Temperatura mandata molto alta', 'Verifica surriscaldamento, raffreddamento compressore, restrizioni e limiti specifici del costruttore.');
       else if (d.discharge_line_c > 95) addFinding(findings, 'warn', 'Temperatura mandata elevata', 'Tendenza da controllare insieme a surriscaldamento, carico e ventilazione.');
     }
 
     if (d.current_a !== null && d.rated_current_a !== null && d.rated_current_a > 0) {
       const load = d.current_a / d.rated_current_a * 100;
-      metrics.push(badge('Assorbimento vs riferimento', `${load.toFixed(0)}%`, load > 115 ? 'danger' : load > 100 ? 'warn' : ''));
+      metrics.push(badge('Assorbimento vs riferimento', `${dec(load, 0)}%`, load > 115 ? 'danger' : load > 100 ? 'warn' : ''));
       if (load > 115) addFinding(findings, 'danger', 'Assorbimento oltre riferimento', 'Controlla tensione, scambio termico, carico e dati di targa. Su inverter il confronto è valido solo se il riferimento corrisponde alla condizione di lavoro.');
     }
 
@@ -165,7 +167,8 @@
     }
 
     if (d.refrigerant === 'R290') {
-      addFinding(findings, 'danger', 'Refrigerante A3 infiammabile', 'Per R290 usa attrezzatura e procedure idonee A3 e rispetta integralmente le istruzioni del costruttore.');
+      // Avviso di sicurezza: sempre visibile, ma non è un'anomalia della macchina e non cambia l'esito.
+      addFinding(findings, 'safety', 'Refrigerante A3 infiammabile', 'Per R290 usa attrezzatura e procedure idonee A3 e rispetta integralmente le istruzioni del costruttore.');
     }
 
     const dangerCount = findings.filter(f => f.severity === 'danger').length;
@@ -180,7 +183,7 @@
     target.innerHTML = `
       <div class="diagnostic-head"><div><span>Esito tecnico</span><strong>${esc(td(title))}</strong></div><div class="diagnostic-score">${dangerCount ? 'STOP' : warnCount ? 'CHECK' : 'OK'}</div></div>
       <div class="diag-metrics">${metrics.join('')}</div>
-      <div class="findings">${findings.map(f => `<article class="finding ${f.severity}"><strong>${esc(f.title)}</strong><p>${esc(f.detail)}</p></article>`).join('')}</div>
+      <div class="findings">${findings.map(f => `<article class="finding ${f.severity === 'safety' ? 'danger safety' : f.severity}"><strong>${esc(f.title)}</strong><p>${esc(f.detail)}</p></article>`).join('')}</div>
       <div class="procedure-box"><strong>Ordine professionale di diagnosi</strong><p>1) verifica pulizia e portata aria; 2) stabilizza la macchina; 3) misura ritorno e mandata aria; 4) registra LP e temperatura di evaporazione; 5) misura il tubo aspirazione e calcola SH; 6) se HP è realmente disponibile, aggiungi condensazione e SC; 7) incrocia assorbimento e temperature; 8) solo alla fine valuta carica, EEV/restrizioni o scambio termico. Il manuale di servizio della macchina prevale sempre.</p></div>`;
   }
 
