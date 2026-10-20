@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0d2438">
   <title>Dimensionamento Climatizzazione Pro</title>
-  <link rel="stylesheet" href="styles.css?v=0.14.6">
-  <link rel="stylesheet" href="diagnostics.css?v=0.14.6">
+  <link rel="stylesheet" href="styles.css?v=0.15.0">
+  <link rel="stylesheet" href="diagnostics.css?v=0.15.0">
 </head>
 <body class="access-pending">
   <header class="topbar">
@@ -67,7 +67,7 @@
       <div class="guided-section"><h3>Account esistenti</h3><div id="accounts-list"></div></div>
     </section>
     <section class="panel project-panel" data-app-page="sizing">
-      <div class="project-state-row"><strong id="project-state" role="status">Nuovo progetto — da salvare</strong><small>v0.14.6</small></div>
+      <div class="project-state-row"><strong id="project-state" role="status">Nuovo progetto — da salvare</strong><small>v0.15.0</small></div>
       <label>Nome progetto<input id="project-name" value="Nuovo impianto"></label>
       <label>Cliente<input id="customer" placeholder="Nome o ragione sociale"></label>
       <label>Località<input id="location" placeholder="Città"></label>
@@ -328,6 +328,11 @@
     <div class="dialog-head"><div><p class="eyebrow">ACCESSI QR</p><h2>Operatori autorizzati</h2></div><button id="close-operators" class="icon-button" aria-label="Chiudi">×</button></div>
     <div class="dialog-body">
       <p class="operator-help">Solo gli operatori attivi possono visualizzare il registro dopo avere inserito nome e PIN. Ogni operazione viene registrata con il loro nome.</p>
+      <div id="bombole-app-box" class="app-link-box hidden">
+        <label for="bombole-app-link">App Bombole per i telefoni degli operatori</label>
+        <input id="bombole-app-link" type="url" readonly autocomplete="off" spellcheck="false">
+        <small class="field-help">Apri questo indirizzo sul telefono e installalo nella schermata Home: legge i QR anche senza rete.</small>
+      </div>
       <form id="new-operator-form" class="operator-form">
         <div class="grid two">
           <label>Nome operatore<input name="name" required maxlength="120" autocomplete="off" placeholder="es. Mario Rossi"></label>
@@ -341,11 +346,11 @@
     </div>
   </dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script src="i18n.js?v=0.14.6"></script>
-  <script src="app.js?v=0.14.6"></script>
-  <script src="accounts.js?v=0.14.6"></script>
-  <script src="diagnostics.js?v=0.14.6"></script>
-  <script src="cylinders.js?v=0.14.6"></script>
-  <script src="machine-brands.js?v=0.14.6"></script>
+  <script src="i18n.js?v=0.15.0"></script>
+  <script src="app.js?v=0.15.0"></script>
+  <script src="accounts.js?v=0.15.0"></script>
+  <script src="diagnostics.js?v=0.15.0"></script>
+  <script src="cylinders.js?v=0.15.0"></script>
+  <script src="machine-brands.js?v=0.15.0"></script>
 </body>
 </html>

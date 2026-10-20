@@ -53,3 +53,26 @@ Gli account si collegano via HTTPS a `external_url` + `/admin/`, con nome utente
 Le password degli account sono memorizzate con salt casuale e PBKDF2-HMAC-SHA256. Le sessioni firmate durano fino a otto ore e verificano a ogni richiesta account attivo e versione autorizzativa. Modificare password, ruolo, permessi o stato revoca tutte le sessioni precedenti dell’account. Cambiare il proprio account richiede un nuovo accesso. Non è possibile disattivare o declassare l’ultimo account amministratore attivo. Il recupero resta possibile dall’Ingress amministrativo o con l’amministratore principale.
 
 I cookie sono Secure/HttpOnly/SameSite e le scritture richiedono CSRF. Gli account condividono il limite di cinque tentativi falliti per indirizzo in quindici minuti. Gli amministratori con account personale possono confermare modifiche allo storico con la propria password. Il registro dei nuovi movimenti riporta il nome dell’account autenticato.
+
+
+## App Bombole e uso senza rete (0.15.0)
+
+Apri `https://<tuo-dominio>/app/` sul telefono di ogni operatore e aggiungilo alla schermata Home:
+
+- iPhone: in Safari tocca Condividi → "Aggiungi alla schermata Home";
+- Android: in Chrome menu ⋮ → "Installa app" o "Aggiungi a schermata Home".
+
+L’indirizzo esatto è nella finestra **Operatori QR**. Non servono app store né costi aggiuntivi.
+
+Come si usa:
+
+1. Con la rete, apri una volta le bombole che userai e accedi con nome e PIN: il telefono le salva.
+2. In cantina o nei locali tecnici apri i QR con il pulsante **Scansiona bombola** dell’app. Su iPhone non usare la fotocamera normale: aprirebbe Safari, che ha una memoria separata dall’app.
+3. Senza rete la scheda mostra l’ultimo residuo noto con la data. I movimenti restano sul telefono ("in attesa di invio") e il residuo mostrato diventa "Residuo previsto".
+4. Quando torna la rete i movimenti partono da soli. Se l’accesso di 8 ore è scaduto, l’app chiede nome e PIN per inviarli.
+
+Regole di sicurezza: nessun movimento entra nel registro senza un operatore verificato; il PIN resta solo in memoria durante l’invio; ogni movimento ha un codice univoco e non viene registrato due volte.
+
+Movimenti "da verificare": se un movimento arrivato in ritardo renderebbe negativo il residuo, superasse la capacità o fosse una pesata sotto la tara, viene salvato ma escluso dal residuo. L’elenco bombole e lo storico lo segnalano; correggilo con **Modifica** o eliminalo.
+
+Su iPhone Safari può cancellare i dati dei siti non usati per alcuni giorni: con l’app aggiunta alla schermata Home questo non succede.

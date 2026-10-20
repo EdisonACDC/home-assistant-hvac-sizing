@@ -1,0 +1,17 @@
+{
+  "name": "Bombole refrigerante",
+  "short_name": "Bombole",
+  "description": "Registro bombole di Climatizzazione Pro: scansione QR, pesature e prelievi anche senza rete.",
+  "id": "/app/",
+  "start_url": "/app/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07131e",
+  "theme_color": "#07131e",
+  "lang": "it",
+  "icons": [
+    {"src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+  ]
+}

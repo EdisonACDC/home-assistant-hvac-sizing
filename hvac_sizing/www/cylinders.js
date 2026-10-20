@@ -72,7 +72,7 @@ function renderCylinders() {
     <button class="cylinder-card" type="button" data-cylinder="${item.id}">
       <span class="cylinder-card-head"><span><span class="cylinder-code">${escapeHtml(item.code)}</span><strong>${escapeHtml(item.name)}</strong></span><span class="refrigerant-pill">${escapeHtml(item.refrigerant)}</span></span>
       <span class="cylinder-balance">${kg(item.current_gas_kg)}</span>
-      <small>${escapeHtml(ctr('Peso totale stimato'))} ${kg(item.total_weight_kg)} · Tara ${kg(item.tare_kg)}</small>
+      <small>${escapeHtml(ctr('Peso totale stimato'))} ${kg(item.total_weight_kg)} · Tara ${kg(item.tare_kg)}</small>${item.review_count ? `<small class="review-detail">${escapeHtml(item.review_count === 1 ? ctr('1 movimento da verificare') : `${item.review_count} ${ctr('movimenti da verificare')}`)}</small>` : ''}
     </button>`).join('') : `<div class="empty-state">${cylinderItems.length ? 'Nessuna bombola corrisponde alla ricerca.' : 'Nessuna bombola registrata. Premi “Nuova bombola” per iniziare.'}</div>`;
   $('#download-all-cylinders-pdf').href = cylinderPdfUrl(null, true);
   $('#download-all-cylinders-pdf').download = 'magazzino-bombole.pdf';
@@ -149,11 +149,14 @@ function renderCylinderDetail() {
       ? `${ctr('Peso totale')} ${kg(item.total_weight_kg)}`
       : `${item.operation === 'remove' ? '−' : '+'}${kg(Math.abs(item.amount_kg || 0))}`;
     const edited = item.edited_at ? ` · ${ctr('Corretto dall’amministratore')}` : '';
+    const late = item.received_at && (new Date(item.received_at) - new Date(item.created_at)) > 120000
+      ? `<small class="offline-detail">${escapeHtml(ctr('Registrato senza rete, inviato il'))} ${escapeHtml(new Date(item.received_at).toLocaleString(window.AppI18n?.locale() || 'it-IT', {dateStyle: 'short', timeStyle: 'short'}))}</small>` : '';
+    const review = item.review_reason ? `<small class="review-detail"><strong>${escapeHtml(ctr('Da verificare'))}</strong> · ${escapeHtml(ctr(item.review_reason))} · ${escapeHtml(ctr('Non conteggiato nel residuo: correggi o elimina il movimento.'))}</small>` : '';
     const machine = [item.machine_brand, item.machine_model, item.machine_serial].filter(Boolean).join(' · ');
     const climate = item.gwp == null ? '' : `${machine ? `${machine} · ` : ''}GWP ${Number(item.gwp).toLocaleString(window.AppI18n?.locale() || 'it-IT')} · ${ctr('Gas movimentato')}: ${tco2(item.co2_equivalent_kg)}${item.emission_co2_equivalent_kg == null ? '' : ` · ${ctr('Emissione stimata')}: ${tco2(item.emission_co2_equivalent_kg)}`}`;
     const note = item.operation === 'initial' && item.notes === 'Registrazione iniziale' ? '' : item.notes;
     const deleteButton = item.operation === 'initial' ? '' : `<button class="button danger history-delete" type="button" data-delete-transaction="${escapeHtml(item.id)}">Elimina</button>`;
-    return `<div class="history-row history-${['add','remove','weighing','initial'].includes(item.operation) ? item.operation : 'other'}" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong class="history-operation">${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${note ? ` · ${escapeHtml(note)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small>${climate ? `<small class="climate-detail">${climate.split(' · ').map(part => `<span>${escapeHtml(part)}</span>`).join('')}</small>` : ''}</div><div class="history-side"><div class="history-value"><strong>${kg(item.gas_after_kg)}</strong><small>residuo</small></div><div class="history-actions"><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button>${deleteButton}</div></div></div>`;
+    return `<div class="history-row history-${['add','remove','weighing','initial'].includes(item.operation) ? item.operation : 'other'}" data-transaction="${escapeHtml(item.id)}"><time>${escapeHtml(date)}</time><div><strong class="history-operation">${escapeHtml(names[item.operation] || item.operation)}</strong><small>${escapeHtml(detail)}${note ? ` · ${escapeHtml(note)}` : ''}${item.operator_name ? ` · ${escapeHtml(item.operator_name)}` : ''}${escapeHtml(edited)}</small>${climate ? `<small class="climate-detail">${climate.split(' · ').map(part => `<span>${escapeHtml(part)}</span>`).join('')}</small>` : ''}${late}${review}</div><div class="history-side"><div class="history-value"><strong>${item.review_reason ? '—' : kg(item.gas_after_kg)}</strong><small>residuo</small></div><div class="history-actions"><button class="button ghost history-edit" type="button" data-edit-transaction="${escapeHtml(item.id)}">Modifica</button>${deleteButton}</div></div></div>`;
   }).join('') : '<div class="empty-state">Nessun movimento registrato.</div>';
   updateOperationPreview();
 }
@@ -483,6 +486,9 @@ $('#new-cylinder').addEventListener('click', () => {
   $('#new-cylinder-dialog').showModal();
 });
 $('#manage-operators').addEventListener('click', async () => {
+  const qrLink = cylinderItems.find(item => item.qr_png_url)?.qr_png_url;
+  $('#bombole-app-box').classList.toggle('hidden', !qrLink);
+  if (qrLink) $('#bombole-app-link').value = `${new URL(qrLink).origin}/app/`;
   formError('#operator-form-error');
   try {
     await loadOperators();
