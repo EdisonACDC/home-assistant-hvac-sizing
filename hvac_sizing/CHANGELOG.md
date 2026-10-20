@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.15.0
+
+QR e registro bombole anche senza rete.
+
+- Nuova app Bombole su `https://<tuo-dominio>/app/`, installabile dalla schermata Home di iPhone e Android, senza app store. Ha un pulsante "Scansiona bombola" che legge i QR già stampati (lettore del telefono o libreria jsQR inclusa nell’addon, licenza Apache 2.0).
+- Senza rete il telefono apre le bombole già aperte in precedenza, mostra l’ultimo residuo noto con la sua data e salva i movimenti in coda. Le bombole mai aperte si possono comunque pesare o movimentare.
+- Al ritorno della rete i movimenti partono da soli, nell’ordine in cui sono stati fatti. Se l’accesso di 8 ore è scaduto, l’app chiede nome e PIN una volta e invia tutto. Il PIN non viene mai salvato sul telefono.
+- Ogni movimento ha un codice univoco: se l’invio si ripete non viene registrato due volte.
+- Il server inserisce i movimenti all’ora della misura e ricalcola lo storico. Un movimento arrivato in ritardo che renderebbe il registro incoerente non viene scartato: resta "da verificare", non cambia il residuo e compare all’amministratore nell’elenco bombole, nello storico e nel PDF, finché non viene corretto o eliminato.
+- Lo storico indica i movimenti registrati senza rete e quando sono stati inviati.
+- Indirizzo dell’app nella finestra "Operatori QR", tutto in italiano e tedesco.
+- Test nuovi: 10 test del server per la coda e i percorsi dell’app; prova nel browser con rete staccata e fotocamera simulata (29 controlli).
+
 ## 0.14.6
 
 Correzioni dal collaudo completo della 0.14.5.

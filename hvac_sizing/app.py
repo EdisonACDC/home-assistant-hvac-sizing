@@ -191,7 +191,20 @@ def db_connection() -> sqlite3.Connection:
     for column, definition in environmental_columns.items():
         if column not in transaction_columns:
             connection.execute(f"ALTER TABLE cylinder_transactions ADD COLUMN {column} {definition}")
+    offline_columns = {
+        "client_id": "TEXT",
+        "received_at": "TEXT",
+        "device_time": "TEXT",
+        "review_reason": "TEXT NOT NULL DEFAULT ''",
+    }
+    for column, definition in offline_columns.items():
+        if column not in transaction_columns:
+            connection.execute(f"ALTER TABLE cylinder_transactions ADD COLUMN {column} {definition}")
     connection.execute("CREATE INDEX IF NOT EXISTS idx_cylinder_transactions_cylinder ON cylinder_transactions(cylinder_id, created_at DESC)")
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_cylinder_transactions_client "
+        "ON cylinder_transactions(cylinder_id, client_id) WHERE client_id IS NOT NULL"
+    )
     return connection
 
 
@@ -610,48 +623,109 @@ def public_cylinder_payload(cylinder: sqlite3.Row, history: list[sqlite3.Row]) -
     }
 
 
-def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: str = "") -> dict:
+REVIEW_REASONS = {
+    "La modifica rende negativo il refrigerante in un movimento successivo": "Con questo movimento il residuo risulterebbe negativo",
+    "La modifica supera la capacità della bombola in un movimento del registro": "Con questo movimento la bombola supererebbe la capacità",
+    "Una pesatura del registro è inferiore alla tara": "Pesatura inferiore alla tara della bombola",
+}
+CLIENT_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{8,64}$")
+
+
+def clean_client_id(value: object) -> str | None:
+    """Codice univoco creato dal telefono per non registrare due volte lo stesso movimento."""
+    text = str(value or "").strip()
+    return text if CLIENT_ID_PATTERN.match(text) else None
+
+
+def measurement_time(value: object, earliest: str, now: datetime) -> tuple[str, str | None]:
+    """Ora della misura inviata dal telefono, limitata tra la creazione della bombola e adesso."""
+    raw = str(value or "").strip()[:40]
+    if not raw:
+        return now.isoformat(), None
+    try:
+        moment = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return now.isoformat(), raw
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    try:
+        lower = datetime.fromisoformat(earliest)
+    except ValueError:
+        lower = moment
+    if lower.tzinfo is None:
+        lower = lower.replace(tzinfo=timezone.utc)
+    moment = min(max(moment, lower), now)
+    return moment.astimezone(timezone.utc).isoformat(), raw
+
+
+def record_cylinder_transaction(cylinder_id: str, payload: dict, operator_name: str = "", *, queued: bool = False) -> dict:
+    """Registra un movimento.
+
+    I movimenti inviati in ritardo da un telefono senza rete (``queued``) entrano nello storico all'ora
+    della misura. Se rendono incoerente il registro non vengono scartati: restano "da verificare" e
+    non cambiano il residuo finché un amministratore non li corregge o li elimina.
+    """
     operation = str(payload.get("operation") or "")
     if operation not in {"weighing", "add", "remove"}:
         raise ValueError("Operazione non valida")
-    now = datetime.now(timezone.utc).isoformat()
+    client_id = clean_client_id(payload.get("client_id"))
+    now_moment = datetime.now(timezone.utc)
+    now = now_moment.isoformat()
     with db_connection() as db:
         row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
         if not row:
             raise LookupError("Bombola non trovata")
-        before = round(row["current_gas_kg"], 3)
+        if client_id:
+            existing = db.execute(
+                "SELECT id FROM cylinder_transactions WHERE cylinder_id = ? AND client_id = ?", (cylinder_id, client_id)
+            ).fetchone()
+            if existing:
+                return cylinder_payload(row) | {"duplicate": True, "transaction_id": existing["id"]}
+        created_at, device_time = measurement_time(payload.get("measured_at"), row["created_at"], now_moment)
+        later = db.execute(
+            "SELECT 1 FROM cylinder_transactions WHERE cylinder_id = ? AND created_at > ? LIMIT 1", (cylinder_id, created_at)
+        ).fetchone()
         total = None
         amount = None
         if operation == "weighing":
             total = number(payload.get("total_weight_kg"), "il peso totale")
-            if total < row["tare_kg"]:
+            if total < row["tare_kg"] and not queued:
                 raise ValueError("Il peso totale non può essere inferiore alla tara")
-            after = round(total - row["tare_kg"], 3)
-            amount = round(after - before, 3)
         else:
             amount = number(payload.get("amount_kg"), "la quantità")
             if amount <= 0:
                 raise ValueError("La quantità deve essere maggiore di zero")
-            after = round(before + amount if operation == "add" else before - amount, 3)
-        if after < 0:
-            raise ValueError("Il prelievo supera il refrigerante disponibile")
-        if row["capacity_kg"] is not None and after > row["capacity_kg"]:
-            raise ValueError("Il refrigerante risultante supera la capacità della bombola")
+        if not later and not queued:
+            # Movimento in tempo reale: messaggi chiari prima di toccare il registro.
+            before = round(row["current_gas_kg"], 3)
+            after = round(total - row["tare_kg"], 3) if operation == "weighing" else round(before + amount if operation == "add" else before - amount, 3)
+            if after < 0:
+                raise ValueError("Il prelievo supera il refrigerante disponibile")
+            if row["capacity_kg"] is not None and after > row["capacity_kg"]:
+                raise ValueError("Il refrigerante risultante supera la capacità della bombola")
         transaction_id = str(uuid.uuid4())
         notes = str(payload.get("notes") or "").strip()[:500]
         operator = str(operator_name or "").strip()[:120]
         environmental = environmental_values(payload, row["refrigerant"], operation)
-        db.execute("UPDATE cylinders SET current_gas_kg = ?, updated_at = ? WHERE id = ?", (after, now, cylinder_id))
         db.execute(
             """INSERT INTO cylinder_transactions
             (id, cylinder_id, operation, amount_kg, total_weight_kg, gas_before_kg, gas_after_kg,
              notes, operator_name, created_at, machine_brand, machine_model, machine_serial,
-             machine_charge_kg, gwp, co2_equivalent_kg, emitted_kg, emission_co2_equivalent_kg)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (transaction_id, cylinder_id, operation, amount, total, before, after, notes, operator, now, *environmental),
+             machine_charge_kg, gwp, co2_equivalent_kg, emitted_kg, emission_co2_equivalent_kg,
+             client_id, received_at, device_time, review_reason)
+            VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '')""",
+            (transaction_id, cylinder_id, operation, amount if amount is not None else 0.0, total, notes, operator,
+             created_at, *environmental, client_id, now, device_time),
         )
-        updated = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
-    return cylinder_payload(updated)
+        try:
+            updated = recalculate_cylinder_transactions(db, cylinder_id)
+        except ValueError as exc:
+            if not queued:
+                raise
+            reason = REVIEW_REASONS.get(str(exc), str(exc))[:300]
+            db.execute("UPDATE cylinder_transactions SET review_reason = ? WHERE id = ?", (reason, transaction_id))
+            updated = recalculate_cylinder_transactions(db, cylinder_id)
+    return cylinder_payload(updated) | {"transaction_id": transaction_id}
 
 
 def recalculate_cylinder_transactions(db: sqlite3.Connection, cylinder_id: str) -> sqlite3.Row:
@@ -664,6 +738,13 @@ def recalculate_cylinder_transactions(db: sqlite3.Connection, cylinder_id: str) 
     ).fetchall()
     balance = 0.0
     for transaction in transactions:
+        if transaction["review_reason"]:
+            # Escluso dal residuo finché un amministratore non lo corregge o lo elimina.
+            db.execute(
+                "UPDATE cylinder_transactions SET gas_before_kg = ?, gas_after_kg = ? WHERE id = ?",
+                (balance, balance, transaction["id"]),
+            )
+            continue
         operation = transaction["operation"]
         total = transaction["total_weight_kg"]
         if operation == "initial":
@@ -730,7 +811,7 @@ def update_cylinder_transaction(cylinder_id: str, transaction_id: str, payload: 
         db.execute(
             """UPDATE cylinder_transactions SET operation = ?, amount_kg = ?, total_weight_kg = ?, notes = ?,
             machine_brand = ?, machine_model = ?, machine_serial = ?, machine_charge_kg = ?, gwp = ?,
-            co2_equivalent_kg = ?, emitted_kg = ?, emission_co2_equivalent_kg = ?, edited_at = ? WHERE id = ?""",
+            co2_equivalent_kg = ?, emitted_kg = ?, emission_co2_equivalent_kg = ?, edited_at = ?, review_reason = '' WHERE id = ?""",
             (operation, amount, total, notes, *environmental, edited_at, transaction_id),
         )
         updated = recalculate_cylinder_transactions(db, cylinder_id)
@@ -760,7 +841,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.14.6"
+APP_VERSION = "0.15.0"
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -882,7 +963,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/cylinders":
             with db_connection() as db:
                 rows = db.execute("SELECT * FROM cylinders ORDER BY refrigerant, name COLLATE NOCASE").fetchall()
-            self._send_json([cylinder_payload(row) for row in rows])
+                reviews = dict(db.execute(
+                    "SELECT cylinder_id, COUNT(*) FROM cylinder_transactions WHERE review_reason <> '' GROUP BY cylinder_id"
+                ).fetchall())
+            self._send_json([cylinder_payload(row) | {"review_count": reviews.get(row["id"], 0)} for row in rows])
             return
         if path == "/api/operators":
             with db_connection() as db:
@@ -1384,18 +1468,34 @@ class PublicHandler(Handler):
             row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
         return row if row and public_access_allowed(row, token) else None
 
+    PUBLIC_ASSETS = {
+        "public.html", "public.js", "public.css", "machine-brands.js", "offline.js", "bombole-app.html", "bombole-app.js",
+        "sw.js", "manifest.webmanifest", "app-icon-192.png", "app-icon-512.png", "vendor/jsqr.js",
+    }
+
+    def _security_headers(self) -> None:
+        # Il portale può usare la fotocamera per leggere i QR dall'app Bombole.
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Permissions-Policy", "camera=(self), microphone=(), geolocation=()")
+        self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
     def _serve_public_asset(self, filename: str) -> None:
-        allowed = {"public.html", "public.js", "public.css", "machine-brands.js"}
-        if filename not in allowed:
+        if filename not in self.PUBLIC_ASSETS:
             self._error("Risorsa non trovata", 404)
             return
         file_path = WWW_DIR / filename
         content = file_path.read_bytes()
-        content_types = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
+        content_types = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+                         ".css": "text/css; charset=utf-8", ".png": "image/png",
+                         ".webmanifest": "application/manifest+json; charset=utf-8"}
         self.send_response(200)
         self.send_header("Content-Type", content_types[file_path.suffix])
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", "no-cache" if filename == "sw.js" else "no-store")
+        if filename == "sw.js":
+            self.send_header("Service-Worker-Allowed", "/")
         self._security_headers()
         self.send_header(
             "Content-Security-Policy",
@@ -1410,8 +1510,22 @@ class PublicHandler(Handler):
         if parts == ["health"]:
             self._send_json({"status": "ok", "service": "cylinder-portal", "version": APP_VERSION})
             return
-        if parts in (["public.js"], ["public.css"], ["machine-brands.js"]):
+        if parts in (["public.js"], ["public.css"], ["machine-brands.js"], ["offline.js"], ["bombole-app.js"], ["sw.js"],
+                     ["manifest.webmanifest"], ["app-icon-192.png"], ["app-icon-512.png"]):
             self._serve_public_asset(parts[0])
+            return
+        if parts == ["vendor", "jsqr.js"]:
+            self._serve_public_asset("vendor/jsqr.js")
+            return
+        if parts == ["app"]:
+            if not urlparse(self.path).path.endswith("/"):
+                self._redirect("/app/")
+            else:
+                self._serve_public_asset("bombole-app.html")
+            return
+        if parts == ["shell", "portal"]:
+            # Copia senza dati della pagina bombola: il telefono la tiene per aprire i QR senza rete.
+            self._serve_public_asset("public.html")
             return
         if parts == ["admin", "login"]:
             if self._admin_session():
@@ -1549,7 +1663,7 @@ class PublicHandler(Handler):
             if not operator:
                 self._error("Sessione operatore scaduta o revocata", 401)
                 return
-            record_cylinder_transaction(parts[3], payload, operator["name"])
+            recorded = record_cylinder_transaction(parts[3], payload, operator["name"], queued=bool(payload.get("queued")))
             with db_connection() as db:
                 updated = db.execute("SELECT * FROM cylinders WHERE id = ?", (parts[3],)).fetchone()
                 history = db.execute(
@@ -1557,7 +1671,9 @@ class PublicHandler(Handler):
                 ).fetchall()
             result = public_cylinder_payload(updated, history)
             result["operator_name"] = operator["name"]
-            self._send_json(result, HTTPStatus.CREATED)
+            result["transaction_id"] = recorded.get("transaction_id")
+            result["duplicate"] = bool(recorded.get("duplicate"))
+            self._send_json(result, HTTPStatus.OK if result["duplicate"] else HTTPStatus.CREATED)
         except (ValueError, json.JSONDecodeError) as exc:
             self._error(str(exc))
         except LookupError as exc:

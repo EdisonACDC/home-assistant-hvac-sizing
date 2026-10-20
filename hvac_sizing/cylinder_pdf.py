@@ -6,6 +6,8 @@ import html
 import io
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
+from datetime import datetime
+
 from pdf_format import co2_markup, date_time
 from reportlab.graphics.barcode.qr import QrCodeWidget
 from reportlab.graphics.shapes import Drawing
@@ -45,6 +47,11 @@ GERMAN = {
     "Macchina": "Anlage", "Carica targa": "Nennfüllung", "Gas movimentato": "Bewegte Gasmenge", "Emissione stimata": "Geschätzte Emission",
     "Dimensionamento Climatizzazione Pro · Magazzino bombole": "Klimaanlagen-Dimensionierung Pro · Kältemittellager",
     "Pagina": "Seite", "Schede bombole refrigerante": "Kältemittelflaschen-Datenblätter",
+    "Da verificare": "Zu prüfen", "non conteggiato nel residuo": "nicht in der Restmenge berücksichtigt",
+    "Registrato senza rete, inviato il": "Ohne Netz erfasst, gesendet am",
+    "Con questo movimento il residuo risulterebbe negativo": "Mit diesem Vorgang würde die Restmenge negativ",
+    "Con questo movimento la bombola supererebbe la capacità": "Mit diesem Vorgang würde die Flaschenkapazität überschritten",
+    "Pesatura inferiore alla tara della bombola": "Wägung unter der Flaschen-Tara",
 }
 
 
@@ -167,13 +174,23 @@ def cylinder_story(cylinder: dict, target_url: str, style: dict, language: str) 
             audit.append(f"{tr('Emissione stimata', language)}: {tco2(item['emission_co2_equivalent_kg'])}")
         system_note = item["operation"] == "initial" and item.get("notes") == "Registrazione iniziale"
         note_text = ("" if system_note else safe(item.get("notes"))) or "—"
+        received = item.get("received_at")
+        if received and item.get("created_at"):
+            try:
+                delay = datetime.fromisoformat(str(received)) - datetime.fromisoformat(str(item["created_at"]))
+                if delay.total_seconds() > 120:
+                    audit.append(f"{tr('Registrato senza rete, inviato il', language)} {date_time(received, language)}")
+            except ValueError:
+                pass
+        if item.get("review_reason"):
+            audit.insert(0, f"<b>{tr('Da verificare', language)}</b>: {safe(tr(item['review_reason'], language))} ({tr('non conteggiato nel residuo', language)})")
         if audit:
             note_text += "<br/>" + "<br/>".join(audit)
         history_rows.append([
             date_time(item.get("created_at"), language),
             operation_names.get(item["operation"], item["operation"]),
             measure,
-            kg(item.get("gas_after_kg")),
+            "—" if item.get("review_reason") else kg(item.get("gas_after_kg")),
             Paragraph(note_text, style["small"]),
         ])
     if len(history_rows) == 1:

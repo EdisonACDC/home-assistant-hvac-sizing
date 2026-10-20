@@ -407,3 +407,9 @@ body[data-access-commissioning="none"] [data-page-button="commissioning"], body[
 
 .project-state-row { grid-column: 1 / -1; display:flex; justify-content:space-between; gap:1rem; padding:.8rem; border:1px solid var(--accent, #38c4d8); border-radius:12px; color:#77e5ef; }
 .project-state-row small { white-space:nowrap; }
+
+.review-detail { display: block; margin-top: .3rem; color: #ffc98e !important; }
+.review-detail strong { color: #ffad5a; }
+.offline-detail { display: block; margin-top: .2rem; color: var(--cyan) !important; }
+.app-link-box { margin-top: .9rem; padding: .75rem; border: 1px solid var(--line); border-radius: 12px; background: #071b2a; }
+.app-link-box input { margin-top: .4rem; }

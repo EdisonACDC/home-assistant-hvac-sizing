@@ -5,8 +5,12 @@
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07131e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Bombole">
   <title>Registro bombola refrigerante</title>
-  <link rel="stylesheet" href="/public.css?v=0.14.6">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/app-icon-192.png">
+  <link rel="stylesheet" href="/public.css?v=0.15.0">
 </head>
 <body>
   <header class="portal-head">
@@ -32,6 +36,7 @@
     </section>
 
     <div id="content" class="hidden">
+      <p id="offline-banner" class="banner offline hidden" role="status"></p>
       <section class="operator-session"><span data-t="logged_as">Operatore collegato</span><strong id="logged-operator"></strong><button id="logout" type="button" data-t="close_logout">Chiudi e disconnetti</button></section>
       <section class="panel cylinder-head">
         <div><p id="cylinder-code" class="eyebrow"></p><h2 id="cylinder-name"></h2><span id="cylinder-refrigerant" class="pill"></span></div>
@@ -39,10 +44,16 @@
       </section>
 
       <section class="metrics">
-        <div class="metric primary"><span data-t="gas_remaining">Gas effettivo residuo</span><strong id="gas-remaining">—</strong></div>
+        <div class="metric primary"><span id="gas-label">Gas effettivo residuo</span><strong id="gas-remaining">—</strong></div>
         <div class="metric"><span data-t="total_weight">Peso totale</span><strong id="total-weight">—</strong></div>
         <div class="metric"><span data-t="tare">Tara bombola</span><strong id="tare">—</strong></div>
         <div class="metric"><span data-t="capacity">Capacità</span><strong id="capacity">—</strong></div>
+      </section>
+
+      <section id="pending-panel" class="panel pending-panel hidden">
+        <div class="section-title"><div><p class="eyebrow" data-t="pending_title">In attesa di invio</p><h2 id="pending-count"></h2></div><button id="pending-send" class="secondary-button" type="button" data-t="send_now">Invia ora</button></div>
+        <p id="pending-message" class="login-help" role="status" aria-live="polite"></p>
+        <div id="pending-list" class="history"></div>
       </section>
 
       <section class="panel">
@@ -85,11 +96,13 @@
       <section class="security-note">
         <strong data-t="security">Sicurezza</strong>
         <p data-t="security_text">L’accesso è personale, temporaneo e limitato alla bombola mostrata. Il PIN non viene salvato sul telefono.</p>
+        <a class="app-link" href="/app/" data-t="app_link">App Bombole: scansione QR anche senza rete</a>
         <a id="admin-link" href="/admin/" data-t="admin">Accesso amministratore</a>
       </section>
     </div>
   </main>
-  <script src="/public.js?v=0.14.6"></script>
-  <script src="/machine-brands.js?v=0.14.6"></script>
+  <script src="/offline.js?v=0.15.0"></script>
+  <script src="/public.js?v=0.15.0"></script>
+  <script src="/machine-brands.js?v=0.15.0"></script>
 </body>
 </html>

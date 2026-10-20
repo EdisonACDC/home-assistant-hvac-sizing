@@ -129,3 +129,19 @@ textarea { resize:vertical; }.primary-button { min-height:46px; border:0; border
 .history-row.history-add .history-operation { color: #98f4c2; background: #163f30; }
 .history-row.history-remove .history-operation::before { content: "−"; font-size: 1.3em; font-weight: 900; }
 .history-row.history-add .history-operation::before { content: "+"; font-size: 1.3em; font-weight: 900; }
+
+/* Senza rete e app Bombole (0.15.0) */
+.banner { margin:0 0 1rem; padding:.75rem .9rem; border-radius:12px; font-size:.8rem; line-height:1.5; }
+.banner.offline { color:#ffe1bd; border:1px solid rgba(255,173,90,.55); background:rgba(255,173,90,.12); }
+.pending-panel { border-color:rgba(255,173,90,.5); }
+.secondary-button { min-height:40px; padding:.55rem .85rem; border:1px solid var(--line); border-radius:10px; color:var(--text); background:var(--panel2); font:inherit; font-weight:800; cursor:pointer; }
+.link-button { border:0; padding:.2rem 0; color:#ffb3b3; background:none; font:inherit; font-size:.75rem; font-weight:800; text-decoration:underline; cursor:pointer; }
+.queue-error { color:#ffb3b3 !important; }
+.security-note .app-link { display:block; margin-top:.65rem; color:var(--cyan); font-weight:800; }
+.scan-panel { display:grid; gap:.8rem; }
+.scan-button { width:100%; min-height:64px; font-size:1.05rem; }
+.scanner { position:relative; display:grid; gap:.7rem; }
+.scanner video { width:100%; max-height:62vh; aspect-ratio:3/4; object-fit:cover; border-radius:14px; background:#000; }
+.scan-frame { position:absolute; top:12%; left:50%; width:62%; aspect-ratio:1; transform:translateX(-50%); border:3px solid var(--cyan); border-radius:18px; box-shadow:0 0 0 999px rgba(0,0,0,.25); pointer-events:none; }
+.recent-row { color:inherit; text-decoration:none; }
+.recent-row:focus-visible, .scan-button:focus-visible, .secondary-button:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
