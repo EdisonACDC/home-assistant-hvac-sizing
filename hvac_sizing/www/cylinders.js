@@ -175,7 +175,7 @@ function renderCylinderDetail() {
     <div class="kpi cool"><span>${ctr('Gas residuo effettivo')}</span><strong>${kg(activeCylinder.current_gas_kg)}</strong>${percent === null ? '' : `<small class="${low ? 'warn-text' : ''}">${Math.round(percent)}%${low ? ` · ${ctr('Scorta bassa')}` : ''}</small>`}</div>
     <div class="kpi"><span>${ctr('Peso totale calcolato')}</span><strong>${kg(activeCylinder.total_weight_kg)}</strong></div>
     <div class="kpi"><span>${ctr('Tara bombola')}</span><strong>${kg(activeCylinder.tare_kg)}</strong></div>
-    <div class="kpi"><span>${ctr('Capacità gas')}</span><strong>${activeCylinder.capacity_kg == null ? '—' : kg(activeCylinder.capacity_kg)}</strong></div>
+    <div class="kpi"><span>${ctr('Capacità gas')}</span><strong>${activeCylinder.capacity_kg == null ? '—' : kg(activeCylinder.capacity_kg)}</strong>${window.appAccess?.role === 'admin' ? `<button type="button" class="link-button" id="set-capacity">${ctr(activeCylinder.capacity_kg == null ? 'Imposta capacità' : 'Modifica')}</button>` : ''}</div>
     </div></div>`;
   UI.applyGeometry($('#cylinder-detail-metrics'));
 
@@ -454,6 +454,18 @@ async function deleteActiveCylinder() {
   }
 }
 
+async function setActiveCylinderCapacity() {
+  if (!activeCylinder) return;
+  const answer = prompt(ctr('Capacità di gas della bombola in kg (es. 12,5). Lascia vuoto per toglierla.'), activeCylinder.capacity_kg == null ? '' : String(activeCylinder.capacity_kg).replace('.', ','));
+  if (answer === null) return;
+  try {
+    await api(`cylinders/${activeCylinder.id}/capacity`, {method: 'POST', body: JSON.stringify({capacity_kg: decimalText(answer)})});
+    await loadCylinders();
+    await openCylinder(activeCylinder.id, false);
+    toast('Capacità aggiornata');
+  } catch (error) { toast(error.message, true); }
+}
+
 async function rotateActiveCylinderQr() {
   if (!activeCylinder) return;
   const question = window.AppI18n?.getLanguage() === 'de'
@@ -601,6 +613,7 @@ $('#close-delete-transaction').addEventListener('click', closeTransactionDelete)
 $('#cancel-delete-transaction').addEventListener('click', closeTransactionDelete);
 $('#delete-transaction-dialog').addEventListener('cancel', event => { event.preventDefault(); closeTransactionDelete(); });
 $('#delete-cylinder').addEventListener('click', deleteActiveCylinder);
+$('#cylinder-detail-metrics').addEventListener('click', event => { if (event.target.closest('#set-capacity')) setActiveCylinderCapacity(); });
 $('#rotate-cylinder-qr').addEventListener('click', rotateActiveCylinderQr);
 $('#cylinder-qr').addEventListener('load', () => formError('#cylinder-qr-error'));
 $('#cylinder-qr').addEventListener('error', () => formError('#cylinder-qr-error', 'Impossibile generare il QR. Chiudi e riapri la scheda oppure riavvia l’add-on.'));

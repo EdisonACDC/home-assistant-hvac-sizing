@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.1
+
+Correzioni dalla prova sul telefono.
+
+- Bombole: il menu "Altro" (Operatori QR, PDF magazzino, Stampa schede) usciva dallo schermo a sinistra sul telefono; ora si apre sotto il pulsante.
+- Bombole senza capacità: invece di una bombola vuota (che sembrava esaurita) compare una bombola tratteggiata con "?".
+- Nella scheda della bombola l’amministratore può impostare o modificare la capacità anche per le bombole già registrate ("Imposta capacità"); la capacità non può essere inferiore al gas già registrato. Così compaiono il livello e la segnalazione "Scorta bassa".
+
 ## 0.16.0
 
 Nuova grafica, uguale ai mockup approvati. Tutto in italiano e tedesco.

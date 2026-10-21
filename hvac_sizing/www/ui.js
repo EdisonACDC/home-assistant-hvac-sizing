@@ -55,7 +55,9 @@
   function bottle(percent, low = false) {
     const level = percent === null || percent === undefined ? null : clamp(percent, 0, 100);
     const label = level === null ? t('Capacità non indicata') : `${t('Piena al')} ${Math.round(level)}%`;
-    return `<span class="bottle${low ? ' low' : ''}" role="img" aria-label="${escapeHtml(label)}"><span class="neck"></span><span class="body"><span class="fill" data-h="${level === null ? 0 : level.toFixed(1)}"></span></span></span>`;
+    // Senza capacità non si può disegnare il livello: bombola tratteggiata con "?" invece di una bombola vuota.
+    const body = level === null ? '<span class="q" aria-hidden="true">?</span>' : `<span class="fill" data-h="${level.toFixed(1)}"></span>`;
+    return `<span class="bottle${low ? ' low' : ''}${level === null ? ' unknown' : ''}" role="img" aria-label="${escapeHtml(label)}"><span class="neck"></span><span class="body">${body}</span></span>`;
   }
 
   /**
