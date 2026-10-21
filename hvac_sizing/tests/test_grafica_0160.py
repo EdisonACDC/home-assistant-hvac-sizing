@@ -38,11 +38,11 @@ class StaticFilesTests(unittest.TestCase):
                 self.assertNotRegex((WWW / name).read_text(encoding="utf-8"), r'\sstyle="')
 
     def test_versions_are_aligned(self):
-        self.assertEqual(app.APP_VERSION, "0.16.1")
-        self.assertIn("bombole-0.16.1", (WWW / "sw.js").read_text(encoding="utf-8"))
+        self.assertEqual(app.APP_VERSION, "0.16.2")
+        self.assertIn("bombole-0.16.2", (WWW / "sw.js").read_text(encoding="utf-8"))
         for name in ("index.html", "public.html", "bombole-app.html", "admin-login.html"):
             with self.subTest(name=name):
-                self.assertNotIn("v=0.16.0", (WWW / name).read_text(encoding="utf-8"))
+                self.assertNotIn("v=0.16.1", (WWW / name).read_text(encoding="utf-8"))
 
 
 class NewApiPermissionTests(unittest.TestCase):

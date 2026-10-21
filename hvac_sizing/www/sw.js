@@ -1,6 +1,6 @@
 /* Service worker del portale bombole: tiene sul telefono le pagine per aprire i QR senza rete.
    I dati delle bombole non passano da qui: li salva offline.js nella memoria della pagina. */
-const VERSION = 'bombole-0.16.1';
+const VERSION = 'bombole-0.16.2';
 const SHELL = [
   '/app/', '/shell/portal', '/public.js', '/public.css', '/offline.js', '/bombole-app.js',
   '/machine-brands.js', '/vendor/jsqr.js', '/manifest.webmanifest', '/app-icon-192.png', '/app-icon-512.png',

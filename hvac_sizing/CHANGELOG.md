@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.2
+
+App Bombole per tutti i browser.
+
+- Nuovo riquadro "Prova senza rete" nell’app Bombole (`/app/`): riconosce telefono e browser (Safari, Chrome, Firefox, Edge, Samsung Internet) e controlla se è aperta dall’icona sulla schermata Home, se la memoria per l’uso senza rete è attiva e quante bombole sono salvate. Mostra "Pronta per l’uso senza rete", "Quasi pronta" o "Non ancora pronta".
+- Istruzioni di installazione per il browser in uso e, in un elenco richiudibile, per tutti gli altri (iPhone, Android e computer), in italiano e tedesco.
+- Su iPhone l’uso senza rete richiede l’icona sulla schermata Home, con qualunque browser sia stata aggiunta; su Android funziona anche nel browser.
+
 ## 0.16.1
 
 Correzioni dalla prova sul telefono.

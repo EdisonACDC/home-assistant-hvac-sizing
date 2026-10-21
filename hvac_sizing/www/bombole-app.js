@@ -16,7 +16,27 @@
       install_title: 'Installa sul telefono', install_ios: 'iPhone: in Safari tocca Condividi e poi “Aggiungi alla schermata Home”.',
       install_android: 'Android: in Chrome apri il menu ⋮ e scegli “Installa app” o “Aggiungi a schermata Home”.',
       install_why: 'Apri sempre i QR con il pulsante Scansiona di questa app: così le bombole si aprono anche senza rete.',
-      weighing: 'Pesatura', add: 'Aggiunta', remove: 'Prelievo', total: 'Totale'
+      weighing: 'Pesatura', add: 'Aggiunta', remove: 'Prelievo', total: 'Totale',
+      ready_eyebrow: 'PROVA SENZA RETE', ready_ok: 'Pronta per l’uso senza rete', ready_partial: 'Quasi pronta', ready_no: 'Non ancora pronta senza rete',
+      check_home: 'Aperta dall’icona sulla schermata Home', check_home_no: 'Aperta nel browser: aggiungila alla schermata Home (istruzioni qui sotto)',
+      check_sw: 'Memoria per l’uso senza rete attiva', check_sw_wait: 'Memoria senza rete in preparazione: ricarica la pagina una volta con la rete',
+      check_sw_no: 'Questo browser non salva le pagine per l’uso senza rete: usa l’icona sulla schermata Home',
+      check_saved: 'Bombole salvate su questo telefono: {n}', check_saved_no: 'Nessuna bombola salvata: con la rete scansiona le bombole che userai e accedi con nome e PIN',
+      howto_title: 'Come installarla con {browser}',
+      other_browsers: 'Istruzioni per gli altri browser', browser_other: 'questo browser',
+      ios_safari: 'Tocca Condividi (quadrato con freccia) e poi “Aggiungi alla schermata Home”.',
+      ios_chrome: 'Tocca Condividi nella barra dell’indirizzo (in alto a destra) e poi “Aggiungi alla schermata Home”.',
+      ios_firefox: 'Tocca il menu ☰ (in basso a destra), poi Condividi e “Aggiungi alla schermata Home”.',
+      ios_edge: 'Tocca il menu ··· (in basso), poi Condividi e “Aggiungi alla schermata Home”.',
+      ios_other: 'Apri il menu Condividi del browser e scegli “Aggiungi alla schermata Home”. Se manca, apri questo indirizzo in Safari.',
+      ios_note: 'Su iPhone l’uso senza rete funziona solo dall’icona sulla schermata Home, con qualunque browser tu l’abbia aggiunta.',
+      android_chrome: 'Apri il menu ⋮ (in alto a destra) e scegli “Installa app” o “Aggiungi a schermata Home”.',
+      android_firefox: 'Apri il menu ⋮ e scegli “Installa” o “Aggiungi alla schermata Home”.',
+      android_samsung: 'Apri il menu ☰ (in basso a destra), poi “Aggiungi pagina a” → “Schermata Home”.',
+      android_edge: 'Apri il menu ··· (in basso) e scegli “Aggiungi al telefono” o “Installa app”.',
+      android_other: 'Apri il menu del browser e scegli “Installa” o “Aggiungi alla schermata Home”.',
+      desktop: 'Sul computer: in Chrome o Edge usa l’icona di installazione nella barra dell’indirizzo; in Firefox e Safari tieni la pagina nei preferiti.',
+      label_ios: 'iPhone / iPad', label_android: 'Android', label_desktop: 'Computer',
     },
     de: {
       secure_portal: 'SICHERES FLASCHENPORTAL', app_title: 'Flaschen', scan: 'Flasche scannen', scan_stop: 'Kamera schließen',
@@ -32,7 +52,27 @@
       install_title: 'Auf dem Telefon installieren', install_ios: 'iPhone: In Safari auf Teilen und dann „Zum Home-Bildschirm“ tippen.',
       install_android: 'Android: In Chrome das Menü ⋮ öffnen und „App installieren“ oder „Zum Startbildschirm hinzufügen“ wählen.',
       install_why: 'QR-Codes immer mit der Scan-Taste dieser App öffnen: So lassen sich Flaschen auch ohne Netz öffnen.',
-      weighing: 'Wägung', add: 'Zugabe', remove: 'Entnahme', total: 'Gesamt'
+      weighing: 'Wägung', add: 'Zugabe', remove: 'Entnahme', total: 'Gesamt',
+      ready_eyebrow: 'TEST OHNE NETZ', ready_ok: 'Bereit für die Nutzung ohne Netz', ready_partial: 'Fast bereit', ready_no: 'Noch nicht bereit ohne Netz',
+      check_home: 'Über das Symbol auf dem Home-Bildschirm geöffnet', check_home_no: 'Im Browser geöffnet: zum Home-Bildschirm hinzufügen (Anleitung unten)',
+      check_sw: 'Speicher für die Nutzung ohne Netz aktiv', check_sw_wait: 'Offline-Speicher wird vorbereitet: Seite einmal mit Netz neu laden',
+      check_sw_no: 'Dieser Browser speichert keine Seiten für die Nutzung ohne Netz: das Symbol auf dem Home-Bildschirm verwenden',
+      check_saved: 'Auf diesem Telefon gespeicherte Flaschen: {n}', check_saved_no: 'Keine Flasche gespeichert: mit Netz die benötigten Flaschen scannen und mit Name und PIN anmelden',
+      howto_title: 'So installierst du sie mit {browser}',
+      other_browsers: 'Anleitung für andere Browser', browser_other: 'diesem Browser',
+      ios_safari: 'Auf Teilen (Quadrat mit Pfeil) und dann „Zum Home-Bildschirm“ tippen.',
+      ios_chrome: 'In der Adressleiste (oben rechts) auf Teilen und dann „Zum Home-Bildschirm“ tippen.',
+      ios_firefox: 'Menü ☰ (unten rechts) öffnen, dann Teilen und „Zum Home-Bildschirm“.',
+      ios_edge: 'Menü ··· (unten) öffnen, dann Teilen und „Zum Home-Bildschirm“.',
+      ios_other: 'Im Teilen-Menü des Browsers „Zum Home-Bildschirm“ wählen. Fehlt der Eintrag, diese Adresse in Safari öffnen.',
+      ios_note: 'Auf dem iPhone funktioniert die Nutzung ohne Netz nur über das Symbol auf dem Home-Bildschirm, egal mit welchem Browser es hinzugefügt wurde.',
+      android_chrome: 'Menü ⋮ (oben rechts) öffnen und „App installieren“ oder „Zum Startbildschirm hinzufügen“ wählen.',
+      android_firefox: 'Menü ⋮ öffnen und „Installieren“ oder „Zum Startbildschirm hinzufügen“ wählen.',
+      android_samsung: 'Menü ☰ (unten rechts) öffnen, dann „Seite hinzufügen zu“ → „Startbildschirm“.',
+      android_edge: 'Menü ··· (unten) öffnen und „Zum Telefon hinzufügen“ oder „App installieren“ wählen.',
+      android_other: 'Im Browsermenü „Installieren“ oder „Zum Startbildschirm hinzufügen“ wählen.',
+      desktop: 'Am Computer: In Chrome oder Edge das Installationssymbol in der Adressleiste verwenden; in Firefox und Safari die Seite als Lesezeichen speichern.',
+      label_ios: 'iPhone / iPad', label_android: 'Android', label_desktop: 'Computer',
     }
   };
   const $ = selector => document.querySelector(selector);
@@ -157,12 +197,58 @@
     banner.classList.toggle('hidden', navigator.onLine);
   }
 
+  /* ---------- Prova senza rete: browser riconosciuto e controlli ---------- */
+  function detectBrowser() {
+    const ua = navigator.userAgent || '';
+    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const android = /Android/.test(ua);
+    const platform = ios ? 'ios' : android ? 'android' : 'desktop';
+    let browser = 'other';
+    if (/EdgiOS|EdgA|Edg\//.test(ua)) browser = 'edge';
+    else if (/FxiOS|Firefox\//.test(ua)) browser = 'firefox';
+    else if (/SamsungBrowser/.test(ua)) browser = 'samsung';
+    else if (/OPiOS|OPR\/|OPT\//.test(ua)) browser = 'other';
+    else if (/CriOS|Chrome\//.test(ua)) browser = 'chrome';
+    else if (/Safari\//.test(ua) && ios) browser = 'safari';
+    else if (/Safari\//.test(ua) && !android) browser = 'safari';
+    if (platform === 'ios' && browser === 'samsung') browser = 'other';
+    return {platform, browser};
+  }
+  const BROWSER_NAMES = {safari: 'Safari', chrome: 'Chrome', firefox: 'Firefox', edge: 'Edge', samsung: 'Samsung Internet'};
+  const IOS_BROWSERS = ['safari', 'chrome', 'firefox', 'edge'];
+  const ANDROID_BROWSERS = ['chrome', 'firefox', 'samsung', 'edge'];
+  const howto = (platform, browser) => platform === 'desktop' ? t('desktop')
+    : t(`${platform}_${(platform === 'ios' ? IOS_BROWSERS : ANDROID_BROWSERS).includes(browser) ? browser : 'other'}`);
+
+  function renderReady() {
+    const {platform, browser} = detectBrowser();
+    const standalone = Boolean(window.matchMedia?.('(display-mode: standalone)').matches || window.matchMedia?.('(display-mode: fullscreen)').matches || navigator.standalone);
+    const swSupported = 'serviceWorker' in navigator;
+    const swActive = swSupported && Boolean(navigator.serviceWorker.controller);
+    const saved = store.recentCylinders().length;
+    const checks = [];
+    checks.push({ok: standalone, text: t(standalone ? 'check_home' : 'check_home_no'), soft: platform !== 'ios'});
+    checks.push({ok: swActive, text: t(swActive ? 'check_sw' : swSupported ? 'check_sw_wait' : 'check_sw_no')});
+    checks.push({ok: saved > 0, text: saved ? t('check_saved', {n: saved}) : t('check_saved_no')});
+    // Su iPhone serve l'icona sulla schermata Home; su Android e computer il browser basta, ma l'icona è comunque consigliata.
+    const essential = checks.filter(check => !check.soft);
+    const ready = essential.every(check => check.ok);
+    const state = ready && checks.every(check => check.ok) ? 'ok' : ready ? 'partial' : 'no';
+    $('#ready-panel').className = `panel ready-panel ${state}`;
+    $('#ready-title').textContent = t(state === 'ok' ? 'ready_ok' : state === 'partial' ? 'ready_partial' : 'ready_no');
+    const name = BROWSER_NAMES[browser] || t('browser_other');
+    $('#ready-browser').textContent = `${t(`label_${platform}`)} · ${name}`;
+    $('#ready-checks').innerHTML = checks.map(check => `<li class="${check.ok ? 'ok' : check.soft ? 'soft' : 'no'}"><b aria-hidden="true">${check.ok ? '✓' : check.soft ? '!' : '✕'}</b><span>${escapeHtml(check.text)}</span></li>`).join('');
+    $('#ready-howto').innerHTML = standalone ? '' : `<strong>${escapeHtml(t('howto_title', {browser: name}))}</strong><p>${escapeHtml(howto(platform, browser))}</p>${platform === 'ios' ? `<p class="login-help">${escapeHtml(t('ios_note'))}</p>` : ''}`;
+    const list = (key, browsers) => `<h3>${escapeHtml(t(`label_${key}`))}</h3><ul>${browsers.map(item => `<li><b>${BROWSER_NAMES[item]}</b> — ${escapeHtml(t(`${key}_${item}`))}</li>`).join('')}</ul>`;
+    $('#ready-all').innerHTML = `${list('ios', IOS_BROWSERS)}<p class="login-help">${escapeHtml(t('ios_note'))}</p>${list('android', ANDROID_BROWSERS)}<h3>${escapeHtml(t('label_desktop'))}</h3><p>${escapeHtml(t('desktop'))}</p>`;
+  }
+
   function renderAll() {
     renderQueue();
     renderRecent();
     renderNetwork();
-    const standalone = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone;
-    $('#install-panel').classList.toggle('hidden', Boolean(standalone));
+    renderReady();
   }
 
   async function loginFor(cylinderId, token) {
@@ -231,6 +317,8 @@
     applyLanguage();
   }));
   window.addEventListener('online', () => { renderNetwork(); send(); });
+  navigator.serviceWorker?.addEventListener('controllerchange', renderReady);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderReady(); });
   window.addEventListener('offline', renderNetwork);
   window.addEventListener('cylinder-queue-changed', renderQueue);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopScan(); });

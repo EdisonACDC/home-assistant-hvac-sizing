@@ -844,7 +844,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.16.1"
+APP_VERSION = "0.16.2"
 
 # File dell'interfaccia: nome nell'indirizzo -> percorso dentro www/.
 APP_FILES = {name: name for name in (

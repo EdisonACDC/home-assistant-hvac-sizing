@@ -168,3 +168,27 @@ h1, h2, .machine-fields h3 { font-family: "Barlow Semi Condensed", Inter, sans-s
 .beforeafter .co2 { grid-column: 1 / -1; color: var(--muted); font-size: .76rem; }
 .beforeafter .bad { color: var(--danger); }
 @media (max-width: 420px) { .op { padding: .6rem .45rem; } .op small { display: none; } }
+
+/* 0.16.2 — prova senza rete nell'app Bombole */
+.ready-panel .pill { margin-top: 0; white-space: nowrap; }
+.ready-panel.ok { border-color: rgba(83,211,155,.6); }
+.ready-panel.partial { border-color: rgba(255,173,90,.55); }
+.ready-panel.no { border-color: rgba(255,107,107,.55); }
+.ready-panel.ok h2 { color: var(--green); }
+.ready-panel.partial h2 { color: #ffad5a; }
+.ready-panel.no h2 { color: #ff9b9b; }
+.ready-checks { display: grid; gap: .45rem; margin: .9rem 0; padding: 0; list-style: none; }
+.ready-checks li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: .5rem; align-items: start; font-size: .84rem; line-height: 1.45; }
+.ready-checks b { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: .75rem; }
+.ready-checks .ok b { color: #06151e; background: var(--green); }
+.ready-checks .soft b { color: #06151e; background: #ffad5a; }
+.ready-checks .no b { color: #fff; background: var(--danger); }
+.ready-howto:empty { display: none; }
+.ready-howto { padding: .8rem; border: 1px solid rgba(59,201,219,.35); border-radius: 12px; background: rgba(59,201,219,.07); font-size: .86rem; line-height: 1.5; }
+.ready-howto strong { color: var(--cyan); }
+.ready-howto p { margin-top: .3rem; }
+.ready-all { margin: .8rem 0; font-size: .82rem; line-height: 1.5; color: var(--muted); }
+.ready-all summary { cursor: pointer; color: var(--cyan); font-weight: 800; }
+.ready-all h3 { margin: .7rem 0 .2rem; color: var(--text); font-size: .9rem; }
+.ready-all ul { margin: 0; padding-left: 1.1rem; }
+.ready-all b { color: var(--text); }
