@@ -1,3 +1,5 @@
+@font-face { font-family: "Inter"; font-weight: 400; font-display: swap; src: url("inter-400.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 800; font-display: swap; src: url("inter-800.woff2") format("woff2"); }
 :root { color-scheme:dark; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; --bg:#07131e; --panel:#0d2438; --line:#21425d; --text:#eef7fc; --muted:#91aabe; --cyan:#3bc9db; --blue:#4d8dff; --danger:#ffb3b3; }
 * { box-sizing:border-box; }
 html { -webkit-text-size-adjust:100%; }

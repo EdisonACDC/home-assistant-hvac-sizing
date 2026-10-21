@@ -55,6 +55,14 @@ Le password degli account sono memorizzate con salt casuale e PBKDF2-HMAC-SHA256
 I cookie sono Secure/HttpOnly/SameSite e le scritture richiedono CSRF. Gli account condividono il limite di cinque tentativi falliti per indirizzo in quindici minuti. Gli amministratori con account personale possono confermare modifiche allo storico con la propria password. Il registro dei nuovi movimenti riporta il nome dell’account autenticato.
 
 
+## Nuova grafica (0.16.0)
+
+- **Calcolo**: a sinistra l’elenco dei locali, al centro il locale aperto con i passi, a destra la potenza stimata in tempo reale. Nel calcolo guidato tocca un lato della pianta per scegliere cosa c’è oltre la parete (Esterno → Interna → Non riscaldato). L’anteprima usa valori neutri per i dati non ancora inseriti e li elenca in "Mancano ancora".
+- **Bombole**: tocca la scheda per aprirla oppure usa Pesa / Preleva / Aggiungi. Prima di salvare vedi il residuo "Prima → Dopo"; un valore negativo o oltre la capacità è segnato in rosso.
+- **Strumenti**: convertitore di unità, kW ↔ BTU/h e controllo perdite F-gas. Le soglie sono quelle del Regolamento (UE) 2024/573: verifica sempre sul testo ufficiale prima di un rapporto.
+
+Se qualcosa non funziona puoi tornare alla 0.15.0 installando l’add-on dal ramo `ripristino-0.15.0`.
+
 ## App Bombole e uso senza rete (0.15.0)
 
 Apri `https://<tuo-dominio>/app/` sul telefono di ogni operatore e aggiungilo alla schermata Home:

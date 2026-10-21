@@ -14,7 +14,7 @@
     Object.keys(sections).forEach(key => document.body.dataset[`access${key[0].toUpperCase()+key.slice(1)}`] = me.role === 'admin' ? 'edit' : me.permissions[key] || 'none');
     const allowed = Object.keys(sections).filter(key=>window.canAccess(key));
     const page = getAppRoute().page;
-    showAppPage(page === 'accounts' && me.role === 'admin' ? page : allowed.includes(page) ? page : allowed[0] || 'no-access');
+    showAppPage(page === 'accounts' && me.role === 'admin' ? page : (allowed.includes(page) || page === 'tools') ? page : allowed[0] || 'tools');
     const link = document.querySelector('#account-login-link');
     let url = '';
     try {
@@ -28,7 +28,10 @@
     open.classList.toggle('hidden', !url);
     if (url) open.href = url; else open.removeAttribute('href');
     document.querySelector('#account-link-status').textContent = url ? '' : t('Configura external_url nelle opzioni dell’add-on.');
-    document.querySelector('#current-app-user').textContent = `${me.name} · ${t(me.role === 'admin' ? 'Amministratore' : 'Utente')}`;
+    document.querySelector('#current-app-user').textContent = `${t(me.name)} · ${t(me.role === 'admin' ? 'Amministratore' : 'Utente')}`;
+    const initials = String(me.name || '?').trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase() || '?';
+    const avatar = document.querySelector('#user-avatar');
+    if (avatar) { avatar.textContent = initials; avatar.title = me.name || ''; }
     document.body.classList.remove('access-pending');
   }
   window.accessReady = api('me').then(me=>{applyAccess(me); return me;}).catch(error=>{
@@ -105,6 +108,6 @@
       resetForm();await loadUsers();toast('Account salvato. Le sessioni precedenti sono state revocate.');
     } catch(error){toast(error.message,true);}finally{submit.disabled=false;}
   });
-  window.addEventListener('app-language-changed',renderUsers);
+  window.addEventListener('app-language-changed',()=>{renderUsers(); const me=window.appAccess; if(me) document.querySelector('#current-app-user').textContent=`${t(me.name)} · ${t(me.role === 'admin' ? 'Amministratore' : 'Utente')}`;});
   window.accessReady.then(me=>{if(me?.role==='admin' && getAppRoute().page==='accounts')loadUsers();});
 })();

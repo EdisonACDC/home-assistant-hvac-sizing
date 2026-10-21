@@ -10,7 +10,7 @@
   <title>Registro bombola refrigerante</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/app-icon-192.png">
-  <link rel="stylesheet" href="/public.css?v=0.15.0">
+  <link rel="stylesheet" href="/public.css?v=0.16.0">
 </head>
 <body>
   <header class="portal-head">
@@ -59,8 +59,13 @@
       <section class="panel">
         <div class="section-title"><div><p class="eyebrow" data-t="register">REGISTRAZIONE</p><h2 data-t="movement">Carico, scarico o pesatura</h2></div></div>
         <form id="operation-form">
+          <div class="ops" role="group" aria-label="Operazione">
+            <button type="button" class="op" data-op="weighing" aria-pressed="true"><strong data-t="op_weighing">Pesatura</strong><small data-t="op_weighing_sub">Peso sulla bilancia</small></button>
+            <button type="button" class="op" data-op="remove" aria-pressed="false"><strong data-t="op_remove">Prelievo</strong><small data-t="op_remove_sub">Carica in macchina</small></button>
+            <button type="button" class="op" data-op="add" aria-pressed="false"><strong data-t="op_add">Aggiunta</strong><small data-t="op_add_sub">Recupero o travaso</small></button>
+          </div>
           <div class="grid two">
-            <label><span data-t="operation">Operazione</span>
+            <label class="hidden"><span data-t="operation">Operazione</span>
               <select id="operation" name="operation">
                 <option value="weighing" data-t="weighing">Pesatura bombola</option>
                 <option value="add" data-t="add">Aggiunta refrigerante</option>
@@ -70,6 +75,7 @@
             <label id="total-field"><span data-t="scale_weight">Peso totale sulla bilancia kg</span><input name="total_weight_kg" inputmode="decimal" autocomplete="off"></label>
             <label id="amount-field" class="hidden"><span data-t="amount">Quantità refrigerante kg</span><input name="amount_kg" inputmode="decimal" autocomplete="off"></label>
           </div>
+          <div id="before-after" class="beforeafter" aria-live="polite"></div>
           <div id="machine-fields" class="machine-fields hidden">
             <h3 data-t="machine_climate">Dati macchina e impatto climatico</h3>
             <div class="grid two">
@@ -84,7 +90,7 @@
           </div>
           <label><span data-t="notes">Note / impianto / cliente</span><textarea name="notes" rows="2" maxlength="500"></textarea></label>
           <div id="form-error" class="form-error hidden" role="alert"></div>
-          <button id="submit" class="primary-button" type="submit" data-t="save">Registra movimento</button>
+          <button id="submit" class="primary-button" type="submit">Registra pesatura</button>
         </form>
       </section>
 
@@ -101,8 +107,8 @@
       </section>
     </div>
   </main>
-  <script src="/offline.js?v=0.15.0"></script>
-  <script src="/public.js?v=0.15.0"></script>
-  <script src="/machine-brands.js?v=0.15.0"></script>
+  <script src="/offline.js?v=0.16.0"></script>
+  <script src="/public.js?v=0.16.0"></script>
+  <script src="/machine-brands.js?v=0.16.0"></script>
 </body>
 </html>

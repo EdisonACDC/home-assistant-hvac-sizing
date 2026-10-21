@@ -4,38 +4,48 @@
   <meta charset="utf-8">
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0d2438">
+  <meta name="theme-color" content="#07131e">
   <title>Dimensionamento Climatizzazione Pro</title>
-  <link rel="stylesheet" href="styles.css?v=0.15.0">
-  <link rel="stylesheet" href="diagnostics.css?v=0.15.0">
+  <link rel="stylesheet" href="styles.css?v=0.16.0">
+  <link rel="stylesheet" href="diagnostics.css?v=0.16.0">
 </head>
 <body class="access-pending">
   <header class="topbar">
-    <div>
-      <p class="eyebrow">HVAC · CARICHI TERMICI · COLLAUDO</p>
-      <h1>Dimensionamento Climatizzazione</h1>
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20M4.9 4.9l14.2 14.2M2 12h20M4.9 19.1L19.1 4.9"/><path d="M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5M3.5 9l2.5 3-2.5 3M20.5 9L18 12l2.5 3"/></svg></span>
+      <div><h1>Climatizzazione Pro</h1><p class="brand-sub">Carichi termici · bombole · collaudo</p></div>
     </div>
-    <div class="top-actions">
+    <div class="top-tools">
       <div class="language-switch" role="group" aria-label="Lingua / Sprache">
         <button class="language-button" type="button" data-language="it">IT</button>
         <button class="language-button" type="button" data-language="de">DE</button>
       </div>
-      <button id="go-sizing" class="button ghost page-nav" data-page-button="sizing">Dimensionamento</button>
-      <button id="go-cylinders" class="button ghost page-nav" data-page-button="cylinders">Bombole</button>
-      <button id="go-performance" class="button ghost page-nav" data-page-button="performance">Diagnosi</button>
-      <button id="go-commissioning" class="button ghost page-nav" data-page-button="commissioning">Vuoto</button>
-      <button id="go-accounts" class="button ghost page-nav" data-page-button="accounts">Utenti app</button>
-      <span id="current-app-user" class="field-help"></span>
-      <button id="external-admin-logout" class="button logout-button hidden" type="button">Disconnetti</button>
+      <details class="menu user-menu">
+        <summary aria-label="Account"><span class="avatar" id="user-avatar" aria-hidden="true">·</span><span id="current-app-user" class="user-name"></span></summary>
+        <div class="menu-list">
+          <button id="go-accounts" class="menu-item page-nav" type="button" data-page-button="accounts">Utenti app</button>
+          <button id="external-admin-logout" class="menu-item danger hidden" type="button">Disconnetti</button>
+        </div>
+      </details>
     </div>
   </header>
+
+  <nav class="app-nav" aria-label="Sezioni dell’app">
+    <button id="go-sizing" class="nav-item page-nav" type="button" data-page-button="sizing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M4.9 4.9l14.2 14.2M2 12h20M4.9 19.1L19.1 4.9"/></svg><span>Calcolo</span></button>
+    <button id="go-cylinders" class="nav-item page-nav" type="button" data-page-button="cylinders"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="6" width="10" height="15" rx="4"/><path d="M10 6V3h4v3"/></svg><span>Bombole</span><span class="nav-badge hidden" id="nav-review-badge"></span></button>
+    <button id="go-performance" class="nav-item page-nav" type="button" data-page-button="performance"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg><span>Diagnosi</span></button>
+    <button id="go-commissioning" class="nav-item page-nav" type="button" data-page-button="commissioning"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 13l4-3"/></svg><span>Vuoto</span></button>
+    <button id="go-tools" class="nav-item page-nav" type="button" data-page-button="tools"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M16 12h0M8 16h2M12 16h2M16 16h0"/></svg><span>Strumenti</span></button>
+  </nav>
 
   <p id="access-error" class="panel hidden" role="alert"></p>
   <main>
     <section class="panel" data-app-page="no-access"><h2>Nessuna sezione abilitata</h2><p>Chiedi all’amministratore di abilitare le sezioni del tuo account.</p></section>
-    <section class="panel" data-app-page="accounts">
-      <h2>Utenti app</h2>
-      <p class="field-help">Account personali per l’accesso esterno. Gli amministratori hanno accesso completo; per gli utenti scegli le sezioni consentite. Gli operatori QR restano separati.</p>
+
+    <!-- ===================== UTENTI APP ===================== -->
+    <section class="panel accounts-panel" data-app-page="accounts">
+      <div class="section-title"><div><p class="eyebrow">ACCESSI ESTERNI</p><h2>Utenti app</h2></div></div>
+      <p class="lead">Account personali per l’accesso esterno. Gli amministratori hanno accesso completo; per gli utenti scegli le sezioni consentite. Gli operatori QR restano separati.</p>
       <div class="account-share">
         <label for="account-login-link">Link di accesso da condividere</label>
         <input id="account-login-link" class="account-link" type="url" readonly autocomplete="off" spellcheck="false">
@@ -47,8 +57,8 @@
         <p id="account-link-status" class="field-help" role="status" aria-live="polite"></p>
         <p class="field-help">Il link apre il login della app. Ogni utente entra con il proprio nome utente e password.</p>
       </div>
-      <p class="field-help">L’accesso tramite Home Assistant mantiene i privilegi amministrativi: condividi con gli utenti il collegamento esterno, non l’accesso Ingress.</p>
-      <form id="account-form" class="guided-section">
+      <p class="notice info"><b class="ic" aria-hidden="true">i</b><span>L’accesso tramite Home Assistant mantiene i privilegi amministrativi: condividi con gli utenti il collegamento esterno, non l’accesso Ingress.</span></p>
+      <form id="account-form" class="card-block">
         <div class="section-title"><h3 id="account-editor-title">Crea account</h3><button id="account-new" type="button" class="button secondary">Nuovo account</button></div>
         <input name="id" type="hidden">
         <div class="grid four">
@@ -57,57 +67,108 @@
           <label>Password<input name="password" type="password" minlength="10" maxlength="128" required autocomplete="new-password"><small class="field-help">Almeno 10 caratteri. In modifica lascia vuoto per mantenerla.</small></label>
           <label>Ruolo<select name="role"><option value="user">Utente</option><option value="admin">Amministratore</option></select></label>
         </div>
-        <div id="account-permissions" class="guided-section"><h3>Cosa può vedere e usare</h3><div class="grid four"><label>Dimensionamento<select name="permission_sizing"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Bombole<select name="permission_cylinders"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Diagnosi<select name="permission_performance"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Vuoto<select name="permission_commissioning"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label></div>
+        <div id="account-permissions" class="card-block inner"><h3>Cosa può vedere e usare</h3><div class="grid four"><label>Dimensionamento<select name="permission_sizing"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Bombole<select name="permission_cylinders"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Diagnosi<select name="permission_performance"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label><label>Vuoto<select name="permission_commissioning"><option value="none">Nascosto</option><option value="view">Consultazione / calcolo</option><option value="edit">Modifica / registra</option></select></label></div>
           <p class="field-help">Consultazione: legge i dati e può eseguire calcoli senza salvare. Modifica: salva i progetti o registra bombole e movimenti. Cancellazione bombole, modifica dello storico e operatori QR restano agli amministratori. Diagnosi e vuoto sono strumenti locali, senza dati condivisi da salvare.</p>
           <p class="field-help">Il permesso su una sezione comprende tutti i progetti o tutte le bombole di quella sezione.</p>
         </div>
         <label class="account-active"><input name="active" type="checkbox" checked>Account attivo</label>
         <button type="submit" class="button primary">Salva account</button>
       </form>
-      <div class="guided-section"><h3>Account esistenti</h3><div id="accounts-list"></div></div>
+      <div class="card-block"><h3>Account esistenti</h3><div id="accounts-list"></div></div>
     </section>
+
+    <!-- ===================== CALCOLO ===================== -->
     <section class="panel project-panel" data-app-page="sizing">
-      <div class="project-state-row"><strong id="project-state" role="status">Nuovo progetto — da salvare</strong><small>v0.15.0</small></div>
-      <label>Nome progetto<input id="project-name" value="Nuovo impianto"></label>
-      <label>Cliente<input id="customer" placeholder="Nome o ragione sociale"></label>
-      <label>Località<input id="location" placeholder="Città"></label>
-      <div class="method-switch" role="group" aria-label="Metodo di calcolo">
-        <button class="method active" data-method="guided">Calcolo guidato</button>
-        <button class="method" data-method="quick">Calcolo rapido</button>
-        <button class="method" data-method="professional">Calcolo professionale</button>
+      <div class="project-top">
+        <div class="project-state-row"><strong id="project-state" role="status">Nuovo progetto — da salvare</strong><small>v0.16.0</small></div>
+        <div class="project-actions">
+          <button id="new-project" type="button" class="button ghost">Nuovo</button>
+          <button id="open-projects" type="button" class="button ghost">Progetti</button>
+          <button id="save-project" type="button" class="button primary">Salva</button>
+        </div>
       </div>
-      <div class="project-actions">
-        <button id="new-project" type="button" class="button ghost">Nuovo</button>
-        <button id="open-projects" class="button ghost">Progetti</button>
-        <button id="save-project" class="button primary">Salva</button>
+      <div class="project-fields">
+        <label class="project-name">Nome progetto<input id="project-name" placeholder="es. Villa Rossi · piano terra" autocomplete="off"></label>
+        <label>Cliente<input id="customer" placeholder="Nome o ragione sociale" autocomplete="off"></label>
+        <label>Località<input id="location" placeholder="Città" autocomplete="off"></label>
+      </div>
+      <div class="method-switch" role="group" aria-label="Metodo di calcolo">
+        <button class="method active" type="button" data-method="guided">Calcolo guidato</button>
+        <button class="method" type="button" data-method="quick">Calcolo rapido</button>
+        <button class="method" type="button" data-method="professional">Calcolo professionale</button>
       </div>
     </section>
 
+    <section id="climate-panel" class="panel climate hidden" data-app-page="sizing">
+      <div class="section-title"><div><p class="eyebrow">CONDIZIONI DI PROGETTO</p><h2>Clima interno ed esterno</h2></div><button type="button" class="info-button" aria-expanded="false" aria-controls="climate-guidance" aria-label="Mostra aiuto">i</button></div>
+      <p class="field-help climate-guidance" id="climate-guidance" hidden>I valori esterni sono esempi da verificare per la località, non il meteo di oggi. Nel calcolo guidato scegli le temperature interne in ogni stanza.</p>
+      <div class="grid six">
+        <label>Estate esterna<span class="unit-field"><input id="summer-outdoor" type="number" step="0.1" inputmode="decimal"><em>°C</em></span></label>
+        <label>Umidità esterna<span class="unit-field"><input id="summer-rh-out" type="number" min="0" max="100" inputmode="decimal"><em>%</em></span></label>
+        <label class="shared-indoor">Estate interna<span class="unit-field"><input id="summer-indoor" type="number" step="0.1" inputmode="decimal"><em>°C</em></span></label>
+        <label>Umidità interna<span class="unit-field"><input id="summer-rh-in" type="number" min="0" max="100" inputmode="decimal"><em>%</em></span></label>
+        <label>Inverno esterna<span class="unit-field"><input id="winter-outdoor" type="number" step="0.1" inputmode="decimal"><em>°C</em></span></label>
+        <label class="shared-indoor">Inverno interna<span class="unit-field"><input id="winter-indoor" type="number" step="0.1" inputmode="decimal"><em>°C</em></span></label>
+      </div>
+    </section>
+
+    <details class="sizing-guide" data-app-page="sizing">
+      <summary>Come compilare</summary>
+      <p>Inserisci le misure del locale e completa i passi della modalità scelta. A destra vedi subito la potenza stimata e i dati che mancano.</p>
+      <p class="sizing-zero-help">0 = assente, solo dove indicato. Nei fattori rapidi 1 = nessuna correzione. Un dato sconosciuto non va azzerato.</p>
+      <p id="sizing-method-help"></p>
+    </details>
+
+    <div class="sizing-layout" data-app-page="sizing">
+      <aside class="rooms-rail panel" aria-labelledby="rooms-rail-title">
+        <div class="rail-head"><h2 id="rooms-rail-title">Locali</h2><span class="count" id="room-total"></span></div>
+        <div id="room-list" class="room-list"></div>
+        <div class="rail-actions">
+          <button id="add-room" type="button" class="button secondary">+ Locale</button>
+          <button id="duplicate-room" type="button" class="button ghost">Duplica</button>
+        </div>
+        <p class="rail-legend"><b class="cool">ciano</b> freddo kW · <b class="heat">arancio</b> caldo kW</p>
+      </aside>
+      <div id="rooms"></div>
+      <aside id="live-panel" class="live-panel panel" aria-live="polite"></aside>
+    </div>
+
+    <div class="calculate-bar" data-app-page="sizing">
+      <div class="calc-summary"><strong id="room-count">1 locale</strong><span id="calc-live"></span></div>
+      <button id="calculate" type="button" class="button calculate">Calcola potenze</button>
+    </div>
+    <section id="results" class="results hidden" data-app-page="sizing"></section>
+
+    <!-- ===================== BOMBOLE ===================== -->
     <section id="cylinders" class="panel cylinders-panel" data-app-page="cylinders">
       <div class="section-title cylinders-title">
         <div><p class="eyebrow">MAGAZZINO REFRIGERANTE</p><h2>Bombole e quantità residue</h2></div>
         <div class="cylinder-main-actions">
-          <button id="manage-operators" class="button ghost" type="button">Operatori QR</button>
-          <a id="download-all-cylinders-pdf" class="button secondary" download>PDF magazzino</a>
-          <button id="print-all-cylinders" class="button ghost" type="button">Stampa schede</button>
-          <button id="new-cylinder" class="button primary">+ Nuova bombola</button>
+          <details class="menu more-menu">
+            <summary class="button ghost">Altro</summary>
+            <div class="menu-list">
+              <button id="manage-operators" class="menu-item" type="button">Operatori QR</button>
+              <a id="download-all-cylinders-pdf" class="menu-item" download>PDF magazzino</a>
+              <button id="print-all-cylinders" class="menu-item" type="button">Stampa schede</button>
+            </div>
+          </details>
+          <button id="new-cylinder" type="button" class="button primary">+ Nuova bombola</button>
         </div>
       </div>
       <div id="cylinder-summary" class="cylinder-summary"></div>
-      <label class="cylinder-search">Cerca bombola
-        <input id="cylinder-search" type="search" placeholder="Nome, codice o refrigerante" autocomplete="off">
-      </label>
+      <div class="cylinder-filters">
+        <div id="cylinder-filter" class="chip-group" role="group" aria-label="Filtra bombole"></div>
+        <label class="cylinder-search"><span class="sr-only">Cerca bombola</span><input id="cylinder-search" type="search" placeholder="Cerca nome, codice o gas" autocomplete="off"></label>
+      </div>
       <div id="cylinders-list" class="cylinders-list"></div>
     </section>
 
+    <!-- ===================== DIAGNOSI ===================== -->
     <section id="performance-test" class="panel performance-panel" data-app-page="performance">
-      <div class="section-title commissioning-title">
-        <div><p class="eyebrow">DIAGNOSI PRESTAZIONI</p><h2>Controllo tecnico macchina in funzione</h2></div>
-        <span class="status-pill">Diagnosi professionale</span>
-      </div>
-      <p class="diagnostic-intro">Inserisci solo i dati realmente misurabili sulla macchina. L'assistente distingue gli split con una sola presa di servizio dai sistemi con bassa e alta accessibili e non diagnostica la carica da una sola pressione.</p>
+      <div class="section-title"><div><p class="eyebrow">DIAGNOSI PRESTAZIONI</p><h2>Controllo tecnico macchina in funzione</h2></div><span class="status-pill">Diagnosi professionale</span></div>
+      <p class="lead">Inserisci solo i dati realmente misurabili sulla macchina. L'assistente distingue gli split con una sola presa di servizio dai sistemi con bassa e alta accessibili e non diagnostica la carica da una sola pressione.</p>
 
-      <p class="subheading">Macchina e condizioni di prova</p>
+      <h3 class="subheading">Macchina e condizioni di prova</h3>
       <div class="grid four">
         <label>Accesso frigorifero
           <select id="perf-access">
@@ -118,24 +179,24 @@
         <label>Refrigerante<select id="perf-refrigerant"><option>R32</option><option>R410A</option><option>R454B</option><option>R452B</option><option>R407C</option><option>R134a</option><option>R290</option><option>R404A</option><option>R448A</option><option>R449A</option><option>R513A</option><option>R1234yf</option></select></label>
         <label>Modalità<select id="perf-mode"><option value="cooling">Raffrescamento</option><option value="heating">Riscaldamento</option></select></label>
         <label>Tipo compressore<select id="perf-compressor"><option value="inverter">Inverter</option><option value="fixed">On/Off</option></select></label>
-        <label>Tempo stabilizzazione min<input id="perf-runtime" type="number" value="15" min="0" step="1"></label>
-        <label>Temperatura esterna °C<input id="perf-outdoor" type="number" value="30" step="0.1"></label>
-        <label>Temperatura ambiente/ritorno °C<input id="perf-return-air" type="number" value="26" step="0.1"></label>
-        <label>Umidità ambiente %<input id="perf-rh" type="number" value="50" min="0" max="100" step="1"></label>
-        <label>Temperatura aria uscita unità interna °C<input id="perf-supply-air" type="number" value="14" step="0.1"></label>
+        <label>Tempo di stabilizzazione<span class="unit-field"><input id="perf-runtime" type="number" value="15" min="0" step="1" inputmode="numeric"><em>min</em></span></label>
+        <label>Temperatura esterna<span class="unit-field"><input id="perf-outdoor" type="number" value="30" step="0.1" inputmode="decimal"><em>°C</em></span></label>
+        <label>Temperatura ambiente/ritorno<span class="unit-field"><input id="perf-return-air" type="number" value="26" step="0.1" inputmode="decimal"><em>°C</em></span></label>
+        <label>Umidità ambiente<span class="unit-field"><input id="perf-rh" type="number" value="50" min="0" max="100" step="1" inputmode="numeric"><em>%</em></span></label>
+        <label>Aria in uscita unità interna<span class="unit-field"><input id="perf-supply-air" type="number" value="14" step="0.1" inputmode="decimal"><em>°C</em></span></label>
       </div>
 
-      <p class="subheading">Valori frigoriferi e tubazioni</p>
+      <h3 class="subheading">Valori frigoriferi e tubazioni</h3>
       <div class="grid four">
-        <label>Bassa pressione bar(g)<input id="perf-low-bar" type="number" step="0.01" placeholder="lettura manometri"></label>
-        <label>Temperatura evaporazione sat. °C<input id="perf-evap-sat" type="number" step="0.1" placeholder="lettura Testo"></label>
-        <label>Temperatura tubo aspirazione °C<input id="perf-suction-line" type="number" step="0.1" placeholder="pinza temperatura"></label>
-        <label class="perf-high-only">Alta pressione bar(g)<input id="perf-high-bar" type="number" step="0.01" placeholder="lettura manometri"></label>
-        <label class="perf-high-only">Temperatura condensazione sat. °C<input id="perf-cond-sat" type="number" step="0.1" placeholder="lettura Testo"></label>
-        <label class="perf-high-only">Temperatura tubo liquido °C<input id="perf-liquid-line" type="number" step="0.1" placeholder="pinza temperatura"></label>
-        <label>Temperatura mandata compressore °C<input id="perf-discharge-line" type="number" step="0.1" placeholder="opzionale"></label>
-        <label>Corrente compressore A<input id="perf-current" type="number" step="0.1" placeholder="opzionale"></label>
-        <label>Corrente nominale/riferimento A<input id="perf-rated-current" type="number" step="0.1" placeholder="targa/manuale"></label>
+        <label>Bassa pressione<span class="unit-field"><input id="perf-low-bar" type="number" step="0.01" placeholder="lettura manometri" inputmode="decimal"><em>bar(g)</em></span></label>
+        <label>Temperatura evaporazione satura<span class="unit-field"><input id="perf-evap-sat" type="number" step="0.1" placeholder="lettura Testo" inputmode="decimal"><em>°C</em></span></label>
+        <label>Temperatura tubo aspirazione<span class="unit-field"><input id="perf-suction-line" type="number" step="0.1" placeholder="pinza temperatura" inputmode="decimal"><em>°C</em></span></label>
+        <label class="perf-high-only">Alta pressione<span class="unit-field"><input id="perf-high-bar" type="number" step="0.01" placeholder="lettura manometri" inputmode="decimal"><em>bar(g)</em></span></label>
+        <label class="perf-high-only">Temperatura condensazione satura<span class="unit-field"><input id="perf-cond-sat" type="number" step="0.1" placeholder="lettura Testo" inputmode="decimal"><em>°C</em></span></label>
+        <label class="perf-high-only">Temperatura tubo liquido<span class="unit-field"><input id="perf-liquid-line" type="number" step="0.1" placeholder="pinza temperatura" inputmode="decimal"><em>°C</em></span></label>
+        <label>Temperatura mandata compressore<span class="unit-field"><input id="perf-discharge-line" type="number" step="0.1" placeholder="opzionale" inputmode="decimal"><em>°C</em></span></label>
+        <label>Corrente compressore<span class="unit-field"><input id="perf-current" type="number" step="0.1" placeholder="opzionale" inputmode="decimal"><em>A</em></span></label>
+        <label>Corrente di targa<span class="unit-field"><input id="perf-rated-current" type="number" step="0.1" placeholder="targa/manuale" inputmode="decimal"><em>A</em></span></label>
       </div>
 
       <div class="check-grid">
@@ -144,28 +205,26 @@
         <label class="check"><input id="perf-fan-high" type="checkbox" checked><span>Ventola interna alta durante il test</span></label>
       </div>
       <div class="commissioning-actions">
-        <button id="analyze-performance" class="button calculate">Analizza funzionamento</button>
-        <button id="reset-performance" class="button secondary">Azzera prova</button>
+        <button id="analyze-performance" type="button" class="button calculate">Analizza funzionamento</button>
+        <button id="reset-performance" type="button" class="button secondary">Azzera prova</button>
       </div>
       <div id="performance-result" class="vacuum-result hidden" aria-live="polite"></div>
-      <p class="disclaimer safety-note"><strong>Metodo:</strong> con una sola presa di servizio la diagnosi usa soprattutto ΔT aria, temperatura di evaporazione, surriscaldamento, condizioni ambiente e assorbimento. L'assenza dell'alta non viene trattata come errore. Su inverter/EEV i dati vanno interpretati a macchina stabilizzata e le specifiche del costruttore prevalgono sempre.</p>
+      <p class="notice warn safety-note"><b class="ic" aria-hidden="true">!</b><span><strong>Metodo:</strong> con una sola presa di servizio la diagnosi usa soprattutto ΔT aria, temperatura di evaporazione, surriscaldamento, condizioni ambiente e assorbimento. L'assenza dell'alta non viene trattata come errore. Su inverter/EEV i dati vanno interpretati a macchina stabilizzata e le specifiche del costruttore prevalgono sempre.</span></p>
     </section>
 
+    <!-- ===================== VUOTO ===================== -->
     <section id="commissioning" class="panel commissioning-panel" data-app-page="commissioning">
-      <div class="section-title commissioning-title">
-        <div><p class="eyebrow">VUOTO E MESSA IN SERVIZIO</p><h2>Diagnosi evacuazione impianto</h2></div>
-        <span class="status-pill">Assistente tecnico</span>
-      </div>
+      <div class="section-title"><div><p class="eyebrow">VUOTO E MESSA IN SERVIZIO</p><h2>Diagnosi evacuazione impianto</h2></div><span class="status-pill">Assistente tecnico</span></div>
       <div class="grid four commissioning-grid">
         <label>Refrigerante<select id="vac-refrigerant"><option>R32</option><option>R410A</option><option>R454B</option><option>R452B</option><option>R407C</option><option>R134a</option><option>R290</option><option>R404A</option><option>R448A</option><option>R449A</option><option>R513A</option><option>R1234yf</option></select></label>
         <label>Condizione impianto<select id="vac-system-state"><option value="new">Nuovo / asciutto</option><option value="used">Già funzionato / presenza olio</option><option value="open">Rimasto aperto all'atmosfera</option></select></label>
         <label>Frusta principale<select id="vac-hose-size"><option value="0.25">1/4&quot; standard</option><option value="0.375">3/8&quot; vuoto</option><option value="0.5">1/2&quot; alto flusso</option></select></label>
-        <label>Tempo evacuazione min<input id="vac-minutes" type="number" value="60" min="0" step="1"></label>
-        <label>Micron iniziali<input id="vac-start" type="number" value="1650" min="0" step="1"></label>
-        <label>Micron attuali<input id="vac-current" type="number" value="900" min="0" step="1"></label>
-        <label>Test risalita - inizio micron<input id="vac-rise-start" type="number" placeholder="es. 450" min="0" step="1"></label>
-        <label>Test risalita - fine micron<input id="vac-rise-end" type="number" placeholder="es. 620" min="0" step="1"></label>
-        <label>Durata test risalita min<input id="vac-rise-minutes" type="number" value="10" min="1" step="1"></label>
+        <label>Tempo di evacuazione<span class="unit-field"><input id="vac-minutes" type="number" value="60" min="0" step="1" inputmode="numeric"><em>min</em></span></label>
+        <label>Micron iniziali<span class="unit-field"><input id="vac-start" type="number" value="1650" min="0" step="1" inputmode="numeric"><em>µ</em></span></label>
+        <label>Micron attuali<span class="unit-field"><input id="vac-current" type="number" value="900" min="0" step="1" inputmode="numeric"><em>µ</em></span></label>
+        <label>Test risalita: inizio<span class="unit-field"><input id="vac-rise-start" type="number" placeholder="es. 450" min="0" step="1" inputmode="numeric"><em>µ</em></span></label>
+        <label>Test risalita: fine<span class="unit-field"><input id="vac-rise-end" type="number" placeholder="es. 620" min="0" step="1" inputmode="numeric"><em>µ</em></span></label>
+        <label>Durata test risalita<span class="unit-field"><input id="vac-rise-minutes" type="number" value="10" min="1" step="1" inputmode="numeric"><em>min</em></span></label>
       </div>
       <div class="check-grid">
         <label class="check"><input id="vac-core-removed" type="checkbox"><span>Valvola a spillo rimossa</span></label>
@@ -173,39 +232,58 @@
         <label class="check"><input id="vac-oil-fresh" type="checkbox" checked><span>Olio pompa nuovo / pulito</span></label>
       </div>
       <div class="commissioning-actions">
-        <button id="analyze-vacuum" class="button calculate">Analizza il vuoto</button>
-        <button id="reset-vacuum" class="button secondary">Azzera test</button>
+        <button id="analyze-vacuum" type="button" class="button calculate">Analizza il vuoto</button>
+        <button id="reset-vacuum" type="button" class="button secondary">Azzera test</button>
       </div>
       <div id="vacuum-result" class="vacuum-result hidden" aria-live="polite"></div>
-      <p class="disclaimer safety-note"><strong>Sicurezza:</strong> azoto secco solo con riduttore. Non immettere azoto mentre la pompa del vuoto sta aspirando. Isola la pompa, rompi il vuoto con azoto, poi evacua di nuovo.</p>
+      <p class="notice warn safety-note"><b class="ic" aria-hidden="true">!</b><span><strong>Sicurezza:</strong> azoto secco solo con riduttore. Non immettere azoto mentre la pompa del vuoto sta aspirando. Isola la pompa, rompi il vuoto con azoto, poi evacua di nuovo.</span></p>
     </section>
 
-    <section id="climate-panel" class="panel climate hidden" data-app-page="sizing">
-      <div class="section-title"><div><p class="eyebrow">CONDIZIONI DI PROGETTO</p><h2>Clima interno ed esterno</h2></div></div>
-      <p class="field-help climate-guidance">I valori esterni sono esempi da verificare per la località, non il meteo di oggi. Nel calcolo guidato scegli le temperature interne in ogni stanza.</p>
-      <div class="grid six">
-        <label>Estate esterna °C<input id="summer-outdoor" type="number" value="35" step="0.1" aria-describedby="help-summer-outdoor"><small class="field-help" id="help-summer-outdoor">Temperatura esterna estiva di progetto della località, non quella letta oggi. 0 significa davvero 0 °C.</small></label>
-        <label>U.R. esterna %<input id="summer-rh-out" type="number" value="50" min="0" max="100" aria-describedby="help-summer-rh-out"><small class="field-help" id="help-summer-rh-out">Umidità relativa esterna associata alle condizioni estive. 50 = 50%; 0 indica aria completamente secca, non dato mancante.</small></label>
-        <label class="shared-indoor">Estate interna °C<input id="summer-indoor" type="number" value="26" step="0.1" aria-describedby="help-summer-indoor"><small class="field-help" id="help-summer-indoor">Temperatura desiderata nel locale in estate, es. 26 °C. Non azzerare per saltare il campo.</small></label>
-        <label>U.R. interna %<input id="summer-rh-in" type="number" value="50" min="0" max="100" aria-describedby="help-summer-rh-in"><small class="field-help" id="help-summer-rh-in">Umidità relativa desiderata all’interno, es. 50%. Serve al carico di deumidificazione. 0 non significa “non so”.</small></label>
-        <label>Inverno esterna °C<input id="winter-outdoor" type="number" value="-5" step="0.1" aria-describedby="help-winter-outdoor"><small class="field-help" id="help-winter-outdoor">Temperatura esterna invernale di progetto della località. Può essere negativa; 0 è valido solo se il dato è 0 °C.</small></label>
-        <label class="shared-indoor">Inverno interna °C<input id="winter-indoor" type="number" value="20" step="0.1" aria-describedby="help-winter-indoor"><small class="field-help" id="help-winter-indoor">Temperatura desiderata nel locale in inverno, es. 20 °C. Non azzerare per saltare il campo.</small></label>
+    <!-- ===================== STRUMENTI ===================== -->
+    <section id="tools" class="tools-page" data-app-page="tools">
+      <div class="panel">
+        <div class="section-title"><div><p class="eyebrow">STRUMENTI</p><h2>Convertitore di unità</h2></div>
+          <div class="seg conv-tabs" role="group" aria-label="Grandezza">
+            <button type="button" aria-pressed="true" data-q="pressure">Pressione</button>
+            <button type="button" aria-pressed="false" data-q="vacuum">Vuoto</button>
+            <button type="button" aria-pressed="false" data-q="power">Potenza</button>
+            <button type="button" aria-pressed="false" data-q="temp">Temperatura</button>
+          </div>
+        </div>
+        <div class="grid three">
+          <label>Valore<input id="conv-value" type="number" step="any" inputmode="decimal" value="27.1"></label>
+          <label>Unità<select id="conv-unit"></select></label>
+          <label id="conv-ref-field">Riferimento<select id="conv-ref"><option value="g">Relativa (manometro)</option><option value="a">Assoluta</option></select></label>
+        </div>
+        <div id="conv-out" class="conv-out" aria-live="polite"></div>
+        <p id="conv-note" class="field-help"></p>
+      </div>
+      <div class="tools-grid">
+        <div class="panel">
+          <div class="section-title"><div><p class="eyebrow">POTENZA</p><h2>kW ↔ BTU/h</h2></div><span class="status-pill">Taglie commerciali</span></div>
+          <label>Potenza calcolata<span class="unit-field"><input id="kw-in" type="number" value="3.3" step="0.1" min="0" inputmode="decimal"><em>kW</em></span></label>
+          <div class="kpi big-number"><span>Equivale a</span><strong id="btu-out">—</strong><small>BTU/h</small></div>
+          <div id="btu-sizes" class="sizes"></div>
+          <p class="field-help">I “BTU” delle taglie sono nomi commerciali: la potenza reale va letta sulla scheda tecnica del modello.</p>
+        </div>
+        <div class="panel">
+          <div class="section-title"><div><p class="eyebrow">F-GAS</p><h2>Gas, GWP e controllo perdite</h2></div><span class="status-pill">Reg. (UE) 2024/573</span></div>
+          <div class="grid two">
+            <label>Gas refrigerante<select id="gas-select"></select></label>
+            <label>Carica di targa<span class="unit-field"><input id="gas-charge" type="number" value="3" step="0.05" min="0" inputmode="decimal"><em>kg</em></span></label>
+          </div>
+          <div class="check-row">
+            <label class="check"><input id="gas-hermetic" type="checkbox"><span>Ermeticamente sigillata (con etichetta)</span></label>
+            <label class="check"><input id="gas-detector" type="checkbox"><span>Rilevatore automatico di perdite</span></label>
+          </div>
+          <div id="gas-result" class="gas-result" aria-live="polite"></div>
+          <p class="field-help">Soglie del controllo perdite secondo il Regolamento (UE) 2024/573. Verifica sempre sul testo ufficiale prima di un rapporto.</p>
+        </div>
       </div>
     </section>
-
-    <section class="section-title rooms-heading" data-app-page="sizing"><div><p class="eyebrow">LOCALI</p><h2>Dati per il calcolo</h2></div><button id="add-room" class="button secondary">+ Aggiungi locale</button></section>
-    <aside class="sizing-guide" data-app-page="sizing" aria-labelledby="sizing-guide-title">
-      <h3 id="sizing-guide-title">Come compilare</h3>
-      <p>Inserisci le misure del locale e completa le domande della modalità scelta. Controlla i dati e le ipotesi nel risultato.</p>
-      <p class="sizing-zero-help">0 = assente, solo dove indicato. Nei fattori rapidi 1 = nessuna correzione. Un dato sconosciuto non va azzerato.</p>
-      <p id="sizing-method-help"></p>
-    </aside>
-    <div id="rooms" data-app-page="sizing"></div>
-    <div class="calculate-bar" data-app-page="sizing"><div><strong id="room-count">1 locale</strong><span>I risultati restano separati per ogni ambiente</span></div><button id="calculate" class="button calculate">Calcola potenze</button></div>
-    <section id="results" class="results hidden" data-app-page="sizing"></section>
   </main>
 
-  <dialog id="projects-dialog"><div class="dialog-head"><h2>Progetti salvati</h2><button id="close-projects" class="icon-button">×</button></div><div id="projects-list" class="projects-list"></div></dialog>
+  <dialog id="projects-dialog"><div class="dialog-head"><h2>Progetti salvati</h2><button id="close-projects" class="icon-button" aria-label="Chiudi">×</button></div><div id="projects-list" class="projects-list"></div></dialog>
   <dialog id="new-cylinder-dialog" class="cylinder-dialog">
     <div class="dialog-head"><h2>Registra nuova bombola</h2><button id="close-new-cylinder" class="icon-button" aria-label="Chiudi">×</button></div>
     <form id="new-cylinder-form" class="dialog-body">
@@ -214,10 +292,10 @@
         <label>Codice identificativo<input name="code" required maxlength="50" placeholder="es. R32-001"></label>
         <label>Refrigerante<input name="refrigerant" list="refrigerant-list" required maxlength="30" value="R32" autocomplete="off"></label>
         <datalist id="refrigerant-list"><option value="R32"><option value="R410A"><option value="R454B"><option value="R452B"><option value="R407C"><option value="R290"><option value="R744"><option value="R404A"><option value="R507A"><option value="R448A"><option value="R449A"><option value="R452A"><option value="R454A"><option value="R454C"><option value="R455A"><option value="R407A"><option value="R407F"><option value="R407H"><option value="R134a"><option value="R513A"><option value="R450A"><option value="R456A"><option value="R515B"><option value="R1234yf"><option value="R1234ze"><option value="R600a"><option value="R417A"><option value="R422A"><option value="R422B"><option value="R422D"><option value="R427A"><option value="R434A"><option value="R437A"><option value="R438A"><option value="R413A"><option value="R408A"><option value="R409A"><option value="R23"><option value="R508B"><option value="R125"><option value="R245fa"><option value="R236fa"><option value="R1233zd"></datalist>
-        <label>Tara bombola kg<input id="new-cylinder-tare" name="tare_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 4,250"></label>
-        <label>Gas refrigerante presente kg<input id="new-cylinder-gas" name="current_gas_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 2,500"></label>
-        <label>Peso totale calcolato kg<input id="new-cylinder-total" name="total_weight_kg" type="text" readonly tabindex="-1" placeholder="tara + gas"></label>
-        <label>Capacità refrigerante kg (opzionale)<input name="capacity_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 5,000"></label>
+        <label>Tara bombola<span class="unit-field"><input id="new-cylinder-tare" name="tare_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 4,250"><em>kg</em></span></label>
+        <label>Gas refrigerante presente<span class="unit-field"><input id="new-cylinder-gas" name="current_gas_kg" type="text" inputmode="decimal" required autocomplete="off" placeholder="es. 2,500"><em>kg</em></span></label>
+        <label>Peso totale calcolato<span class="unit-field"><input id="new-cylinder-total" name="total_weight_kg" type="text" readonly tabindex="-1" placeholder="tara + gas"><em>kg</em></span></label>
+        <label>Capacità (opzionale)<span class="unit-field"><input name="capacity_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 9,000"><em>kg</em></span></label>
       </div>
       <div class="net-preview"><span>Peso totale automatico</span><strong id="new-cylinder-net">0,000 kg</strong><small>Tara + gas refrigerante presente</small></div>
       <label>Note<textarea name="notes" rows="2" maxlength="500" placeholder="Marca, numero di serie, proprietà…"></textarea></label>
@@ -233,31 +311,29 @@
       <div class="cylinder-workspace">
         <form id="cylinder-operation-form" class="operation-card">
           <h3>Registra movimento</h3>
-          <label>Operazione
-            <select id="cylinder-operation" name="operation">
-              <option value="weighing">Pesatura bombola</option>
-              <option value="remove">Prelievo refrigerante</option>
-              <option value="add">Aggiunta refrigerante</option>
-            </select>
-          </label>
-          <label id="weighing-field">Peso totale sulla bilancia kg<input id="operation-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="bombola + gas"></label>
-          <label id="amount-field" class="hidden">Quantità refrigerante kg<input id="operation-amount" name="amount_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 0,650"></label>
+          <div class="ops" role="radiogroup" aria-label="Operazione">
+            <label class="op"><input type="radio" name="operation" value="weighing" id="op-weighing" checked><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14l-2-11H7z"/><path d="M9 9a3 3 0 0 1 6 0"/></svg><strong>Pesatura</strong><small>Peso sulla bilancia</small></label>
+            <label class="op"><input type="radio" name="operation" value="remove" id="op-remove"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg><strong>Prelievo</strong><small>Carica in macchina</small></label>
+            <label class="op"><input type="radio" name="operation" value="add" id="op-add"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V8"/><path d="M7 13l5-5 5 5"/><path d="M5 4h14"/></svg><strong>Aggiunta</strong><small>Recupero o travaso</small></label>
+          </div>
+          <label id="weighing-field">Peso totale sulla bilancia<span class="unit-field"><input id="operation-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="bombola + gas"><em>kg</em></span></label>
+          <label id="amount-field" class="hidden"><span id="amount-label">Quantità refrigerante</span><span class="unit-field"><input id="operation-amount" name="amount_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 0,650"><em>kg</em></span></label>
+          <div id="operation-preview" class="beforeafter"></div>
           <div id="machine-fields" class="machine-fields hidden">
             <h4>Dati macchina e impatto climatico</h4>
             <div class="grid two">
               <label>Marca macchina<input name="machine_brand" maxlength="120" autocomplete="organization" placeholder="es. Toshiba"></label>
               <label>Modello macchina<input name="machine_model" maxlength="120" autocomplete="off" placeholder="modello unità"></label>
               <label>Matricola / numero di serie<input name="machine_serial" maxlength="120" autocomplete="off"></label>
-              <label>Carica macchina di targa kg<input name="machine_charge_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 2,400"></label>
+              <label>Carica di targa della macchina<span class="unit-field"><input name="machine_charge_kg" type="text" inputmode="decimal" autocomplete="off" placeholder="es. 2,400"><em>kg</em></span></label>
               <label>GWP refrigerante<input name="gwp" type="text" inputmode="decimal" autocomplete="off" required></label>
-              <label>Gas disperso / perdita stimata kg (opzionale)<input name="emitted_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+              <label>Gas disperso / perdita stimata (opzionale)<span class="unit-field"><input name="emitted_kg" type="text" inputmode="decimal" autocomplete="off"><em>kg</em></span></label>
             </div>
             <div id="environment-preview" class="environment-preview"></div>
           </div>
-          <div id="operation-preview" class="operation-preview"></div>
           <label>Note / impianto / cliente<textarea name="notes" rows="2" maxlength="500"></textarea></label>
           <div id="cylinder-operation-error" class="form-error hidden" role="alert"></div>
-          <button class="button primary full" type="submit">Registra movimento</button>
+          <button id="operation-submit" class="button primary full" type="submit">Registra movimento</button>
         </form>
         <div class="qr-card">
           <h3>QR code bombola</h3>
@@ -265,7 +341,7 @@
           <div id="cylinder-qr-error" class="form-error hidden" role="alert">Impossibile generare il QR. Chiudi e riapri la scheda oppure riavvia l’add-on.</div>
           <p>Scansionandolo si apre direttamente questa scheda.</p>
           <div class="qr-actions"><a id="download-cylinder-qr" class="button secondary" target="_blank" rel="noopener noreferrer" download>Scarica QR in PNG</a><button id="print-cylinder-qr" class="button ghost" type="button">Stampa</button></div>
-          <button id="rotate-cylinder-qr" class="delete-room" type="button">Revoca e rigenera QR</button>
+          <button id="rotate-cylinder-qr" class="button danger small" type="button">Revoca e rigenera QR</button>
         </div>
       </div>
       <div class="sheet-actions">
@@ -275,7 +351,7 @@
           <button id="print-cylinder-sheet" class="button secondary" type="button">Stampa scheda</button>
         </div>
       </div>
-      <div class="history-head"><h3>Storico movimenti</h3><button id="delete-cylinder" class="delete-room" type="button">Elimina bombola</button></div>
+      <div class="history-head"><h3>Storico movimenti</h3><button id="delete-cylinder" class="button danger small" type="button">Elimina bombola</button></div>
       <div id="cylinder-history" class="history-list"></div>
     </div>
   </dialog>
@@ -292,7 +368,7 @@
           <option value="add">Aggiunta refrigerante</option>
         </select>
       </label>
-      <label id="edit-transaction-total-field">Peso totale sulla bilancia kg<input id="edit-transaction-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+      <label id="edit-transaction-total-field">Peso totale sulla bilancia<span class="unit-field"><input id="edit-transaction-total" name="total_weight_kg" type="text" inputmode="decimal" autocomplete="off"><em>kg</em></span></label>
       <label id="edit-transaction-amount-field"><span id="edit-transaction-amount-label">Quantità refrigerante kg</span><input id="edit-transaction-amount" name="amount_kg" type="text" inputmode="decimal" autocomplete="off"></label>
       <div id="edit-machine-fields" class="machine-fields hidden">
         <h4>Dati macchina e impatto climatico</h4>
@@ -300,9 +376,9 @@
           <label>Marca macchina<input id="edit-machine-brand" name="machine_brand" maxlength="120" autocomplete="organization"></label>
           <label>Modello macchina<input id="edit-machine-model" name="machine_model" maxlength="120" autocomplete="off"></label>
           <label>Matricola / numero di serie<input id="edit-machine-serial" name="machine_serial" maxlength="120" autocomplete="off"></label>
-          <label>Carica macchina di targa kg<input id="edit-machine-charge" name="machine_charge_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+          <label>Carica di targa della macchina<span class="unit-field"><input id="edit-machine-charge" name="machine_charge_kg" type="text" inputmode="decimal" autocomplete="off"><em>kg</em></span></label>
           <label>GWP refrigerante<input id="edit-transaction-gwp" name="gwp" type="text" inputmode="decimal" autocomplete="off"></label>
-          <label>Gas disperso / perdita stimata kg (opzionale)<input id="edit-emitted-kg" name="emitted_kg" type="text" inputmode="decimal" autocomplete="off"></label>
+          <label>Gas disperso / perdita stimata (opzionale)<span class="unit-field"><input id="edit-emitted-kg" name="emitted_kg" type="text" inputmode="decimal" autocomplete="off"><em>kg</em></span></label>
         </div>
         <div id="edit-environment-preview" class="environment-preview"></div>
       </div>
@@ -346,11 +422,13 @@
     </div>
   </dialog>
   <div id="toast" class="toast" role="status"></div>
-  <script src="i18n.js?v=0.15.0"></script>
-  <script src="app.js?v=0.15.0"></script>
-  <script src="accounts.js?v=0.15.0"></script>
-  <script src="diagnostics.js?v=0.15.0"></script>
-  <script src="cylinders.js?v=0.15.0"></script>
-  <script src="machine-brands.js?v=0.15.0"></script>
+  <script src="i18n.js?v=0.16.0"></script>
+  <script src="ui.js?v=0.16.0"></script>
+  <script src="app.js?v=0.16.0"></script>
+  <script src="accounts.js?v=0.16.0"></script>
+  <script src="diagnostics.js?v=0.16.0"></script>
+  <script src="cylinders.js?v=0.16.0"></script>
+  <script src="tools.js?v=0.16.0"></script>
+  <script src="machine-brands.js?v=0.16.0"></script>
 </body>
 </html>

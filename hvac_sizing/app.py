@@ -529,8 +529,11 @@ def app_api_allowed(identity, method, target):
     permission = identity['permissions']
     if len(parts) >= 2 and parts[:2] == ['api', 'projects']:
         return permission.get('sizing') in ('view', 'edit') if method == 'GET' else permission.get('sizing') == 'edit'
-    if parts == ['api', 'calculate']:
+    if parts in (['api', 'calculate'], ['api', 'preview']):
         return method == 'POST' and permission.get('sizing') in ('view', 'edit')
+    if parts == ['api', 'refrigerants']:
+        return method == 'GET'
+
     if len(parts) >= 2 and parts[:2] == ['api', 'cylinders']:
         if method == 'GET':
             return permission.get('cylinders') in ('view', 'edit')
@@ -841,7 +844,20 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.15.0"
+APP_VERSION = "0.16.0"
+
+# File dell'interfaccia: nome nell'indirizzo -> percorso dentro www/.
+APP_FILES = {name: name for name in (
+    "index.html", "i18n.js", "ui.js", "app.js", "diagnostics.js", "cylinders.js", "tools.js",
+    "styles.css", "diagnostics.css", "machine-brands.js", "accounts.js",
+)}
+FONT_FILES = {name: f"fonts/{name}" for name in (
+    "barlow-600.woff2", "barlow-700.woff2", "inter-400.woff2", "inter-600.woff2", "inter-800.woff2", "mono-600.woff2",
+)}
+CONTENT_TYPES = {
+    ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
+    ".png": "image/png", ".woff2": "font/woff2", ".webmanifest": "application/manifest+json; charset=utf-8",
+}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -944,6 +960,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/health":
             self._send_json({"status": "ok", "version": APP_VERSION})
+            return
+        if path == "/api/refrigerants":
+            self._send_json({"source": "Regolamento (UE) 2024/573", "gwp": REFRIGERANT_GWP})
             return
         if path == "/api/projects":
             with db_connection() as db:
@@ -1063,6 +1082,13 @@ class Handler(BaseHTTPRequestHandler):
             payload = self._json_body()
             if path == '/api/users':
                 self._send_json(save_app_user(payload), 201)
+                return
+            if path == "/api/preview":
+                # Anteprima mentre si compila: stesso calcolo, senza PDF.
+                if not payload.get("rooms"):
+                    self._error("Aggiungi almeno un locale")
+                    return
+                self._send_json(calculate_project(payload))
                 return
             if path == "/api/calculate":
                 if not payload.get("rooms"):
@@ -1299,17 +1325,16 @@ class Handler(BaseHTTPRequestHandler):
         filename = path.rsplit("/", 1)[-1]
         if not filename or "." not in filename:
             filename = "index.html"
-        allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js", "accounts.js"}
-        if filename not in allowed:
+        relative = APP_FILES.get(filename) or FONT_FILES.get(filename)
+        if not relative:
             self.send_error(404)
             return
-        file_path = WWW_DIR / filename
+        file_path = WWW_DIR / relative
         content = file_path.read_bytes()
-        content_types = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
         self.send_response(200)
-        self.send_header("Content-Type", content_types[file_path.suffix])
+        self.send_header("Content-Type", CONTENT_TYPES[file_path.suffix])
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Cache-Control", "public, max-age=604800" if filename in FONT_FILES else "no-cache")
         self._security_headers()
         self.send_header("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:")
         self.end_headers()
@@ -1386,19 +1411,18 @@ class PublicHandler(Handler):
         self.wfile.write(encoded)
 
     def _serve_admin_asset(self, filename: str, *, login_asset: bool = False) -> None:
-        login_allowed = {"admin-login.html", "admin-login.js", "admin-login.css"}
-        app_allowed = {"index.html", "i18n.js", "app.js", "diagnostics.js", "cylinders.js", "styles.css", "diagnostics.css", "machine-brands.js", "accounts.js"}
-        allowed = login_allowed if login_asset else app_allowed
-        if filename not in allowed:
+        login_allowed = {name: name for name in ("admin-login.html", "admin-login.js", "admin-login.css")}
+        allowed = {**(login_allowed if login_asset else APP_FILES), **FONT_FILES}
+        relative = allowed.get(filename)
+        if not relative:
             self._error("Risorsa non trovata", 404)
             return
-        file_path = WWW_DIR / filename
+        file_path = WWW_DIR / relative
         content = file_path.read_bytes()
-        content_types = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
         self.send_response(200)
-        self.send_header("Content-Type", content_types[file_path.suffix])
+        self.send_header("Content-Type", CONTENT_TYPES[file_path.suffix])
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", "public, max-age=604800" if filename in FONT_FILES else "no-store")
         self._security_headers()
         self.send_header(
             "Content-Security-Policy",
@@ -1482,18 +1506,17 @@ class PublicHandler(Handler):
         self.send_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
     def _serve_public_asset(self, filename: str) -> None:
-        if filename not in self.PUBLIC_ASSETS:
+        relative = filename if filename in self.PUBLIC_ASSETS else FONT_FILES.get(filename)
+        if not relative:
             self._error("Risorsa non trovata", 404)
             return
-        file_path = WWW_DIR / filename
+        file_path = WWW_DIR / relative
         content = file_path.read_bytes()
-        content_types = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-                         ".css": "text/css; charset=utf-8", ".png": "image/png",
-                         ".webmanifest": "application/manifest+json; charset=utf-8"}
         self.send_response(200)
-        self.send_header("Content-Type", content_types[file_path.suffix])
+        self.send_header("Content-Type", CONTENT_TYPES[file_path.suffix])
         self.send_header("Content-Length", str(len(content)))
-        self.send_header("Cache-Control", "no-cache" if filename == "sw.js" else "no-store")
+        cache = "public, max-age=604800" if filename in FONT_FILES else "no-cache" if filename == "sw.js" else "no-store"
+        self.send_header("Cache-Control", cache)
         if filename == "sw.js":
             self.send_header("Service-Worker-Allowed", "/")
         self._security_headers()
@@ -1514,6 +1537,9 @@ class PublicHandler(Handler):
                      ["manifest.webmanifest"], ["app-icon-192.png"], ["app-icon-512.png"]):
             self._serve_public_asset(parts[0])
             return
+        if len(parts) == 1 and parts[0] in FONT_FILES:
+            self._serve_public_asset(parts[0])
+            return
         if parts == ["vendor", "jsqr.js"]:
             self._serve_public_asset("vendor/jsqr.js")
             return
@@ -1532,6 +1558,9 @@ class PublicHandler(Handler):
                 self._redirect("/admin/")
             else:
                 self._serve_admin_asset("admin-login.html", login_asset=True)
+            return
+        if len(parts) == 2 and parts[0] == "admin" and parts[1] in FONT_FILES:
+            self._serve_admin_asset(parts[1], login_asset=True)
             return
         if len(parts) == 2 and parts[0] == "admin" and parts[1] in {"admin-login.js", "admin-login.css"}:
             self._serve_admin_asset(parts[1], login_asset=True)
