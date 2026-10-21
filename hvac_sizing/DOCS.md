@@ -70,6 +70,17 @@ Apri `https://<tuo-dominio>/app/` sul telefono di ogni operatore e aggiungilo al
 - iPhone: in Safari tocca Condividi → "Aggiungi alla schermata Home";
 - Android: in Chrome menu ⋮ → "Installa app" o "Aggiungi a schermata Home".
 
+Con altri browser:
+
+- iPhone · Chrome: Condividi nella barra dell’indirizzo → "Aggiungi alla schermata Home";
+- iPhone · Firefox: menu ☰ → Condividi → "Aggiungi alla schermata Home";
+- iPhone · Edge: menu ··· → Condividi → "Aggiungi alla schermata Home";
+- Android · Firefox: menu ⋮ → "Installa" o "Aggiungi alla schermata Home";
+- Android · Samsung Internet: menu ☰ → "Aggiungi pagina a" → "Schermata Home";
+- Android · Edge: menu ··· → "Aggiungi al telefono".
+
+Su iPhone l’uso senza rete funziona solo dall’icona sulla schermata Home (qualunque sia il browser usato per aggiungerla). Su Android funziona anche dentro il browser. Il riquadro **Prova senza rete** in fondo all’app indica se il telefono è pronto e cosa manca.
+
 L’indirizzo esatto è nella finestra **Operatori QR**. Non servono app store né costi aggiuntivi.
 
 Come si usa:
