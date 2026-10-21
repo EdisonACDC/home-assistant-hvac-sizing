@@ -346,6 +346,9 @@
     /* 0.16.0 — nuova grafica */
     "Nuovo progetto": "Neues Projekt",
     "micron": "Mikron",
+    "Imposta capacità": "Kapazität festlegen",
+    "Capacità aggiornata": "Kapazität aktualisiert",
+    "Capacità di gas della bombola in kg (es. 12,5). Lascia vuoto per toglierla.": "Kältemittelkapazität der Flasche in kg (z. B. 12,5). Leer lassen, um sie zu entfernen.",
     "Margine": "Reserve",
     "Interna": "Innen",
     "Non risc.": "Unbeh.",

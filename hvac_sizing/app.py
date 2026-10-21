@@ -844,7 +844,7 @@ def delete_cylinder_transaction(cylinder_id: str, transaction_id: str) -> dict:
     return cylinder_payload(updated, history)
 
 
-APP_VERSION = "0.16.0"
+APP_VERSION = "0.16.1"
 
 # File dell'interfaccia: nome nell'indirizzo -> percorso dentro www/.
 APP_FILES = {name: name for name in (
@@ -1203,6 +1203,26 @@ class Handler(BaseHTTPRequestHandler):
                 session = admin_session_payload(self.headers.get("X-Hvac-App-Session", ""))
                 actor = app_identity(session)["name"]
                 self._send_json(record_cylinder_transaction(cylinder_id, payload, actor), HTTPStatus.CREATED)
+                return
+            if path.startswith("/api/cylinders/") and path.endswith("/capacity"):
+                cylinder_id = path.split("/")[3]
+                capacity = number(payload.get("capacity_kg"), "la capacità", required=False)
+                if capacity is not None and capacity <= 0:
+                    raise ValueError("La capacità deve essere maggiore di zero")
+                with db_connection() as db:
+                    row = db.execute("SELECT * FROM cylinders WHERE id = ?", (cylinder_id,)).fetchone()
+                    if not row:
+                        self._error("Bombola non trovata", 404)
+                        return
+                    if capacity is not None:
+                        peak = db.execute(
+                            "SELECT MAX(gas_after_kg) FROM cylinder_transactions WHERE cylinder_id = ? AND COALESCE(review_reason, '') = ''",
+                            (cylinder_id,)).fetchone()[0]
+                        if max(float(row["current_gas_kg"]), float(peak or 0)) > capacity + 1e-9:
+                            raise ValueError("La capacità è inferiore al gas già registrato nella bombola")
+                    db.execute("UPDATE cylinders SET capacity_kg = ?, updated_at = ? WHERE id = ?",
+                               (capacity, datetime.now(timezone.utc).isoformat(), cylinder_id))
+                self._send_json({"updated": cylinder_id, "capacity_kg": capacity})
                 return
             if path.startswith("/api/cylinders/") and path.endswith("/rotate-qr"):
                 cylinder_id = path.split("/")[3]

@@ -70,6 +70,8 @@ ERRORS_DE = {
     "Controlla tipo di vetro, esposizione e schermatura delle finestre.": "Verglasung, Ausrichtung und Verschattung der Fenster prüfen.",
     "Per i lucernari seleziona mansarda.": "Für Dachfenster Dachgeschoss auswählen.",
     "La superficie delle finestre supera quella delle pareti esterne o del tetto.": "Die Fensterfläche übersteigt die Fläche der Außenwände oder des Dachs.",
+    "La capacità deve essere maggiore di zero": "Die Kapazität muss größer als null sein",
+    "La capacità è inferiore al gas già registrato nella bombola": "Die Kapazität ist kleiner als die bereits erfasste Kältemittelmenge",
 }
 
 FIELDS_DE = {

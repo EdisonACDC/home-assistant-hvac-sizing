@@ -38,11 +38,11 @@ class StaticFilesTests(unittest.TestCase):
                 self.assertNotRegex((WWW / name).read_text(encoding="utf-8"), r'\sstyle="')
 
     def test_versions_are_aligned(self):
-        self.assertEqual(app.APP_VERSION, "0.16.0")
-        self.assertIn("bombole-0.16.0", (WWW / "sw.js").read_text(encoding="utf-8"))
+        self.assertEqual(app.APP_VERSION, "0.16.1")
+        self.assertIn("bombole-0.16.1", (WWW / "sw.js").read_text(encoding="utf-8"))
         for name in ("index.html", "public.html", "bombole-app.html", "admin-login.html"):
             with self.subTest(name=name):
-                self.assertNotIn("v=0.15", (WWW / name).read_text(encoding="utf-8"))
+                self.assertNotIn("v=0.16.0", (WWW / name).read_text(encoding="utf-8"))
 
 
 class NewApiPermissionTests(unittest.TestCase):
@@ -71,6 +71,22 @@ class PreviewTests(unittest.TestCase):
         # Il campo "wall" serve solo al disegno: senza di esso il risultato non cambia.
         del payload["rooms"][0]["guided_windows"][0]["wall"]
         self.assertEqual(calculate_project(payload)["rooms"][0]["total_cooling_kw"], full["rooms"][0]["total_cooling_kw"])
+
+
+class CapacityApiTests(unittest.TestCase):
+    """0.16.1: capacità impostabile sulle bombole già registrate, solo per gli amministratori."""
+
+    def test_only_admin_can_change_capacity(self):
+        user = {"role": "user", "permissions": {"sizing": "none", "cylinders": "edit", "performance": "none", "commissioning": "none"}}
+        self.assertFalse(app.app_api_allowed(user, "POST", "/api/cylinders/abc/capacity"))
+        self.assertTrue(app.app_api_allowed({"role": "admin", "permissions": {}}, "POST", "/api/cylinders/abc/capacity"))
+
+    def test_capacity_route_and_german_errors(self):
+        source = (Path(__file__).resolve().parents[1] / "app.py").read_text(encoding="utf-8")
+        self.assertIn('endswith("/capacity")', source)
+        from errors_i18n import translate_error
+        self.assertNotEqual(translate_error("La capacità è inferiore al gas già registrato nella bombola"),
+                            "La capacità è inferiore al gas già registrato nella bombola")
 
 
 if __name__ == "__main__":
