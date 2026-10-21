@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.16.0
+
+Nuova grafica, uguale ai mockup approvati. Tutto in italiano e tedesco.
+
+- Calcolo: ogni locale si compila a passi (guidato: Misure, Comfort, Pareti, Sopra e sotto, Finestre, Carichi; rapido e professionale con passi propri). Le pareti si scelgono toccando la pianta del locale, che mostra anche le finestre sulla parete giusta.
+- A destra (sotto, sul telefono) la potenza stimata si aggiorna mentre scrivi, con la ripartizione per voce e l’elenco dei dati mancanti: un tocco porta al passo giusto. Il valore definitivo resta quello di "Calcola potenze" e del PDF.
+- Elenco locali con stato, avanzamento e kW di ciascuno; nuovo pulsante "Duplica" per locali simili.
+- Unità di misura dentro i campi; le spiegazioni lunghe sono dietro il pulsante ⓘ.
+- Risultati con barre per locale, disegno dell’unità esterna proposta e tabella tecnica richiudibile.
+- Telefono: barra di navigazione in basso con Calcolo, Bombole, Diagnosi, Vuoto e Strumenti.
+- Bombole: bombola disegnata con il livello di riempimento, segnalazione "Scorta bassa" (sotto il 20% della capacità), filtri per gas, pulsanti rapidi Pesa / Preleva / Aggiungi, tre pulsanti grandi per l’operazione e anteprima "Prima → Dopo" con CO₂e. Il numero di movimenti da verificare compare sul pulsante Bombole. Stessi pulsanti e anteprima nel portale QR degli operatori.
+- Diagnosi: semaforo con l’esito e scale colorate per ΔT aria, surriscaldamento, sottoraffreddamento, temperatura di mandata e assorbimento (stesse soglie della diagnosi).
+- Vuoto: grafico dell’evacuazione e del test di risalita con la zona obiettivo ≤ 500 micron.
+- Nuova pagina Strumenti, aperta a tutti gli utenti: convertitore di pressione (relativa/assoluta), vuoto, potenza e temperatura; kW ↔ BTU/h con le taglie commerciali; GWP del gas scelto, CO₂ equivalente e frequenza del controllo perdite secondo il Regolamento (UE) 2024/573.
+- Caratteri inclusi nell’add-on (licenza OFL): nessuna richiesta a servizi esterni, funzionano anche senza rete.
+- Server: nuove API `/api/preview` (anteprima senza PDF, stessi permessi del calcolo) e `/api/refrigerants` (tabella GWP, sola lettura).
+- Test nuovi: file serviti, caratteri, nessuno stile in linea bloccato dalla CSP, versioni allineate, permessi delle nuove API.
+- Per tornare alla 0.15.0: ramo `ripristino-0.15.0` del repository.
+
 ## 0.15.0
 
 QR e registro bombole anche senza rete.

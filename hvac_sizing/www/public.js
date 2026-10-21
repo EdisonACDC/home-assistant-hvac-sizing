@@ -2,7 +2,7 @@
   const store = window.CylinderOffline;
   const dictionary = {
     it: {
-      secure_portal:'PORTALE SICURO BOMBOLE', title:'Registro refrigerante', loading:'Caricamento scheda…', operator_access:'ACCESSO OPERATORE', identify:'Identificati per visualizzare il registro', authorized_only:'Possono entrare soltanto gli operatori salvati e attivati dall’amministratore.', login:'Accedi al registro', logged_as:'Operatore collegato', close_logout:'Chiudi e disconnetti', limited_access:'Accesso limitato', single_cylinder:'Solo questa bombola', gas_remaining:'Gas effettivo residuo', total_weight:'Peso totale', tare:'Tara bombola', capacity:'Capacità', register:'REGISTRAZIONE', movement:'Carico, scarico o pesatura', operator:'Nome operatore', pin:'PIN personale', operation:'Operazione', weighing:'Pesatura bombola', add:'Aggiunta refrigerante', remove:'Prelievo refrigerante', scale_weight:'Peso totale sulla bilancia kg', amount:'Quantità refrigerante kg', machine_climate:'Dati macchina e impatto climatico', machine_brand:'Marca macchina', machine_model:'Modello macchina', machine_serial:'Matricola / numero di serie', machine_charge:'Carica macchina di targa kg', gwp:'GWP refrigerante', emitted:'Gas disperso / perdita stimata kg (opzionale)', moved_co2:'CO₂e gas movimentato', machine_co2:'CO₂e carica macchina', emission_co2:'Emissione stimata', notes:'Note / impianto / cliente', save:'Registra movimento', audit:'REGISTRO', history:'Storico movimenti', security:'Sicurezza', security_text:'L’accesso è personale e limitato alla bombola mostrata. Il PIN non viene salvato: l’accesso resta valido 8 ore su questo telefono.', admin:'Accesso amministratore', empty:'Nessun movimento registrato.', initial:'Registrazione iniziale', saved:'Movimento registrato correttamente', invalid_link:'Collegamento QR non valido', failed:'Operazione non riuscita',
+      secure_portal:'PORTALE SICURO BOMBOLE', title:'Registro refrigerante', loading:'Caricamento scheda…', operator_access:'ACCESSO OPERATORE', identify:'Identificati per visualizzare il registro', authorized_only:'Possono entrare soltanto gli operatori salvati e attivati dall’amministratore.', login:'Accedi al registro', logged_as:'Operatore collegato', close_logout:'Chiudi e disconnetti', limited_access:'Accesso limitato', single_cylinder:'Solo questa bombola', gas_remaining:'Gas effettivo residuo', total_weight:'Peso totale', tare:'Tara bombola', capacity:'Capacità', register:'REGISTRAZIONE', movement:'Carico, scarico o pesatura', operator:'Nome operatore', pin:'PIN personale', operation:'Operazione', weighing:'Pesatura bombola', add:'Aggiunta refrigerante', remove:'Prelievo refrigerante', scale_weight:'Peso totale sulla bilancia kg', amount:'Quantità refrigerante kg', machine_climate:'Dati macchina e impatto climatico', machine_brand:'Marca macchina', machine_model:'Modello macchina', machine_serial:'Matricola / numero di serie', machine_charge:'Carica macchina di targa kg', gwp:'GWP refrigerante', emitted:'Gas disperso / perdita stimata kg (opzionale)', moved_co2:'CO₂e gas movimentato', machine_co2:'CO₂e carica macchina', emission_co2:'Emissione stimata', notes:'Note / impianto / cliente', save:'Registra movimento', audit:'REGISTRO', history:'Storico movimenti', security:'Sicurezza', security_text:'L’accesso è personale e limitato alla bombola mostrata. Il PIN non viene salvato: l’accesso resta valido 8 ore su questo telefono.', admin:'Accesso amministratore', empty:'Nessun movimento registrato.', initial:'Registrazione iniziale', saved:'Movimento registrato correttamente', invalid_link:'Collegamento QR non valido', failed:'Operazione non riuscita', op_weighing:'Pesatura', op_weighing_sub:'Peso sulla bilancia', op_remove:'Prelievo', op_remove_sub:'Carica in macchina', op_add:'Aggiunta', op_add_sub:'Recupero o travaso', before:'Prima', after:'Dopo', minus_tare:'tara', negative:'Il residuo risulterebbe negativo: controlla il valore.', over_capacity:'Il residuo supera la capacità della bombola: controlla il valore.', save_weighing:'Registra pesatura', save_remove:'Registra prelievo', save_add:'Registra aggiunta',
       offline_banner:'Senza rete · dati salvati il {date}. I movimenti restano sul telefono e partono appena torna la connessione.',
       offline_nodata:'Senza rete e senza dati salvati per questa bombola: puoi comunque registrare il movimento, verrà inviato dopo.',
       offline_nologin:'Senza rete: registra pure il movimento. Quando torna la connessione ti verranno chiesti nome e PIN per inviarlo.',
@@ -13,7 +13,7 @@
       app_link:'App Bombole: scansione QR anche senza rete'
     },
     de: {
-      secure_portal:'SICHERES FLASCHENPORTAL', title:'Kältemittelregister', loading:'Datenblatt wird geladen…', operator_access:'BEDIENERZUGANG', identify:'Identifizieren Sie sich, um das Register anzuzeigen', authorized_only:'Nur vom Administrator gespeicherte und aktivierte Bediener dürfen sich anmelden.', login:'Register öffnen', logged_as:'Angemeldeter Bediener', close_logout:'Schließen und abmelden', limited_access:'Eingeschränkter Zugriff', single_cylinder:'Nur diese Flasche', gas_remaining:'Tatsächlicher Restinhalt', total_weight:'Gesamtgewicht', tare:'Flaschen-Tara', capacity:'Kapazität', register:'ERFASSUNG', movement:'Zugabe, Entnahme oder Wägung', operator:'Name des Bedieners', pin:'Persönliche PIN', operation:'Vorgang', weighing:'Flasche wiegen', add:'Kältemittel hinzufügen', remove:'Kältemittel entnehmen', scale_weight:'Gesamtgewicht auf der Waage kg', amount:'Kältemittelmenge kg', machine_climate:'Anlagendaten und Klimawirkung', machine_brand:'Anlagenhersteller', machine_model:'Anlagenmodell', machine_serial:'Seriennummer', machine_charge:'Nennfüllmenge der Anlage kg', gwp:'GWP des Kältemittels', emitted:'Ausgetretenes Gas / geschätzter Verlust kg (optional)', moved_co2:'CO₂e der bewegten Gasmenge', machine_co2:'CO₂e der Anlagenfüllung', emission_co2:'Geschätzte Emission', notes:'Notizen / Anlage / Kunde', save:'Vorgang erfassen', audit:'REGISTER', history:'Bewegungsverlauf', security:'Sicherheit', security_text:'Der Zugriff ist persönlich und auf die angezeigte Flasche beschränkt. Die PIN wird nicht gespeichert: Die Anmeldung gilt 8 Stunden auf diesem Telefon.', admin:'Administratorzugang', empty:'Keine Bewegung erfasst.', initial:'Ersterfassung', saved:'Vorgang erfolgreich erfasst', invalid_link:'Ungültiger oder widerrufener QR-Link', failed:'Vorgang fehlgeschlagen',
+      secure_portal:'SICHERES FLASCHENPORTAL', title:'Kältemittelregister', loading:'Datenblatt wird geladen…', operator_access:'BEDIENERZUGANG', identify:'Identifizieren Sie sich, um das Register anzuzeigen', authorized_only:'Nur vom Administrator gespeicherte und aktivierte Bediener dürfen sich anmelden.', login:'Register öffnen', logged_as:'Angemeldeter Bediener', close_logout:'Schließen und abmelden', limited_access:'Eingeschränkter Zugriff', single_cylinder:'Nur diese Flasche', gas_remaining:'Tatsächlicher Restinhalt', total_weight:'Gesamtgewicht', tare:'Flaschen-Tara', capacity:'Kapazität', register:'ERFASSUNG', movement:'Zugabe, Entnahme oder Wägung', operator:'Name des Bedieners', pin:'Persönliche PIN', operation:'Vorgang', weighing:'Flasche wiegen', add:'Kältemittel hinzufügen', remove:'Kältemittel entnehmen', scale_weight:'Gesamtgewicht auf der Waage kg', amount:'Kältemittelmenge kg', machine_climate:'Anlagendaten und Klimawirkung', machine_brand:'Anlagenhersteller', machine_model:'Anlagenmodell', machine_serial:'Seriennummer', machine_charge:'Nennfüllmenge der Anlage kg', gwp:'GWP des Kältemittels', emitted:'Ausgetretenes Gas / geschätzter Verlust kg (optional)', moved_co2:'CO₂e der bewegten Gasmenge', machine_co2:'CO₂e der Anlagenfüllung', emission_co2:'Geschätzte Emission', notes:'Notizen / Anlage / Kunde', save:'Vorgang erfassen', audit:'REGISTER', history:'Bewegungsverlauf', security:'Sicherheit', security_text:'Der Zugriff ist persönlich und auf die angezeigte Flasche beschränkt. Die PIN wird nicht gespeichert: Die Anmeldung gilt 8 Stunden auf diesem Telefon.', admin:'Administratorzugang', empty:'Keine Bewegung erfasst.', initial:'Ersterfassung', saved:'Vorgang erfolgreich erfasst', invalid_link:'Ungültiger oder widerrufener QR-Link', failed:'Vorgang fehlgeschlagen', op_weighing:'Wägung', op_weighing_sub:'Gewicht auf der Waage', op_remove:'Entnahme', op_remove_sub:'In Anlage gefüllt', op_add:'Zugabe', op_add_sub:'Rückgewinnung oder Umfüllen', before:'Vorher', after:'Nachher', minus_tare:'Tara', negative:'Die Restmenge wäre negativ: Wert prüfen.', over_capacity:'Die Restmenge übersteigt die Flaschenkapazität: Wert prüfen.', save_weighing:'Wägung erfassen', save_remove:'Entnahme erfassen', save_add:'Zugabe erfassen',
       offline_banner:'Ohne Netz · Daten gespeichert am {date}. Vorgänge bleiben auf dem Telefon und werden gesendet, sobald die Verbindung zurück ist.',
       offline_nodata:'Ohne Netz und ohne gespeicherte Daten für diese Flasche: Der Vorgang kann trotzdem erfasst werden und wird später gesendet.',
       offline_nologin:'Ohne Netz: Vorgang ruhig erfassen. Sobald die Verbindung zurück ist, werden Name und PIN zum Senden abgefragt.',
@@ -45,6 +45,7 @@
     document.querySelectorAll('[data-t]').forEach(node => node.textContent = t(node.dataset.t, node.textContent));
     document.querySelectorAll('[data-lang]').forEach(button => button.classList.toggle('active', button.dataset.lang === language));
     if (!$('#content').classList.contains('hidden')) render();
+    operationFields();
   }
   const kg = value => `${Number(value || 0).toLocaleString(locale(),{minimumFractionDigits:3,maximumFractionDigits:3})} kg`;
   function decimal(value) {
@@ -257,7 +258,30 @@
     const gwp=$('#operation-form [name="gwp"]');
     gwp.required=!weighing && cylinder?.gwp == null;
     if(!weighing&&!gwp.value) gwp.value=cylinder?.gwp??'';
+    document.querySelectorAll('[data-op]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.op===$('#operation').value)));
+    $('#submit').textContent=t(`save_${$('#operation').value}`);
     updateEnvironmentPreview();
+    updateBeforeAfter();
+  }
+  function updateBeforeAfter(){
+    const target=$('#before-after');
+    if(!cylinder){target.classList.add('hidden');return;}
+    target.classList.remove('hidden');
+    const operation=$('#operation').value;
+    const form=$('#operation-form');
+    const before=Number(store.projectedGas(cylinder, cylinderId) ?? cylinder.current_gas_kg);
+    let after=null, extra='';
+    if(operation==='weighing'){
+      const total=Number(decimal(form.elements.total_weight_kg.value)||0);
+      if(total){after=total-Number(cylinder.tare_kg||0);extra=`<small class="co2">${kg(total)} − ${escapeHtml(t('minus_tare'))} ${kg(cylinder.tare_kg)}</small>`;}
+    } else {
+      const amount=Number(decimal(form.elements.amount_kg.value)||0);
+      if(amount) after=operation==='add'?before+amount:before-amount;
+    }
+    const negative=after!==null&&after<0;
+    const over=after!==null&&cylinder.capacity_kg!=null&&after>Number(cylinder.capacity_kg);
+    const warning=negative?t('negative'):over?t('over_capacity'):'';
+    target.innerHTML=`<div><span>${escapeHtml(t('before'))}</span><strong>${kg(before)}</strong></div><b class="arrow" aria-hidden="true">→</b><div><span>${escapeHtml(t('after'))}</span><strong class="${warning?'bad':''}">${after===null?'—':kg(Math.max(0,after))}</strong></div>${extra}${warning?`<small class="co2 bad">${escapeHtml(warning)}</small>`:''}`;
   }
   function updateEnvironmentPreview(){
     if($('#operation').value==='weighing')return;
@@ -267,7 +291,8 @@
   }
 
   $('#operation').addEventListener('change',operationFields);
-  $('#operation-form').addEventListener('input',event=>{if(['amount_kg','machine_charge_kg','gwp','emitted_kg'].includes(event.target.name))updateEnvironmentPreview();});
+  $('#operation-form').addEventListener('input',event=>{if(['amount_kg','machine_charge_kg','gwp','emitted_kg'].includes(event.target.name))updateEnvironmentPreview();if(['amount_kg','total_weight_kg'].includes(event.target.name))updateBeforeAfter();});
+  document.querySelectorAll('[data-op]').forEach(button=>button.addEventListener('click',()=>{$('#operation').value=button.dataset.op;operationFields();(button.dataset.op==='weighing'?$('#total-field input'):$('#amount-field input')).focus();}));
   $('#pending-list').addEventListener('click', event => {
     const button = event.target.closest('[data-delete]');
     if (!button) return;

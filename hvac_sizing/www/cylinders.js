@@ -58,22 +58,54 @@ async function loadCylinders(openFromQr = false) {
   }
 }
 
+let cylinderFilter = 'all';
+const LOW_STOCK = 0.2;
+const fillPercent = item => item.capacity_kg ? Math.max(0, Math.min(100, Number(item.current_gas_kg) / Number(item.capacity_kg) * 100)) : null;
+const isLow = item => item.capacity_kg ? Number(item.current_gas_kg) < Number(item.capacity_kg) * LOW_STOCK : Number(item.current_gas_kg) <= 0;
+
+function renderCylinderFilters() {
+  const gases = [...new Set(cylinderItems.map(item => item.refrigerant))].sort();
+  if (cylinderFilter !== 'all' && cylinderFilter !== 'low' && cylinderFilter !== 'review' && !gases.includes(cylinderFilter)) cylinderFilter = 'all';
+  const lowCount = cylinderItems.filter(isLow).length;
+  const reviewCount = cylinderItems.filter(item => item.review_count).length;
+  const chips = [['all', `${ctr('Tutte')} · ${cylinderItems.length}`], ...gases.map(gas => [gas, gas])];
+  if (lowCount) chips.push(['low', `${ctr('Scorta bassa')} · ${lowCount}`]);
+  if (reviewCount) chips.push(['review', `${ctr('Da verificare')} · ${reviewCount}`]);
+  $('#cylinder-filter').innerHTML = cylinderItems.length ? chips.map(([value, label]) => `<button type="button" class="chip" data-filter="${escapeHtml(value)}" aria-pressed="${cylinderFilter === value}">${escapeHtml(label)}</button>`).join('') : '';
+}
+
 function renderCylinders() {
   const search = ($('#cylinder-search').value || '').trim().toLowerCase();
-  const visible = cylinderItems.filter(item => `${item.name} ${item.code} ${item.refrigerant}`.toLowerCase().includes(search));
+  renderCylinderFilters();
+  const visible = cylinderItems.filter(item => `${item.name} ${item.code} ${item.refrigerant}`.toLowerCase().includes(search)
+    && (cylinderFilter === 'all' || (cylinderFilter === 'low' ? isLow(item) : cylinderFilter === 'review' ? item.review_count : item.refrigerant === cylinderFilter)));
   const totals = cylinderItems.reduce((result, item) => {
     result[item.refrigerant] = (result[item.refrigerant] || 0) + Number(item.current_gas_kg);
     return result;
   }, {});
+  const lowCount = cylinderItems.filter(isLow).length;
+  const reviews = cylinderItems.reduce((sum, item) => sum + Number(item.review_count || 0), 0);
+  const badge = $('#nav-review-badge');
+  if (badge) { badge.textContent = reviews ? String(reviews) : ''; badge.classList.toggle('hidden', !reviews); }
   $('#cylinder-summary').innerHTML = cylinderItems.length
-    ? `<div class="summary-chip"><span>Bombole registrate</span><strong>${cylinderItems.length}</strong></div>${Object.entries(totals).sort().map(([gas, total]) => `<div class="summary-chip"><span>${escapeHtml(ctr('Totale'))} ${escapeHtml(gas)}</span><strong>${kg(total)}</strong></div>`).join('')}`
+    ? `<div class="stat"><span>${escapeHtml(ctr('Bombole registrate'))}</span><strong>${cylinderItems.length}</strong></div>${Object.entries(totals).sort().map(([gas, total]) => `<div class="stat"><span>${escapeHtml(ctr('Totale'))} ${escapeHtml(gas)}</span><strong>${Number(total).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2})}<small> kg</small></strong></div>`).join('')}${lowCount ? `<div class="stat low"><span>${escapeHtml(ctr('Scorta bassa'))}</span><strong>${lowCount}</strong></div>` : ''}${reviews ? `<div class="stat low"><span>${escapeHtml(ctr('Movimenti da verificare'))}</span><strong>${reviews}</strong></div>` : ''}`
     : '';
-  $('#cylinders-list').innerHTML = visible.length ? visible.map(item => `
-    <button class="cylinder-card" type="button" data-cylinder="${item.id}">
-      <span class="cylinder-card-head"><span><span class="cylinder-code">${escapeHtml(item.code)}</span><strong>${escapeHtml(item.name)}</strong></span><span class="refrigerant-pill">${escapeHtml(item.refrigerant)}</span></span>
-      <span class="cylinder-balance">${kg(item.current_gas_kg)}</span>
-      <small>${escapeHtml(ctr('Peso totale stimato'))} ${kg(item.total_weight_kg)} · Tara ${kg(item.tare_kg)}</small>${item.review_count ? `<small class="review-detail">${escapeHtml(item.review_count === 1 ? ctr('1 movimento da verificare') : `${item.review_count} ${ctr('movimenti da verificare')}`)}</small>` : ''}
-    </button>`).join('') : `<div class="empty-state">${cylinderItems.length ? 'Nessuna bombola corrisponde alla ricerca.' : 'Nessuna bombola registrata. Premi “Nuova bombola” per iniziare.'}</div>`;
+  $('#cylinders-list').innerHTML = visible.length ? visible.map(item => {
+    const low = isLow(item);
+    const percent = fillPercent(item);
+    return `<article class="cyl-card${low ? ' low' : ''}${item.review_count ? ' review' : ''}">
+      <button class="cyl-open" type="button" data-cylinder="${item.id}" aria-label="${escapeHtml(`${ctr('Apri')} ${item.code} ${item.name}`)}">${UI.bottle(percent, low)}
+      <span class="cyl-info">
+        <span class="cyl-head"><span class="code">${escapeHtml(item.code)}</span><span class="refrigerant-pill">${escapeHtml(item.refrigerant)}</span></span>
+        <span class="name">${escapeHtml(item.name)}</span>
+        <span class="kg">${Number(item.current_gas_kg || 0).toLocaleString(window.AppI18n?.locale() || 'it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})}<small> kg${item.capacity_kg ? ` / ${Number(item.capacity_kg).toLocaleString(window.AppI18n?.locale() || 'it-IT', {maximumFractionDigits: 1})} kg` : ''}</small></span>
+        <span class="meta${low ? ' warn' : ''}">${low ? `${escapeHtml(ctr('Scorta bassa'))} · ` : ''}${escapeHtml(ctr('Peso totale stimato'))} ${kg(item.total_weight_kg)} · ${escapeHtml(ctr('Tara'))} ${kg(item.tare_kg)}</span>
+        ${item.review_count ? `<span class="meta warn">${escapeHtml(item.review_count === 1 ? ctr('1 movimento da verificare') : `${item.review_count} ${ctr('movimenti da verificare')}`)}</span>` : ''}
+      </span></button>
+      <span class="cyl-acts" data-quick-op><button type="button" class="button secondary small" data-quick="weighing" data-id="${item.id}">${escapeHtml(ctr('Pesa'))}</button><button type="button" class="button ghost small" data-quick="remove" data-id="${item.id}">${escapeHtml(ctr('Preleva'))}</button><button type="button" class="button ghost small" data-quick="add" data-id="${item.id}">${escapeHtml(ctr('Aggiungi'))}</button></span>
+    </article>`;
+  }).join('') : `<div class="empty-state">${escapeHtml(ctr(cylinderItems.length ? 'Nessuna bombola corrisponde alla ricerca.' : 'Nessuna bombola registrata. Premi “Nuova bombola” per iniziare.'))}</div>`;
+  UI.applyGeometry($('#cylinders-list'));
   $('#download-all-cylinders-pdf').href = cylinderPdfUrl(null, true);
   $('#download-all-cylinders-pdf').download = 'magazzino-bombole.pdf';
 }
@@ -136,11 +168,16 @@ async function openCylinder(id, updateUrl = true) {
 }
 
 function renderCylinderDetail() {
-  $('#cylinder-detail-metrics').innerHTML = `
-    <div class="metric cool"><span>Gas residuo effettivo</span><strong>${kg(activeCylinder.current_gas_kg)}</strong></div>
-    <div class="metric"><span>Peso totale calcolato</span><strong>${kg(activeCylinder.total_weight_kg)}</strong></div>
-    <div class="metric"><span>Tara bombola</span><strong>${kg(activeCylinder.tare_kg)}</strong></div>
-    <div class="metric"><span>Capacità gas</span><strong>${activeCylinder.capacity_kg == null ? '—' : kg(activeCylinder.capacity_kg)}</strong></div>`;
+  const low = isLow(activeCylinder);
+  const percent = fillPercent(activeCylinder);
+  $('#cylinder-detail-metrics').innerHTML = `<div class="detail-hero">${UI.bottle(percent, low).replace('class="bottle', 'class="bottle big')}
+    <div class="grid">
+    <div class="kpi cool"><span>${ctr('Gas residuo effettivo')}</span><strong>${kg(activeCylinder.current_gas_kg)}</strong>${percent === null ? '' : `<small class="${low ? 'warn-text' : ''}">${Math.round(percent)}%${low ? ` · ${ctr('Scorta bassa')}` : ''}</small>`}</div>
+    <div class="kpi"><span>${ctr('Peso totale calcolato')}</span><strong>${kg(activeCylinder.total_weight_kg)}</strong></div>
+    <div class="kpi"><span>${ctr('Tara bombola')}</span><strong>${kg(activeCylinder.tare_kg)}</strong></div>
+    <div class="kpi"><span>${ctr('Capacità gas')}</span><strong>${activeCylinder.capacity_kg == null ? '—' : kg(activeCylinder.capacity_kg)}</strong></div>
+    </div></div>`;
+  UI.applyGeometry($('#cylinder-detail-metrics'));
 
   const names = {initial: 'Registrazione iniziale', weighing: 'Pesatura', add: 'Aggiunta', remove: 'Prelievo'};
   $('#cylinder-history').innerHTML = activeCylinder.history.length ? activeCylinder.history.map(item => {
@@ -311,8 +348,18 @@ async function deleteTransaction(event) {
   }
 }
 
+const currentOperation = () => $('#cylinder-operation-form input[name="operation"]:checked')?.value || 'weighing';
+function setOperation(value) {
+  const radio = $(`#cylinder-operation-form input[name="operation"][value="${value}"]`);
+  if (radio) radio.checked = true;
+  setOperationFields();
+}
+
 function setOperationFields() {
-  const weighing = $('#cylinder-operation').value === 'weighing';
+  const operation = currentOperation();
+  const weighing = operation === 'weighing';
+  $('#amount-label').textContent = ctr(operation === 'remove' ? 'Quantità prelevata' : 'Quantità aggiunta');
+  $('#operation-submit').textContent = ctr(weighing ? 'Registra pesatura' : operation === 'remove' ? 'Registra prelievo' : 'Registra aggiunta');
   $('#weighing-field').classList.toggle('hidden', !weighing);
   $('#amount-field').classList.toggle('hidden', weighing);
   $('#operation-total').required = weighing;
@@ -327,7 +374,7 @@ function setOperationFields() {
 }
 
 function updateEnvironmentPreview() {
-  if (!activeCylinder || $('#cylinder-operation').value === 'weighing') return;
+  if (!activeCylinder || currentOperation() === 'weighing') return;
   const form = $('#cylinder-operation-form');
   const amount = cylinderNumber($('#operation-amount').value);
   const gwp = cylinderNumber(form.elements.gwp.value);
@@ -338,21 +385,25 @@ function updateEnvironmentPreview() {
 
 function updateOperationPreview() {
   if (!activeCylinder) return;
-  const operation = $('#cylinder-operation').value;
-  let after = Number(activeCylinder.current_gas_kg);
-  let explanation = `${ctr('Residuo attuale')}: <strong>${kg(after)}</strong>`;
+  const operation = currentOperation();
+  const before = Number(activeCylinder.current_gas_kg);
+  let after = null;
+  let co2Line = '';
   if (operation === 'weighing') {
     const total = cylinderNumber($('#operation-total').value);
-    if (total) {
-      after = Math.max(0, total - Number(activeCylinder.tare_kg));
-      explanation = `${kg(total)} − ${ctr('tara')} ${kg(activeCylinder.tare_kg)} = <strong>${kg(after)} ${ctr('di gas')}</strong>`;
-    }
+    if (total) after = total - Number(activeCylinder.tare_kg);
   } else {
     const amount = cylinderNumber($('#operation-amount').value);
-    after = operation === 'add' ? after + amount : after - amount;
-    explanation = `${ctr('Nuovo residuo previsto')}: <strong>${kg(after)}</strong>`;
+    if (amount) {
+      after = operation === 'add' ? before + amount : before - amount;
+      const gwp = cylinderNumber($('#cylinder-operation-form').elements.gwp.value);
+      if (gwp) co2Line = `<small class="co2">${escapeHtml(ctr('Gas movimentato'))}: <b>${tco2(amount * gwp)}</b></small>`;
+    }
   }
-  $('#operation-preview').innerHTML = explanation;
+  const negative = after !== null && after < 0;
+  const overCapacity = after !== null && activeCylinder.capacity_kg && after > Number(activeCylinder.capacity_kg);
+  const note = negative ? ctr('Il residuo risulterebbe negativo: controlla il valore.') : overCapacity ? ctr('Il residuo supera la capacità della bombola: controlla il valore.') : '';
+  $('#operation-preview').innerHTML = `<div><span>${escapeHtml(ctr('Prima'))}</span><strong>${kg(before)}</strong></div><b class="arrow" aria-hidden="true">→</b><div><span>${escapeHtml(ctr('Dopo'))}</span><strong class="${negative || overCapacity ? 'bad' : ''}">${after === null ? '—' : kg(Math.max(0, after))}</strong></div>${operation === 'weighing' && after !== null ? `<small class="co2">${kg(cylinderNumber($('#operation-total').value))} − ${escapeHtml(ctr('tara'))} ${kg(activeCylinder.tare_kg)}</small>` : ''}${co2Line}${note ? `<small class="co2 bad">${escapeHtml(note)}</small>` : ''}`;
 }
 
 async function saveCylinderOperation(event) {
@@ -370,8 +421,7 @@ async function saveCylinderOperation(event) {
   try {
     await api(`cylinders/${activeCylinder.id}/transactions`, {method: 'POST', body: JSON.stringify(payload)});
     formElement.reset();
-    $('#cylinder-operation').value = 'weighing';
-    setOperationFields();
+    setOperation('weighing');
     await loadCylinders();
     await openCylinder(activeCylinder.id, false);
     toast('Movimento registrato');
@@ -508,15 +558,28 @@ $('#new-cylinder-form').addEventListener('submit', createCylinder);
 $('#new-cylinder-tare').addEventListener('input', updateNewCylinderPreview);
 $('#new-cylinder-gas').addEventListener('input', updateNewCylinderPreview);
 $('#cylinder-search').addEventListener('input', renderCylinders);
-$('#cylinders-list').addEventListener('click', event => {
+$('#cylinders-list').addEventListener('click', async event => {
+  const quick = event.target.closest('[data-quick]');
+  if (quick) {
+    await openCylinder(quick.dataset.id);
+    setOperation(quick.dataset.quick);
+    (quick.dataset.quick === 'weighing' ? $('#operation-total') : $('#operation-amount')).focus();
+    return;
+  }
   const card = event.target.closest('[data-cylinder]');
   if (card) openCylinder(card.dataset.cylinder);
 });
-$('#cylinder-operation').addEventListener('change', setOperationFields);
+$('#cylinder-filter').addEventListener('click', event => {
+  const chip = event.target.closest('[data-filter]');
+  if (!chip) return;
+  cylinderFilter = chip.dataset.filter;
+  renderCylinders();
+});
+$$('#cylinder-operation-form input[name="operation"]').forEach(radio => radio.addEventListener('change', setOperationFields));
 $('#operation-total').addEventListener('input', updateOperationPreview);
 $('#operation-amount').addEventListener('input', () => { updateOperationPreview(); updateEnvironmentPreview(); });
 $('#cylinder-operation-form').addEventListener('input', event => {
-  if (['machine_charge_kg', 'gwp', 'emitted_kg'].includes(event.target.name)) updateEnvironmentPreview();
+  if (['machine_charge_kg', 'gwp', 'emitted_kg'].includes(event.target.name)) { updateEnvironmentPreview(); updateOperationPreview(); }
 });
 $('#cylinder-operation-form').addEventListener('submit', saveCylinderOperation);
 $('#cylinder-history').addEventListener('click', event => {

@@ -1,9 +1,10 @@
 /* Service worker del portale bombole: tiene sul telefono le pagine per aprire i QR senza rete.
    I dati delle bombole non passano da qui: li salva offline.js nella memoria della pagina. */
-const VERSION = 'bombole-0.15.0';
+const VERSION = 'bombole-0.16.0';
 const SHELL = [
   '/app/', '/shell/portal', '/public.js', '/public.css', '/offline.js', '/bombole-app.js',
-  '/machine-brands.js', '/vendor/jsqr.js', '/manifest.webmanifest', '/app-icon-192.png', '/app-icon-512.png'
+  '/machine-brands.js', '/vendor/jsqr.js', '/manifest.webmanifest', '/app-icon-192.png', '/app-icon-512.png',
+  '/inter-400.woff2', '/inter-600.woff2', '/inter-800.woff2', '/barlow-700.woff2', '/mono-600.woff2'
 ];
 
 self.addEventListener('install', event => {
