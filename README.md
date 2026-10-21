@@ -74,3 +74,15 @@ Il risultato è una stima tecnica trasparente e non sostituisce un calcolo norma
 - VDI 2078 / VDI 6007 per carico frigorifero dinamico e risposta termica degli ambienti;
 - EN 12831-1 per il carico di riscaldamento;
 - EN ISO 52016-1 per fabbisogni, temperature interne e carichi sensibili/latenti.
+
+## Licenza
+
+© 2026 Marius Grosu — distribuito con licenza **MIT** (vedi [LICENSE](LICENSE)). Puoi usarlo, anche per lavoro, modificarlo e condividerlo, mantenendo il nome dell’autore e questa licenza.
+
+Il programma è fornito "così com’è", senza garanzie. I risultati di dimensionamento, diagnosi e registro F-gas sono stime tecniche da verificare: la responsabilità delle scelte di progetto, dell’installazione e della tenuta dei registri resta di chi lo usa.
+
+Componenti di terzi inclusi: caratteri Inter, Barlow Semi Condensed e JetBrains Mono (SIL Open Font License 1.1, `hvac_sizing/www/fonts/LICENSE-OFL.txt`); jsQR (Apache License 2.0, `hvac_sizing/www/vendor/jsqr-LICENSE.txt`).
+
+### Lizenz (Deutsch)
+
+© 2026 Marius Grosu — unter der **MIT**-Lizenz veröffentlicht (siehe [LICENSE](LICENSE)). Nutzung, auch beruflich, Änderung und Weitergabe sind erlaubt, sofern Autorenname und Lizenz erhalten bleiben. Die Software wird „wie besehen“ ohne Gewährleistung bereitgestellt; Auslegungs-, Diagnose- und F-Gas-Ergebnisse sind zu prüfende technische Schätzungen, die Verantwortung liegt beim Anwender.
